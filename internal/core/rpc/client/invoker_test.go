@@ -1,10 +1,17 @@
 package client
 
 import (
+	"bytes"
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"go.yorun.ai/vine/internal/core/logger"
+	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/utilfortest/spectest"
+	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -256,6 +263,65 @@ func TestInvokerDestination(t *testing.T) {
 		defer invoker.cleanup()
 		if request.Destination() != destination || request.Client() != c.clientApp {
 			t.Fatalf("destination or caller identity changed: %v", request)
+		}
+	}
+}
+
+type identityLogTransport func(*http.Request) (*http.Response, error)
+
+func (f identityLogTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
+
+func TestInvokerLogsIdentityCarriedByRequest(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "client-identity.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	user := meta.NewAuthenticatedActorWithRawInfo("demo.UserActor", "123", "demo.UserInfo", []byte(`{"id":123}`))
+	operator := meta.NewAuthenticatedActorWithRawInfo("demo.OpsActor", "ops", "demo.OpsInfo", []byte(`{"id":"ops"}`))
+	actor := meta.NewImpersonatedActor(user, operator)
+	for _, identity := range []meta.Actor{actor, meta.NewAnonymousActor()} {
+		client := New(Option{
+			Context:             meta.NewContext(t.Context(), meta.InitialTrace(), nil, identity),
+			ClientApp:           testClientApp(t),
+			Logger:              log,
+			ServerEndpoint:      "http://rpc.local",
+			ReturnIfSystemError: true,
+			Transport: identityLogTransport(func(request *http.Request) (*http.Response, error) {
+				decoded, err := meta.DecodeActorFromBase64(request.Header.Get(rpchttp.HeaderRpcActor))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if decoded.Type() != identity.Type() || decoded.Identifier() != identity.Identifier() {
+					t.Fatal("request actor changed")
+				}
+				return nil, errors.New("test transport failure")
+			}),
+		})
+		replacement := meta.NewContext(t.Context(), meta.InitialTrace(), nil, operator)
+		_, err := client.Invoke(testMethodInfo(), nil, WithContext(replacement))
+		if err == nil {
+			t.Fatal("expected transport failure")
+		}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := bytes.Split(bytes.TrimSpace(data), []byte("\n"))
+	if len(lines) != 4 {
+		t.Fatalf("expected two start/finish pairs: %s", data)
+	}
+	for index, line := range lines {
+		var record map[string]any
+		if err := json.Unmarshal(line, &record); err != nil {
+			t.Fatal(err)
+		}
+		if index < 2 {
+			if record["actorIdentifier"] != "123" || record["impersonatorActorIdentifier"] != "ops" {
+				t.Fatalf("logged actor differs from request: %s", line)
+			}
+		} else if record["actorType"] != "anonymous" || record["actorIdentifier"] != nil || record["impersonatorActorIdentifier"] != nil {
+			t.Fatalf("shared logger retained previous identity: %s", line)
 		}
 	}
 }

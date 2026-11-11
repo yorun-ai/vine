@@ -23,6 +23,7 @@ type _RequestDecoder struct {
 type RejectionDiagnostic struct {
 	Trace           meta.Trace
 	Client          meta.App
+	Actor           meta.Actor
 	Method          spec.MethodInfo
 	ServiceSkelName string
 	MethodSkelName  string
@@ -59,6 +60,7 @@ func (d *_RequestDecoder) decode() (spec.Request, *RejectionDiagnostic, error) {
 			diagnostic := new(RejectionDiagnostic{
 				Trace:           d.rpcRequest.TraceValue,
 				Client:          d.rpcRequest.ClientValue,
+				Actor:           d.rpcRequest.ActorValue,
 				Method:          d.rpcRequest.MethodInfoValue,
 				ServiceSkelName: d.serviceSkelName,
 				MethodSkelName:  d.methodSkelName,

@@ -205,7 +205,7 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "client-rejected.jsonl")
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: logPath})
 	client := New(Option{
-		Context:             testClientContext(),
+		Context:             meta.NewContext(t.Context(), meta.InitialTrace(), nil, meta.NewAuthenticatedActorWithRawInfo("demo.UserActor", "123", "demo.UserInfo", []byte(`{"id":123}`))),
 		ClientApp:           testClientApp(t),
 		Logger:              log,
 		ServerEndpoint:      "http://127.0.0.1:1",
@@ -230,6 +230,9 @@ func TestInvokeEncodingFailureLogsRejectedWithoutStarted(t *testing.T) {
 	}
 	if record["msg"] != "rpc client invoke rejected" || record["level"] != "ERROR" || record["code"] != string(ex.InvocationFailed) {
 		t.Fatalf("unexpected client rejection record: %#v", record)
+	}
+	if record["actorRealm"] != "demo.UserActor" || record["actorIdentifier"] != "123" {
+		t.Fatalf("missing rejection identity: %#v", record)
 	}
 	if _, started := record["phase"]; started {
 		t.Fatalf("lifecycle phase field must not be emitted: %#v", record)

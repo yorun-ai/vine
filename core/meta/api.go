@@ -39,7 +39,7 @@ const (
 	ActorTypeAnonymous = internalmeta.ActorTypeAnonymous
 	// ActorTypeAuthenticated identifies a verified actor.
 	ActorTypeAuthenticated = internalmeta.ActorTypeAuthenticated
-	// ActorTypeImpersonated identifies an actor operating as another identity.
+	// ActorTypeImpersonated identifies an effective actor with an authenticated operator.
 	ActorTypeImpersonated = internalmeta.ActorTypeImpersonated
 )
 
@@ -108,6 +108,12 @@ func NewAnonymousActor() Actor {
 // NewAuthenticatedActor creates an authenticated actor carrying info.
 func NewAuthenticatedActor[I any](info I) Actor {
 	return internalmeta.NewAuthenticatedActor[I](info)
+}
+
+// NewImpersonatedActor attaches an authenticated operator to an effective actor.
+// Realm, identifier, and info continue to describe the effective actor.
+func NewImpersonatedActor(actor Actor, impersonator Actor) Actor {
+	return internalmeta.NewImpersonatedActor(actor, impersonator)
 }
 
 // GetActorInfo returns actor's payload as T and reports whether the conversion succeeded.

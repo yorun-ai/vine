@@ -352,3 +352,90 @@ func TestPortalRejectsEmptyAndDuplicateAuthorization(t *testing.T) {
 		}
 	}
 }
+
+func TestAuthResultImpersonation(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		result       string
+		valid        bool
+		impersonated bool
+	}{
+		{name: "ordinary", result: `{"info":{"userId":9007199254740993}}`, valid: true},
+		{name: "null operator", result: `{"info":{"userId":9007199254740993},"impersonatorInfo":null}`, valid: true},
+		{name: "operator", result: `{"info":{"userId":9007199254740993},"impersonatorInfo":{"opsActorInfo":{"id":"ops-1","role":"support"},"adminActorInfo":null}}`, valid: true, impersonated: true},
+		{name: "missing info", result: `{}`},
+		{name: "null info", result: `{"info":null}`},
+		{name: "empty operators", result: `{"info":{"userId":1},"impersonatorInfo":{}}`},
+		{name: "all null", result: `{"info":{"userId":1},"impersonatorInfo":{"opsActorInfo":null}}`},
+		{name: "unknown operator", result: `{"info":{"userId":1},"impersonatorInfo":{"unknownInfo":{}}}`},
+		{name: "unknown null", result: `{"info":{"userId":1},"impersonatorInfo":{"unknownInfo":null}}`},
+		{name: "multiple", result: `{"info":{"userId":1},"impersonatorInfo":{"opsActorInfo":{"id":"a"},"adminActorInfo":{"id":"b"}}}`},
+		{name: "operator array", result: `{"info":{"userId":1},"impersonatorInfo":{"opsActorInfo":[]}}`},
+		{name: "operator missing identifier", result: `{"info":{"userId":1},"impersonatorInfo":{"opsActorInfo":{}}}`},
+		{name: "duplicate key", result: `{"info":{"userId":1},"info":{"userId":2}}`},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			endpoint := registerTestAuthService(t, http.StatusOK, "OK", tt.result)
+			values := testAuthValues(endpoint)
+			actor := testAuthActorDescriptor()
+			actor.Auth.IdentifierField = "userId"
+			actor.Auth.Method().ResultType.SkelName = "demo.UserActorAuthResult"
+			actor.Auth.Impersonators = []*skeldesc.ActorImpersonator{
+				{InfoFieldName: "opsActorInfo", ActorSkelName: "demo.OpsActor"},
+				{InfoFieldName: "adminActorInfo", ActorSkelName: "demo.AdminActor"},
+			}
+			values[watched.FormatDescriptorActorKey(actor.SkelName)] = vcode.MustMarshalJsonS(actor)
+			for _, name := range []string{"demo.OpsActor", "demo.AdminActor"} {
+				operator := testAuthActorDescriptor()
+				operator.SkelName = name
+				operator.Auth.Info.SkelName = name + "Info"
+				operator.Auth.IdentifierField = "id"
+				values[watched.FormatDescriptorActorKey(name)] = vcode.MustMarshalJsonS(operator)
+			}
+			access := newTestAccess(t, values)
+			for _, web := range []bool{false, true} {
+				request := httptest.NewRequest(http.MethodPost, "http://demo.local/demo.UserService/Get", nil)
+				setTestRequestHeaders(t, request)
+				request.Header.Set("Authorization", "key1 token, key2 token")
+				recorder := httptest.NewRecorder()
+				operation := authOperationForTest(t, request, recorder)
+				header := rpchttp.HeaderRpcActor
+				var ok bool
+				if web {
+					header = webspec.HeaderWebActor
+					ok = access.AuthWeb(new(WebOperation{Auther: operation, ActorSkelName: "demo.UserActor"}))
+				} else {
+					ok = access.AllowRpc(new(RpcOperation{Auther: operation, Server: testServerApp(), ActorSkelName: "demo.UserActor", ServiceName: "demo.UserService", MethodName: "Get"}))
+				}
+				require.Equal(t, tt.valid, ok, recorder.Body.String())
+				if !ok {
+					continue
+				}
+				decoded, err := meta.DecodeActorFromBase64(request.Header.Get(header))
+				require.NoError(t, err)
+				assert.Equal(t, "demo.UserActor", decoded.Realm())
+				assert.Equal(t, "9007199254740993", decoded.Identifier())
+				assert.Equal(t, tt.impersonated, decoded.IsImpersonated())
+				assert.Empty(t, request.Header.Get("Authorization"))
+				if tt.impersonated {
+					assert.Equal(t, "demo.OpsActor", decoded.Impersonator().Realm())
+					assert.Equal(t, "ops-1", decoded.Impersonator().Identifier())
+					assert.JSONEq(t, `{"id":"ops-1","role":"support"}`, decoded.Impersonator().RawInfo())
+				}
+			}
+		})
+	}
+}
+
+func TestLegacyAuthInfoIsNotAnEnvelope(t *testing.T) {
+	actor := testAuthActorDescriptor()
+	auther := new(Auther{actorDescriptor: &actor})
+	raw := `{"info":{"id":"nested"},"impersonatorInfo":{"opsActorInfo":{}}}`
+	result, err := auther.actorFromAuthResult([]byte(raw))
+	require.NoError(t, err)
+	assert.False(t, result.IsImpersonated())
+	assert.Equal(t, raw, result.RawInfo())
+	actor.Auth.Method().ResultType.SkelName = "demo.Unrelated"
+	_, err = auther.actorFromAuthResult([]byte(raw))
+	require.Error(t, err)
+}

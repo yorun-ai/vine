@@ -3,6 +3,8 @@ package access
 import (
 	"bytes"
 	"encoding/json/jsontext"
+	"encoding/json/v2"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/mtls"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/desc"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/util/vpre"
 )
@@ -27,9 +30,10 @@ type Auther struct {
 	Trace     meta.Trace
 	Initiator meta.Initiator
 
-	endpointManager *epmgr.Manager
-	actorDescriptor *skeldesc.Actor
-	identity        *mtls.Identity
+	endpointManager   *epmgr.Manager
+	descriptorManager *desc.Manager
+	actorDescriptor   *skeldesc.Actor
+	identity          *mtls.Identity
 
 	actor      meta.Actor
 	credential map[string]string
@@ -127,25 +131,108 @@ func (o *Auther) executeAuthRequest(authRequest *http.Request, writeError _AuthE
 		return false
 	}
 
-	if len(info) == 0 || bytes.Equal(info, []byte("null")) {
+	actor, err := o.actorFromAuthResult(info)
+	if err != nil {
 		writeError(ex.ServiceUnavailable, "bad auth response")
 		return false
 	}
+	setActor(actor)
+	return true
+}
 
+// actorFromAuthResult uses the declared return contract, never payload field names,
+// to distinguish legacy ActorInfo from the generated AuthResult envelope.
+func (o *Auther) actorFromAuthResult(result jsontext.Value) (meta.Actor, error) {
+	auth := o.actorDescriptor.Auth
+	method := auth.Method()
+	if method == nil || method.ResultType == nil || method.ResultType.Kind != skeldesc.TypeKindData || method.ResultType.Nullable {
+		return nil, fmt.Errorf("invalid auth result contract")
+	}
+	if method.ResultType.SkelName == auth.Info.SkelName {
+		return actorFromInfo(o.actorDescriptor, result)
+	}
+	if method.ResultType.SkelName != o.actorDescriptor.SkelName+"AuthResult" {
+		return nil, fmt.Errorf("unsupported auth result contract")
+	}
+	fields, err := authObject(result)
+	if err != nil {
+		return nil, err
+	}
+	actor, err := actorFromInfo(o.actorDescriptor, fields["info"])
+	if err != nil {
+		return nil, err
+	}
+	raw := bytes.TrimSpace(fields["impersonatorInfo"])
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return actor, nil
+	}
+	candidates, err := authObject(raw)
+	if err != nil {
+		return nil, err
+	}
+	var operator meta.Actor
+	for field, info := range candidates {
+		var reference *skeldesc.ActorImpersonator
+		for _, candidate := range auth.Impersonators {
+			if candidate.InfoFieldName == field {
+				reference = candidate
+				break
+			}
+		}
+		if reference == nil {
+			return nil, fmt.Errorf("undeclared impersonator field %s", field)
+		}
+		if bytes.Equal(bytes.TrimSpace(info), []byte("null")) {
+			continue
+		}
+		if operator != nil {
+			return nil, fmt.Errorf("multiple impersonators")
+		}
+		target, ok := o.descriptorManager.Actor(reference.ActorSkelName)
+		if !ok || target.Auth == nil || target.Auth.Info == nil {
+			return nil, fmt.Errorf("impersonator descriptor unavailable")
+		}
+		operator, err = actorFromInfo(target, info)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if operator == nil {
+		return nil, fmt.Errorf("empty impersonator info")
+	}
+	return meta.NewImpersonatedActor(actor, operator), nil
+}
+
+func authObject(raw jsontext.Value) (map[string]jsontext.Value, error) {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 || raw[0] != '{' {
+		return nil, fmt.Errorf("expected auth info object")
+	}
+	var fields map[string]jsontext.Value
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil, err
+	}
+	return fields, nil
+}
+
+func actorFromInfo(actor *skeldesc.Actor, info jsontext.Value) (meta.Actor, error) {
+	fields, err := authObject(info)
+	if err != nil {
+		return nil, err
+	}
 	identifier := ""
-	if o.actorDescriptor.Auth.IdentifierField != "" {
-		value := gjson.GetBytes(info, o.actorDescriptor.Auth.IdentifierField)
-		if value.Type == gjson.Null {
-			writeError(ex.ServiceUnavailable, "bad auth response")
-			return false
+	if actor.Auth.IdentifierField != "" {
+		raw := fields[actor.Auth.IdentifierField]
+		value := gjson.ParseBytes(raw)
+		if value.Type != gjson.String && value.Type != gjson.Number {
+			return nil, fmt.Errorf("invalid actor identifier")
 		}
 		identifier = value.Raw
 		if value.Type == gjson.String {
 			identifier = value.Str
 		}
 	}
-	setActor(meta.NewAuthenticatedActorWithRawInfo(o.actorDescriptor.SkelName, identifier, o.actorDescriptor.Auth.Info.SkelName, info))
-	return true
+	return meta.NewAuthenticatedActorWithRawInfo(actor.SkelName, identifier, actor.Auth.Info.SkelName, info), nil
 }
 
 // authenticate applies explicit modes without treating failed authentication as anonymous.

@@ -30,7 +30,7 @@ func buildLoggerFields(ctx meta.Context, method rpcspec.MethodInfo, info meta.Ap
 }
 
 func buildContextLogFields(ctx meta.Context) []slog.Attr {
-	fields := make([]slog.Attr, 0, 7)
+	fields := make([]slog.Attr, 0, 11)
 	if ctx == nil {
 		return fields
 	}
@@ -50,7 +50,7 @@ func buildContextLogFields(ctx meta.Context) []slog.Attr {
 		}
 	}
 	if actor := ctx.Actor(); actor != nil {
-		fields = append(fields, slog.String("actorType", string(actor.Type())))
+		fields = append(fields, actor.LogFields()...)
 	}
 	if initiator := ctx.Initiator(); initiator != nil && initiator.IpAddr() != "" {
 		fields = append(fields, slog.String("clientIp", initiator.IpAddr()))

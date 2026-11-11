@@ -317,6 +317,9 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 		t.Fatalf("NewApp() error = %v", err)
 	}
 	httptrans.EncodeClientToHeader(header, client)
+	user := meta.NewAuthenticatedActorWithRawInfo("demo.UserActor", "123", "demo.UserInfo", []byte(`{"id":123}`))
+	operator := meta.NewAuthenticatedActorWithRawInfo("demo.OpsActor", "ops", "demo.OpsInfo", []byte(`{"id":"ops"}`))
+	httptrans.EncodeActorToHeader(header, meta.NewImpersonatedActor(user, operator))
 	header.Set(httptrans.HeaderAccept, "application/vrpc+json")
 	header.Set(httptrans.HeaderContentType, "application/vrpc+json")
 
@@ -355,6 +358,9 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 	}
 	if record["vrpcId"] != trace.Id() || record["clientName"] != client.Name() {
 		t.Fatalf("validated rejection metadata was not preserved: %#v", record)
+	}
+	if record["actorIdentifier"] != "123" || record["impersonatorActorIdentifier"] != "ops" {
+		t.Fatalf("decoded rejection identity was lost: %#v", record)
 	}
 	if _, exists := record["body"]; exists {
 		t.Fatalf("raw request body leaked into rejection log: %#v", record)
@@ -497,5 +503,65 @@ func TestServerHandleClassifiesOnlyRequestCancellation(t *testing.T) {
 				t.Fatal("request cancellation must not replace completed results")
 			}
 		})
+	}
+}
+
+func TestServerLifecycleLogsRequestActorWithoutLeakingToNextRequest(t *testing.T) {
+	method := spectest.RpcService(new(spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeBoth,
+		Name:     "IdentityService",
+		SkelName: "test.identity.lifecycle",
+		Methods:  []*spec.MethodSpec{{Name: "Get", SkelName: "get"}},
+	})).Methods()[0]
+	path := filepath.Join(t.TempDir(), "identity.jsonl")
+	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelDebug, OutputPath: path})
+	server := new(Server{
+		opt:      new(Option{App: testServerApp()}),
+		executor: new(_ServerTestExecutor{result: "ok"}),
+		log:      log,
+	})
+	user := meta.NewAuthenticatedActorWithRawInfo("demo.UserActor", "123", "demo.UserInfo", []byte(`{"secret":"not-for-logs"}`))
+	operator := meta.NewAuthenticatedActorWithRawInfo("demo.OpsActor", "ops-1", "demo.OpsInfo", []byte(`{"secret":"operator-secret"}`))
+	for _, actor := range []meta.Actor{meta.NewImpersonatedActor(user, operator), meta.NewAnonymousActor()} {
+		response := server.handle(new(spec.RequestImpl{
+			ContextValue:    t.Context(),
+			TraceValue:      meta.InitialTrace(),
+			MethodInfoValue: method,
+			ActorValue:      actor,
+		}))
+		if response.Error().Code() != ex.OK {
+			t.Fatalf("unexpected response: %v", response.Error())
+		}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := bytes.Split(bytes.TrimSpace(data), []byte("\n"))
+	if len(lines) != 4 {
+		t.Fatalf("expected start/finish for both requests: %s", data)
+	}
+	for index, line := range lines {
+		var record map[string]any
+		if err := json.Unmarshal(line, &record); err != nil {
+			t.Fatal(err)
+		}
+		if index < 2 {
+			if record["actorType"] != "impersonated" || record["actorRealm"] != "demo.UserActor" || record["actorIdentifier"] != "123" || record["impersonatorActorRealm"] != "demo.OpsActor" || record["impersonatorActorIdentifier"] != "ops-1" {
+				t.Fatalf("missing request identity: %s", line)
+			}
+		} else {
+			if record["actorType"] != "anonymous" {
+				t.Fatalf("incorrect actor: %s", line)
+			}
+			for _, key := range []string{"actorRealm", "actorIdentifier", "impersonatorActorRealm", "impersonatorActorIdentifier"} {
+				if _, exists := record[key]; exists {
+					t.Fatalf("identity leaked to next request: %s", line)
+				}
+			}
+		}
+		if bytes.Contains(line, []byte("secret")) {
+			t.Fatalf("actor info leaked: %s", line)
+		}
 	}
 }
