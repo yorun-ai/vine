@@ -9,7 +9,7 @@ require (
 	// Recheck the cleanupLoop implementation-dependent trick in infra/redis/memory.go.
 	github.com/alicebob/miniredis/v2 v2.39.1-0.20260919065521-ee67e4deb7b4
 	github.com/andybalholm/brotli v1.2.6
-	github.com/fxamacker/cbor/v2 v2.9.4
+	github.com/fxamacker/cbor/v2 v2.10.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/go-sqlite v1.23.0
 	github.com/glebarez/sqlite v1.11.0
@@ -22,7 +22,7 @@ require (
 	github.com/nats-io/nats.go v1.54.0
 	github.com/redis/go-redis/v9 v9.22.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/shopspring/decimal v1.4.0
+	github.com/shopspring/decimal v1.6.0
 	github.com/spiffe/go-spiffe/v2 v2.8.2
 	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/gjson v1.19.0
