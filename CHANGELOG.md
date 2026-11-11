@@ -8,6 +8,64 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-11-11
+
+### Added
+
+- Support one direct impersonator alongside the effective actor. Expose
+  `Actor.IsImpersonated()`, `Actor.Impersonator()` and
+  `meta.NewImpersonatedActor`; impersonated actors remain authenticated and
+  service audience and permission checks continue to use the effective identity.
+- Accept Skel-generated AuthResult authentication responses at Portal while
+  retaining legacy ActorInfo responses. Resolve declared impersonators from
+  descriptor references and propagate complete operator metadata downstream,
+  including through processes without the operator's registered Go info type.
+- Expose `Actor.LogFields()` and include actor type, realm and identifier plus
+  impersonator realm and identifier in business context and Rpc lifecycle logs.
+  Empty identity fields are omitted and actor info payloads are not logged.
+
+### Changed
+
+- Use native `uuid.UUID` in generated contracts, with shared Skel JSON/CBOR
+  payload rules for Rpc, Event and Task traffic. Legacy UUID wrapper values
+  retain their existing wire representation.
+- Upgrade Skel to v0.35.0, vRPC Go to v0.17.0, CBOR to v2.10.0 and decimal to
+  v1.6.0. Remove the redundant Rpc CBOR scalar-validation pass now handled by
+  the shared codec.
+- Reject nested impersonation in both construction and wire decoding.
+- Update stable Hub, Link and Portal Kubernetes images to v0.33.0.
+
+### Fixed
+
+- Align Hub Dashboard decimal validation with the runtime's effective-exponent
+  limit after fractional digits, while retaining the input exponent's int32
+  range check. Update the shared boundary cases and embedded assets.
+
+### Removed
+
+- Remove `vcode.MarshalCbor`, `vcode.MustMarshalCbor`, `vcode.UnmarshalCbor` and
+  `vcode.MustUnmarshalCbor` in favor of the shared Skel payload codec.
+
+### Upgrade Notes
+
+- Upgrade Portal before deploying authentication services that return the new
+  AuthResult structure. Before enabling impersonation, upgrade all receiving
+  Vine applications and forwarding components: older runtimes cannot decode
+  the impersonated actor payload. Legacy ActorInfo auth services remain usable
+  during migration.
+- Session management and impersonation authorization remain the business auth
+  service's responsibility. With AuthResult, populate `info` and omit or null
+  `impersonatorInfo` for ordinary authentication; otherwise populate exactly one
+  declared operator info field. Only one direct impersonator is supported.
+- Regenerate native UUID contracts with Skel v0.35.0 and update hand-written
+  code that expected wrapper methods such as `.Value()`. Use `uuid.UUID`
+  directly; deprecated `core/skel` UUID aliases and constructors remain for
+  existing callers.
+- Replace removed CBOR helpers with `go.yorun.ai/skel/types/codec.MarshalCBOR`
+  and `UnmarshalCBOR`. The decoder takes a destination pointer and returns an
+  error; it does not allocate a generic result. For Rpc envelopes, use
+  `go.yorun.ai/vrpc/transport/http`.
+
 ## [0.32.6] - 2026-11-07
 
 ### Changed
@@ -1909,7 +1967,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.32.6...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/yorun-ai/vine/compare/v0.32.6...v0.33.0
 [0.32.6]: https://github.com/yorun-ai/vine/compare/v0.32.5...v0.32.6
 [0.32.5]: https://github.com/yorun-ai/vine/compare/v0.32.4...v0.32.5
 [0.32.4]: https://github.com/yorun-ai/vine/compare/v0.32.3...v0.32.4
