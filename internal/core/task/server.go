@@ -2,11 +2,11 @@ package task
 
 import (
 	"context"
-	"encoding/json/v2"
 	"reflect"
 	"runtime/pprof"
 	"time"
 
+	"go.yorun.ai/skel/types/codec"
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -81,7 +81,7 @@ func (s *Server) RunTask(ctx context.Context, run appskeled.TaskRun) ex.Error {
 	}
 
 	arguments := triggerInfo.NewArguments()
-	err = json.Unmarshal([]byte(run.ArgumentsJson), arguments)
+	err = codec.UnmarshalJSON([]byte(run.ArgumentsJson), arguments)
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidTask, err.Error())
 		tasklog.RunnerRejected(s.log, startedAt, trace, triggerInfo, client, s.opt.App, rejectedErr)

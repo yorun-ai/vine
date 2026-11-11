@@ -1,7 +1,8 @@
 package control
 
 import (
-	skeltype "go.yorun.ai/skel/types"
+	"uuid"
+
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -21,7 +22,7 @@ func (s *PortalRegistryServiceServerImpl) Register(registration skeled.PortalReg
 	})
 }
 
-func (s *PortalRegistryServiceServerImpl) Unregister(instanceId skeltype.UUID) {
+func (s *PortalRegistryServiceServerImpl) Unregister(instanceId uuid.UUID) {
 	s.PortalInstanceCore.Unregister(instanceId.String())
 }
 

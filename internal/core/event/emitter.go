@@ -3,14 +3,13 @@ package event
 import (
 	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
+	"go.yorun.ai/skel/types/codec"
 	eventlog "go.yorun.ai/vine/internal/core/event/log"
 	"go.yorun.ai/vine/internal/core/event/spec"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
-	"go.yorun.ai/vine/util/vcode"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -72,9 +71,9 @@ func (e *Emitter) buildEmission(eventInfo spec.EventInfo, eventPayload any, opti
 			TraceSpan:     e.context.Trace().Span(),
 			AppName:       e.clientApp.Name(),
 			AppVersion:    e.clientApp.Version(),
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse(e.clientApp.InstanceId())),
+			AppInstanceId: uuid.MustParse(e.clientApp.InstanceId()),
 		},
 		EventSkelName: eventInfo.SkelName(),
-		EventJson:     vcode.MustMarshalJsonS(eventPayload),
+		EventJson:     codec.MustMarshalJSONString(eventPayload),
 	}
 }

@@ -12,10 +12,8 @@ import (
 	"testing"
 	"uuid"
 
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
-
 	"github.com/stretchr/testify/assert"
-	skeltype "go.yorun.ai/skel/types"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"go.yorun.ai/vine/internal/core/event/spec"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -165,7 +163,7 @@ func TestServerOnEventForwardsToListener(t *testing.T) {
 			TraceSpan:     trace.Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: uuid.MustParse("33333333-3333-3333-3333-333333333333"),
 		},
 		EventSkelName: "test.event.TestServerEvent",
 		EventJson:     `{"groupId":9}`,
@@ -210,7 +208,7 @@ func TestServerOnEventAddsProfileLabels(t *testing.T) {
 			TraceSpan:     trace.Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: uuid.MustParse("33333333-3333-3333-3333-333333333333"),
 		},
 		EventSkelName: "test.event.TestServerEvent",
 		EventJson:     `{"groupId":9}`,
@@ -239,7 +237,7 @@ func BenchmarkServerOnEvent(b *testing.B) {
 			TraceSpan:     trace.Span(),
 			AppName:       "remote.app",
 			AppVersion:    "1.0.0",
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse("33333333-3333-3333-3333-333333333333")),
+			AppInstanceId: uuid.MustParse("33333333-3333-3333-3333-333333333333"),
 		},
 		EventSkelName: "test.event.TestServerEvent",
 		EventJson:     `{"groupId":9}`,

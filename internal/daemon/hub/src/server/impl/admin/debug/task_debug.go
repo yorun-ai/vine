@@ -100,7 +100,7 @@ func (s *TaskDebugApiServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunc
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
+			AppInstanceId: uuid.MustParse(s.CurrentApp.InstanceId()),
 			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    request.TaskSkelName,

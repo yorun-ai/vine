@@ -3,7 +3,6 @@ package minder
 import (
 	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/util/vslice"
@@ -12,7 +11,7 @@ import (
 func (i *AppInstance) registerHubInstance() {
 	i.minder.RegistryServiceClient.Register(hubskeled.AppRegistration{
 		Name:              i.AppInfo.Name(),
-		InstanceId:        skeltype.NewUUID(uuid.MustParse(i.AppInfo.InstanceId())),
+		InstanceId:        uuid.MustParse(i.AppInfo.InstanceId()),
 		Version:           i.AppInfo.Version(),
 		Endpoint:          i.IngressEndpoint,
 		ServiceHandlers:   vslice.Clone(i.HubServiceHandlers),
@@ -24,7 +23,7 @@ func (i *AppInstance) registerHubInstance() {
 }
 
 func (i *AppInstance) unregisterHubInstance() {
-	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), skeltype.NewUUID(uuid.MustParse(i.AppInfo.InstanceId())))
+	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), uuid.MustParse(i.AppInfo.InstanceId()))
 }
 
 func toHubEventListenerRegistrations(registrations []skeled.EventListenerRegistration) []hubskeled.EventListenerRegistration {

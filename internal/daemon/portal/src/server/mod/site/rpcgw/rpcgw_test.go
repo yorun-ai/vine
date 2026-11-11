@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json/v2"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -896,71 +897,118 @@ func headerValuesContain(values []string, target string) bool {
 }
 
 func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
-	backend := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, exists := r.Header["Authorization"]; exists {
-			t.Error("client credentials reached the HTTP Rpc backend")
-		}
-		payload, err := base64.RawURLEncoding.DecodeString(r.Header.Get(rpchttp.HeaderRpcActor))
-		if err != nil {
-			t.Errorf("invalid actor payload: %v", err)
-			return
-		}
-		var actor struct {
-			Type  meta.ActorType `json:"type"`
-			Realm string         `json:"realm"`
-			Info  struct {
-				UserId string `json:"userId"`
-			} `json:"info"`
-		}
-		if err := json.Unmarshal(payload, &actor); err != nil || actor.Type != meta.ActorTypeAuthenticated || actor.Realm != "demo.UserActor" || actor.Info.UserId != "u1" {
-			t.Errorf("missing authenticated actor: %s, %v", payload, err)
-		}
-		w.WriteHeader(http.StatusAccepted)
-	}))
-	backend.Config.Protocols = new(http.Protocols)
-	backend.Config.Protocols.SetHTTP1(true)
-	backend.Config.Protocols.SetUnencryptedHTTP2(true)
-	backend.Start()
-	t.Cleanup(backend.Close)
-	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
-			Endpoint:      backend.URL,
-			ServiceName:   "demo.UserService",
-			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
-		}),
-	})
-	authEndpoint := "link+inproc://vine/portal-rpcgw-auth-test"
-	registerTestIngress(t, authEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil || !strings.Contains(string(body), `"key":"token"`) {
-			t.Errorf("authentication did not receive credentials: %s, %v", body, err)
-		}
-		w.Header().Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
-		w.Header().Set(rpchttp.HeaderRpcStatus, "OK")
-		w.Header().Set(rpchttp.HeaderRpcServer, "name=demo.auth,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174012")
-		_, _ = w.Write([]byte(`{"result":{"userId":"u1"}}`))
-	}))
-	watchClient := newTestDescriptorWatch(t)
-	watchClient.SetValue(watched.FormatDescriptorActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.DescriptorActor{
-		SkelName: "demo.UserActor",
-		Auth:     &skeldesc.ActorAuth{Credential: testCredentialDescriptor(), Info: new(skeldesc.Data{SkelName: "demo.UserInfo"}), Service: new(skeldesc.Service{SkelName: "demo.AuthService", AuthMode: skeldesc.AuthModeRequired, Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeRequired}}}), MethodName: "Auth"},
-	}))
-	watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
-	authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
-	authEpmgr.DIInit()
-	descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
-	descriptors.DIInit()
-	t.Cleanup(descriptors.AfterAppStop)
-	target.access = new(access.Access{Context: t.Context(), Desc: descriptors, Epmgr: authEpmgr})
-	target.access.DIInit()
-	t.Cleanup(target.access.AfterAppStop)
-	request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", strings.NewReader("request"))
-	setTestAuthHeaders(request)
-	request.Header.Set("Authorization", "key token")
-	response := httptest.NewRecorder()
-	target.Serve(testContext(response, request))
-	if response.Code != http.StatusAccepted {
-		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	for _, impersonated := range []bool{false, true} {
+		t.Run(fmt.Sprint(impersonated), func(t *testing.T) {
+			backend := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if _, exists := r.Header["Authorization"]; exists {
+					t.Error("client credentials reached the HTTP Rpc backend")
+				}
+				payload, err := base64.RawURLEncoding.DecodeString(r.Header.Get(rpchttp.HeaderRpcActor))
+				if err != nil {
+					t.Errorf("invalid actor payload: %v", err)
+					return
+				}
+				var actor struct {
+					Type  meta.ActorType `json:"type"`
+					Realm string         `json:"realm"`
+					Info  struct {
+						UserId string `json:"userId"`
+					} `json:"info"`
+				}
+				expectedActorType := meta.ActorTypeAuthenticated
+				if impersonated {
+					expectedActorType = meta.ActorTypeImpersonated
+				}
+				decoded, decodeErr := meta.DecodeActorFromBase64(r.Header.Get(rpchttp.HeaderRpcActor))
+				if decodeErr != nil {
+					t.Errorf("decode actor: %v", decodeErr)
+				} else if impersonated && (decoded.Impersonator() == nil || decoded.Impersonator().Realm() != "demo.OpsActor" || decoded.Impersonator().Identifier() != "ops") {
+					t.Error("missing operator")
+				}
+				if err := json.Unmarshal(payload, &actor); err != nil || actor.Type != expectedActorType || actor.Realm != "demo.UserActor" || actor.Info.UserId != "u1" {
+					t.Errorf("missing authenticated actor: %s, %v", payload, err)
+				}
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			backend.Config.Protocols = new(http.Protocols)
+			backend.Config.Protocols.SetHTTP1(true)
+			backend.Config.Protocols.SetUnencryptedHTTP2(true)
+			backend.Start()
+			t.Cleanup(backend.Close)
+			target := newTestRpcGateway(t, map[string]string{
+				watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+					Endpoint:      backend.URL,
+					ServiceName:   "demo.UserService",
+					AppName:       "demo.app",
+					AppInstanceId: "instance-1",
+				}),
+			})
+			authEndpoint := "link+inproc://vine/portal-rpcgw-auth-test"
+			registerTestIngress(t, authEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil || !strings.Contains(string(body), `"key":"token"`) {
+					t.Errorf("authentication did not receive credentials: %s, %v", body, err)
+				}
+				w.Header().Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
+				w.Header().Set(rpchttp.HeaderRpcStatus, "OK")
+				w.Header().Set(rpchttp.HeaderRpcServer, "name=demo.auth,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174012")
+				if impersonated {
+					_, _ = w.Write([]byte(`{"result":{"info":{"userId":"u1"},"impersonatorInfo":{"opsActorInfo":{"id":"ops"}}}}`))
+				} else {
+					_, _ = w.Write([]byte(`{"result":{"userId":"u1"}}`))
+				}
+			}))
+			watchClient := newTestDescriptorWatch(t)
+			resultName := "demo.UserInfo"
+			if impersonated {
+				resultName = "demo.UserActorAuthResult"
+			}
+			watchClient.SetValue(watched.FormatDescriptorActorKey("demo.UserActor"), vcode.MustMarshalJsonS(watched.DescriptorActor{
+				SkelName: "demo.UserActor",
+				Auth: new(skeldesc.ActorAuth{
+					Credential:    testCredentialDescriptor(),
+					Info:          new(skeldesc.Data{SkelName: "demo.UserInfo"}),
+					Impersonators: []*skeldesc.ActorImpersonator{{InfoFieldName: "opsActorInfo", ActorSkelName: "demo.OpsActor"}},
+					Service: new(skeldesc.Service{
+						SkelName: "demo.AuthService",
+						AuthMode: skeldesc.AuthModeRequired,
+						Methods: []*skeldesc.Method{{
+							Name:              "Auth",
+							SkelName:          "auth",
+							AuthMode:          skeldesc.AuthModeInherit,
+							EffectiveAuthMode: skeldesc.AuthModeRequired,
+							ResultType:        new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: resultName}),
+						}},
+					}),
+					MethodName: "Auth",
+				}),
+			}))
+			watchClient.SetValue(watched.FormatDescriptorActorKey("demo.OpsActor"), vcode.MustMarshalJsonS(watched.DescriptorActor{
+				SkelName: "demo.OpsActor",
+				Auth: new(skeldesc.ActorAuth{
+					Info:            new(skeldesc.Data{SkelName: "demo.OpsActorInfo"}),
+					IdentifierField: "id",
+					Service:         new(skeldesc.Service{SkelName: "demo.OpsAuthService"}),
+				}),
+			}))
+			watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
+			authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
+			authEpmgr.DIInit()
+			descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})
+			descriptors.DIInit()
+			t.Cleanup(descriptors.AfterAppStop)
+			target.access = new(access.Access{Context: t.Context(), Desc: descriptors, Epmgr: authEpmgr})
+			target.access.DIInit()
+			t.Cleanup(target.access.AfterAppStop)
+			request := httptest.NewRequest(http.MethodPost, "http://demo.local/invoke/demo.UserService/Get", strings.NewReader("request"))
+			setTestAuthHeaders(request)
+			request.Header.Set("Authorization", "key token")
+			response := httptest.NewRecorder()
+			target.Serve(testContext(response, request))
+			if response.Code != http.StatusAccepted {
+				t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+			}
+
+		})
 	}
 }

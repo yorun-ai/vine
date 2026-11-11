@@ -2,11 +2,11 @@ package event
 
 import (
 	"context"
-	"encoding/json/v2"
 	"reflect"
 	"runtime/pprof"
 	"time"
 
+	"go.yorun.ai/skel/types/codec"
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 
 	eventlog "go.yorun.ai/vine/internal/core/event/log"
@@ -81,7 +81,7 @@ func (s *Server) OnEvent(ctx context.Context, on appskeled.EventOn) ex.Error {
 	}
 
 	payload := reflect.New(eventInfo.PayloadType()).Interface()
-	err = json.Unmarshal([]byte(on.EventJson), payload)
+	err = codec.UnmarshalJSON([]byte(on.EventJson), payload)
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidEvent, err.Error())
 		eventlog.ListenerRejected(s.log, startedAt, trace, eventInfo, client, s.opt.App, rejectedErr)

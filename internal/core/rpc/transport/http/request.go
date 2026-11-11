@@ -2,13 +2,10 @@ package http
 
 import (
 	"context"
-	"encoding/json/v2"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
-	"github.com/fxamacker/cbor/v2"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	"go.yorun.ai/vine/util/vpre"
@@ -26,6 +23,7 @@ type _RequestDecoder struct {
 type RejectionDiagnostic struct {
 	Trace           meta.Trace
 	Client          meta.App
+	Actor           meta.Actor
 	Method          spec.MethodInfo
 	ServiceSkelName string
 	MethodSkelName  string
@@ -62,6 +60,7 @@ func (d *_RequestDecoder) decode() (spec.Request, *RejectionDiagnostic, error) {
 			diagnostic := new(RejectionDiagnostic{
 				Trace:           d.rpcRequest.TraceValue,
 				Client:          d.rpcRequest.ClientValue,
+				Actor:           d.rpcRequest.ActorValue,
 				Method:          d.rpcRequest.MethodInfoValue,
 				ServiceSkelName: d.serviceSkelName,
 				MethodSkelName:  d.methodSkelName,
@@ -159,44 +158,8 @@ func (d *_RequestDecoder) decodeArguments() error {
 	return nil
 }
 
-type _JSONScalarTranscoder struct{}
-
-func (_JSONScalarTranscoder) Transcode(w io.Writer, r io.Reader) error {
-	var value any
-	if err := cbor.NewDecoder(r).Decode(&value); err != nil {
-		return err
-	}
-	return json.MarshalWrite(w, value)
-}
-
-// The shared codec validates the envelope and wire representation first. Until it
-// invokes JSON scalar decoders for CBOR, apply the generated enum validation too:
-// otherwise null and empty strings silently become the same zero value as omission.
-// TODO: remove the second pass when the shared vRPC codec provides this parity.
-var cborScalarValidation = func() cbor.DecMode {
-	mode, err := (cbor.DecOptions{
-		DupMapKey:                 cbor.DupMapKeyEnforcedAPF,
-		JSONUnmarshalerTranscoder: _JSONScalarTranscoder{},
-	}).DecMode()
-	vpre.MustNil(err)
-	return mode
-}()
-
 func (d *_RequestDecoder) decodeArgumentsBytes(bodyBytes []byte, arguments any) error {
-	contentType := d.httpRequest.Header.Get(HeaderContentType)
-	if err := rpchttp.DecodeRequest(bodyBytes, arguments, contentType); err != nil {
-		return err
-	}
-	if rpchttp.MediaTypeOf(contentType) == ContentTypeCbor {
-		raw, err := rpchttp.DecodeCBORRequest(bodyBytes)
-		if err != nil {
-			return err
-		}
-		if err := cborScalarValidation.Unmarshal(raw, arguments); err != nil {
-			return fmt.Errorf("request params cannot be parsed: %w", err)
-		}
-	}
-	return nil
+	return rpchttp.DecodeRequest(bodyBytes, arguments, d.httpRequest.Header.Get(HeaderContentType))
 }
 
 func encodeRequest(endpoint string, rpcRequest spec.Request) (request *http.Request, err error) {

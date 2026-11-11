@@ -101,8 +101,9 @@ Read the applicable directory README for ownership, dependency, and lifecycle co
 - Use Go's `encoding/json/v2` and `encoding/json/jsontext` APIs for Vine JSON;
   do not reintroduce the v1 `encoding/json` implementation.
 - Encode and decode Rpc payloads and envelopes with the shared
-  `go.yorun.ai/vrpc/transport/http` wire codec. Use `vcode` for Event and Task
-  Skel payloads. Supported payloads use empty arrays/maps for nil collections.
+  `go.yorun.ai/vrpc/transport/http` wire codec. Use `go.yorun.ai/skel/types/codec` for Skel payload rules;
+  Event/Task encoding and decoding use it directly. Keep `vcode` JSON helpers
+  independent of Skel payload rules; do not add CBOR wrappers to `vcode`. Supported payloads use empty arrays/maps for nil collections.
 - The runtime isolates in-process Rpc arguments and results by cloning them from
   the declared Go types with `util/vbean`. Skel contracts carry only generated
   scalars, lists, maps, nullable values and beans, so reflection covers them.

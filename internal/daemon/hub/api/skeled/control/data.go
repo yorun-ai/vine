@@ -2,14 +2,18 @@
 
 package control
 
-import skeltype "go.yorun.ai/skel/types"
+import (
+	"uuid"
+
+	skeltype "go.yorun.ai/skel/types"
+)
 
 // AppRegistration Link application instance information registered with Hub
 type AppRegistration struct {
 	// Name Application name
 	Name string `json:"name"`
 	// InstanceId Application instance ID
-	InstanceId skeltype.UUID `json:"instanceId"`
+	InstanceId uuid.UUID `json:"instanceId"`
 	// Version Application version
 	Version string `json:"version"`
 	// Endpoint Application access address (e.g. "http://10.1.2.3:23001")
@@ -35,7 +39,7 @@ type AppStatus struct {
 	// Name Application name
 	Name string `json:"name"`
 	// InstanceId Application instance ID
-	InstanceId skeltype.UUID `json:"instanceId"`
+	InstanceId uuid.UUID `json:"instanceId"`
 }
 
 // EventListenerRegistration Event listening capability registration information provided by the application
@@ -87,7 +91,7 @@ type Info struct {
 // PortalRegistration Portal instance registration information provided by Portal
 type PortalRegistration struct {
 	// InstanceId Portal instance ID
-	InstanceId skeltype.UUID `json:"instanceId"`
+	InstanceId uuid.UUID `json:"instanceId"`
 	// Version Portal Vine runtime version
 	Version string `json:"version"`
 }
@@ -95,7 +99,7 @@ type PortalRegistration struct {
 // PortalStatus Portal instance status information, used for heartbeat refresh
 type PortalStatus struct {
 	// InstanceId Portal instance ID
-	InstanceId skeltype.UUID `json:"instanceId"`
+	InstanceId uuid.UUID `json:"instanceId"`
 }
 
 // ServiceHandlerRegistration Rpc service processing capability registration information provided by the application

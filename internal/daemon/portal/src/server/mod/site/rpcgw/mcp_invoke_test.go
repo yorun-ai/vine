@@ -60,7 +60,7 @@ func TestMcpCallAdmissionForwardingAndErrors(t *testing.T) {
 		Auth: &skeldesc.ActorAuth{
 			Credential: testCredentialDescriptor(),
 			Info:       &skeldesc.Data{SkelName: "demo.UserInfo"},
-			Service:    &skeldesc.Service{SkelName: "demo.AuthService", Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth"}}},
+			Service:    &skeldesc.Service{SkelName: "demo.AuthService", Methods: []*skeldesc.Method{{Name: "Auth", SkelName: "auth", ResultType: new(skeldesc.Type{Kind: skeldesc.TypeKindData, SkelName: "demo.UserInfo"})}}},
 			MethodName: "Auth",
 		},
 	}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
@@ -378,7 +379,7 @@ func validateSeedScalar(node *yaml.Node, scalar skeldesc.Scalar) error {
 	case skeldesc.ScalarJSON:
 		target = new(skeltype.JSON)
 	case skeldesc.ScalarUUID:
-		target = new(skeltype.UUID)
+		target = new(uuid.UUID)
 	case skeldesc.ScalarTimestamp:
 		target = new(skeltype.Timestamp)
 	case skeldesc.ScalarDuration:

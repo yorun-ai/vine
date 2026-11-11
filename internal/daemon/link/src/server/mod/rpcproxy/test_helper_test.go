@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
@@ -55,7 +55,7 @@ type _H2CTestServer struct {
 type _TestRegistryServiceClient struct{}
 
 func (*_TestRegistryServiceClient) Register(hubskeled.AppRegistration, ...client.InvokeOption) {}
-func (*_TestRegistryServiceClient) Unregister(string, skeltype.UUID, ...client.InvokeOption)   {}
+func (*_TestRegistryServiceClient) Unregister(string, uuid.UUID, ...client.InvokeOption)       {}
 func (*_TestRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...client.InvokeOption) bool {
 	return true
 }

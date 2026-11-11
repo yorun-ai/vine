@@ -35,6 +35,15 @@ type _PayloadValue struct {
 	err    error
 }
 
+// WithActor derives a request logger without changing the shared logger.
+// A nil logger retains the disabled logging behavior of lifecycle helpers.
+func WithActor(log *logger.Logger, actor meta.Actor) *logger.Logger {
+	if log == nil || actor == nil {
+		return log
+	}
+	return log.With(actor.LogFields()...)
+}
+
 func Noop() *Span {
 	return &Span{}
 }

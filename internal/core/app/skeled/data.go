@@ -2,7 +2,11 @@
 
 package skeled
 
-import skeltype "go.yorun.ai/skel/types"
+import (
+	"uuid"
+
+	skeltype "go.yorun.ai/skel/types"
+)
 
 // EventOn Link triggers event processing information to the App
 type EventOn struct {
@@ -25,7 +29,7 @@ type EventOnMeta struct {
 	// AppVersion The application version that sent the event
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that sent the event
-	AppInstanceId skeltype.UUID `json:"appInstanceId"`
+	AppInstanceId uuid.UUID `json:"appInstanceId"`
 	// EmittedAt The time the event was sent
 	EmittedAt skeltype.Timestamp `json:"emittedAt"`
 }
@@ -53,7 +57,7 @@ type TaskRunMeta struct {
 	// AppVersion The application version that initiated the task
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that initiated the task
-	AppInstanceId skeltype.UUID `json:"appInstanceId"`
+	AppInstanceId uuid.UUID `json:"appInstanceId"`
 	// LaunchedAt Task launch time
 	LaunchedAt skeltype.Timestamp `json:"launchedAt"`
 }

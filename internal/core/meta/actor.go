@@ -1,8 +1,10 @@
 package meta
 
 import (
+	"bytes"
 	"encoding/json/jsontext"
 	"fmt"
+	"log/slog"
 	"reflect"
 
 	"go.yorun.ai/vine/util/vcode"
@@ -25,11 +27,18 @@ type Actor interface {
 	Type() ActorType
 	IsAnonymous() bool
 	IsAuthenticated() bool
+	// IsImpersonated reports whether an operator is acting as this identity.
+	IsImpersonated() bool
+	// Impersonator returns the operator, or nil for ordinary authentication.
+	Impersonator() Actor
 
 	Realm() string
 	Identifier() string
 
 	RawInfo() string
+
+	// LogFields returns identity fields without actor info payloads.
+	LogFields() []slog.Attr
 
 	mustByActor()
 }
@@ -41,7 +50,8 @@ type _Actor struct {
 	realm      string
 	identifier string
 
-	rawAuthInfo jsontext.Value
+	rawAuthInfo  jsontext.Value
+	impersonator *_Actor
 }
 
 func (a *_Actor) Type() ActorType {
@@ -53,7 +63,29 @@ func (a *_Actor) IsAnonymous() bool {
 }
 
 func (a *_Actor) IsAuthenticated() bool {
-	return a.kind == ActorTypeAuthenticated
+	return a.kind == ActorTypeAuthenticated || a.kind == ActorTypeImpersonated
+}
+
+func (a *_Actor) IsImpersonated() bool {
+	return a.kind == ActorTypeImpersonated
+}
+
+func (a *_Actor) Impersonator() Actor {
+	if a.impersonator == nil {
+		return nil
+	}
+	return a.impersonator
+}
+
+// NewImpersonatedActor attaches one direct operator to an effective identity.
+// Both actors must be ordinarily authenticated; existing impersonation is rejected.
+func NewImpersonatedActor(actor Actor, impersonator Actor) Actor {
+	vpre.Check(actor != nil && actor.Type() == ActorTypeAuthenticated, "impersonation requires an ordinary authenticated effective actor")
+	vpre.Check(impersonator != nil && impersonator.Type() == ActorTypeAuthenticated, "impersonation requires an ordinary authenticated operator")
+	result := *actor.(*_Actor)
+	result.kind = ActorTypeImpersonated
+	result.impersonator = impersonator.(*_Actor)
+	return &result
 }
 
 func (a *_Actor) Realm() string {
@@ -66,6 +98,28 @@ func (a *_Actor) Identifier() string {
 
 func (a *_Actor) RawInfo() string {
 	return string(a.rawAuthInfo)
+}
+
+// LogFields describes the effective identity and its direct impersonator.
+// Empty identity values and actor info payloads are omitted.
+func (a *_Actor) LogFields() []slog.Attr {
+	fields := make([]slog.Attr, 0, 5)
+	fields = append(fields, slog.String("actorType", string(a.Type())))
+	if realm := a.Realm(); realm != "" {
+		fields = append(fields, slog.String("actorRealm", realm))
+	}
+	if identifier := a.Identifier(); identifier != "" {
+		fields = append(fields, slog.String("actorIdentifier", identifier))
+	}
+	if impersonator := a.Impersonator(); impersonator != nil {
+		if realm := impersonator.Realm(); realm != "" {
+			fields = append(fields, slog.String("impersonatorActorRealm", realm))
+		}
+		if identifier := impersonator.Identifier(); identifier != "" {
+			fields = append(fields, slog.String("impersonatorActorIdentifier", identifier))
+		}
+	}
+	return fields
 }
 
 func (a *_Actor) mustByActor() {}
@@ -130,7 +184,7 @@ func GetActorInfoByType(metaActor Actor, kind reflect.Type) (any, bool) {
 		return nil, false
 	}
 	actor := metaActor.(*_Actor)
-	if actor.kind != ActorTypeAuthenticated {
+	if !actor.IsAuthenticated() {
 		return nil, false
 	}
 	if !actor.hasInfoType(kind) {
@@ -159,6 +213,7 @@ type _ActorPayload struct {
 
 	InfoSkelName string         `json:"infoSkelName,omitempty"`
 	Info         jsontext.Value `json:"info,omitempty"`
+	Impersonator *_ActorPayload `json:"impersonator,omitempty"`
 }
 
 func DecodeActorFromBase64(value string) (Actor, error) {
@@ -167,6 +222,16 @@ func DecodeActorFromBase64(value string) (Actor, error) {
 		return nil, err
 	}
 
+	return decodeActorPayload(payload)
+}
+
+func decodeActorPayload(payload *_ActorPayload) (Actor, error) {
+	if payload == nil {
+		return nil, fmt.Errorf("invalid actor payload")
+	}
+	if payload.Type != ActorTypeImpersonated && payload.Impersonator != nil {
+		return nil, fmt.Errorf("unexpected impersonator for actor type %s", payload.Type)
+	}
 	switch payload.Type {
 	case ActorTypeAbsent:
 		return NewAbsentActor(), nil
@@ -174,36 +239,65 @@ func DecodeActorFromBase64(value string) (Actor, error) {
 		return NewAnonymousActor(), nil
 	case ActorTypeAuthenticating:
 		return NewAuthenticatingActor(), nil
-	case ActorTypeImpersonated:
-		vpre.Panicf("impersonated actor not implemented")
+	case ActorTypeAuthenticated, ActorTypeImpersonated:
+	default:
+		return nil, fmt.Errorf("unknown actor type %s", payload.Type)
 	}
-
-	if payload.InfoSkelName == "" || payload.Info == nil {
-		return nil, fmt.Errorf("invalid payload %q", value)
+	actor, err := decodeActorIdentity(payload)
+	if err != nil {
+		return nil, err
 	}
+	if payload.Type == ActorTypeImpersonated {
+		operator := payload.Impersonator
+		if operator == nil || operator.Type != ActorTypeAuthenticated || operator.Impersonator != nil {
+			return nil, fmt.Errorf("impersonator must be ordinarily authenticated without another impersonator")
+		}
+		actor.impersonator, err = decodeActorIdentity(operator)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return actor, nil
+}
 
+func decodeActorIdentity(payload *_ActorPayload) (*_Actor, error) {
+	payload.Info = bytes.TrimSpace(payload.Info)
+	if payload.InfoSkelName == "" || !payload.Info.IsValid() || len(payload.Info) == 0 || payload.Info[0] != '{' {
+		return nil, fmt.Errorf("invalid actor info payload")
+	}
 	actorInfo := defaultRegistry.infoByInfoSkelName[payload.InfoSkelName]
-	vpre.Check(actorInfo != nil, "actor info %s is not registered", payload.InfoSkelName)
-
-	return &_Actor{
-		kind:        ActorTypeAuthenticated,
+	if actorInfo == nil {
+		// Transit processes and consumers need not import every operator's Go type.
+		actorInfo = new(_ActorInfo{InfoSkelName: payload.InfoSkelName})
+	}
+	actor := new(_Actor{
+		kind:        payload.Type,
 		actorInfo:   actorInfo,
 		realm:       payload.Realm,
 		identifier:  payload.Identifier,
 		rawAuthInfo: payload.Info,
-	}, nil
+	})
+	return actor, nil
 }
 
 func EncodeActorToBase64(metaActor Actor) string {
 	actor := metaActor.(*_Actor)
-	payload := &_ActorPayload{
+	payload := actorPayload(actor)
+	if actor.impersonator != nil {
+		payload.Impersonator = actorPayload(actor.impersonator)
+	}
+	return encodePayloadToBase64(payload)
+}
+
+func actorPayload(actor *_Actor) *_ActorPayload {
+	payload := new(_ActorPayload{
 		Type:       actor.kind,
 		Realm:      actor.Realm(),
 		Identifier: actor.Identifier(),
 		Info:       actor.rawAuthInfo,
-	}
+	})
 	if actor.actorInfo != nil {
 		payload.InfoSkelName = actor.actorInfo.InfoSkelName
 	}
-	return encodePayloadToBase64(payload)
+	return payload
 }

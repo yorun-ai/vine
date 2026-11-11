@@ -3,14 +3,13 @@ package config
 import (
 	"context"
 	"testing"
+	"uuid"
 
-	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-
-	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/flag"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
@@ -55,7 +54,7 @@ type _TestRegistryServiceClient struct{}
 func (*_TestRegistryServiceClient) Register(hubskeled.AppRegistration, ...rpcclient.InvokeOption) {
 }
 
-func (*_TestRegistryServiceClient) Unregister(string, skeltype.UUID, ...rpcclient.InvokeOption) {
+func (*_TestRegistryServiceClient) Unregister(string, uuid.UUID, ...rpcclient.InvokeOption) {
 }
 
 func (*_TestRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...rpcclient.InvokeOption) bool {

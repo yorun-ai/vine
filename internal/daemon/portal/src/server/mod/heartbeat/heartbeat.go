@@ -5,7 +5,6 @@ import (
 	"time"
 	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -36,12 +35,12 @@ type Heartbeat struct {
 	HubInfo              *hubinfo.HubInfo                   `inject:""`
 	PortalRegistryClient skeled.PortalRegistryServiceClient `inject:""`
 
-	instanceId skeltype.UUID
+	instanceId uuid.UUID
 	stop       context.CancelFunc
 }
 
 func (h *Heartbeat) AfterAppStart() {
-	h.instanceId = skeltype.NewUUID(uuid.MustParse(h.CurrentApp.InstanceId()))
+	h.instanceId = uuid.MustParse(h.CurrentApp.InstanceId())
 	h.register()
 
 	if h.Flag.HubInprocMode {

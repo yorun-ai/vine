@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	skeltype "go.yorun.ai/skel/types"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
@@ -53,7 +52,7 @@ func TestPortalRegistryServiceRegistersAndUnregisters(t *testing.T) {
 	repo := &_PortalInstanceRepoSpy{}
 	service := &PortalRegistryServiceServerImpl{PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: repo}}
 
-	instanceId := skeltype.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	instanceId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	service.Register(skeled.PortalRegistration{InstanceId: instanceId, Version: "1.2.3"})
 
 	require.Len(t, repo.saved, 1)
@@ -65,7 +64,7 @@ func TestPortalRegistryServiceRegistersAndUnregisters(t *testing.T) {
 }
 
 func TestPortalRegistryServiceHeartbeatReportsRegistration(t *testing.T) {
-	instanceId := skeltype.NewUUID(uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	instanceId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 
 	unknownRepo := &_PortalInstanceRepoSpy{}
 	unknownService := &PortalRegistryServiceServerImpl{PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: unknownRepo}}

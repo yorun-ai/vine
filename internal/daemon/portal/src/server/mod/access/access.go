@@ -40,6 +40,7 @@ func (a *Access) DIInit() {
 
 func (a *Access) AllowRpc(operation *RpcOperation) bool {
 	operation.endpointManager = a.Epmgr
+	operation.descriptorManager = a.Desc
 	operation.identity = a.Identity
 	if !operation.readRequestBody() {
 		return false
@@ -74,6 +75,7 @@ func (a *Access) AllowRpc(operation *RpcOperation) bool {
 
 func (a *Access) AuthWeb(operation *WebOperation) bool {
 	operation.endpointManager = a.Epmgr
+	operation.descriptorManager = a.Desc
 	operation.identity = a.Identity
 
 	mode := defaultAuthMode

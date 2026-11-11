@@ -4,6 +4,7 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"strconv"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
@@ -155,7 +156,7 @@ func configScalarMatches(value jsontext.Value, scalar skeldesc.Scalar) bool {
 	case skeldesc.ScalarJSON:
 		target = new(skeltype.JSON)
 	case skeldesc.ScalarUUID:
-		target = new(skeltype.UUID)
+		target = new(uuid.UUID)
 	case skeldesc.ScalarDuration:
 		target = new(skeltype.Duration)
 	case skeldesc.ScalarTimestamp:

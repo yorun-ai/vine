@@ -59,16 +59,17 @@ func (i *_Invoker) invoke() (result any, err ex.Error) {
 
 	defer i.cleanup()
 	rpcRequest := i.buildRequest()
+	requestLogger := rpclog.WithActor(i.logger, rpcRequest.Actor())
 	logSpan := rpclog.Noop()
 	defer func() { logSpan.FinishWithResponse(err, rpcResponse) }()
 
 	rpcResponse, err = i.roundTrip(rpcRequest, func() {
 		if !inproc.IsEndpoint(i.serverEndpoint) || rpclog.IsInprocClientLogEnabled() {
-			logSpan = rpclog.StartClientInvoke(i.logger, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint)
+			logSpan = rpclog.StartClientInvoke(requestLogger, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint)
 		}
 	})
 	if !inproc.IsEndpoint(i.serverEndpoint) && !logSpan.Started() && err != nil {
-		rpclog.ClientRejected(i.logger, startedAt, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint, i.arguments, err)
+		rpclog.ClientRejected(requestLogger, startedAt, rpcRequest.Trace(), i.methodInfo, i.serverEndpoint, i.arguments, err)
 	}
 	result, err = parseResponse(rpcResponse, err)
 

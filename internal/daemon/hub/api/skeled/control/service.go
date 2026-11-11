@@ -4,8 +4,8 @@ package control
 
 import (
 	"reflect"
+	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/core/ex"
 	"go.yorun.ai/vine/core/rpc"
 )
@@ -515,7 +515,7 @@ type _PortalRegistryServiceRegisterArguments struct {
 }
 
 type _PortalRegistryServiceUnregisterArguments struct {
-	InstanceId skeltype.UUID `json:"instanceId" skel:"index(0)"`
+	InstanceId uuid.UUID `json:"instanceId" skel:"index(0)"`
 }
 
 type _PortalRegistryServiceHeartbeatArguments struct {
@@ -530,7 +530,7 @@ type PortalRegistryServiceServer interface {
 	Register(registration PortalRegistration)
 	// Unregister Unregister a Portal instance.
 	//   @param instanceId - Portal instance ID
-	Unregister(instanceId skeltype.UUID)
+	Unregister(instanceId uuid.UUID)
 	// Heartbeat Portal instance heartbeat.
 	//   @param status - Portal instance status
 	//   @returns bool - Whether the current Portal instance is still registered in the Hub
@@ -547,7 +547,7 @@ func (*DefaultPortalRegistryServiceServer) Register(PortalRegistration) {
 	ex.PanicNew(ex.InvalidRequest, "method register is not implemented")
 }
 
-func (*DefaultPortalRegistryServiceServer) Unregister(skeltype.UUID) {
+func (*DefaultPortalRegistryServiceServer) Unregister(uuid.UUID) {
 	ex.PanicNew(ex.InvalidRequest, "method unregister is not implemented")
 }
 
@@ -562,7 +562,7 @@ func (*DefaultPortalRegistryServiceServer) mustBePortalRegistryServiceServer() {
 
 type PortalRegistryServiceServerER interface {
 	Register(registration PortalRegistration) ex.Error
-	Unregister(instanceId skeltype.UUID) ex.Error
+	Unregister(instanceId uuid.UUID) ex.Error
 	Heartbeat(status PortalStatus) (bool, ex.Error)
 
 	mustBePortalRegistryServiceServerER()
@@ -594,7 +594,7 @@ func (service *_WrapperPortalRegistryServiceServerER) Register(registration Port
 	return
 }
 
-func (service *_WrapperPortalRegistryServiceServerER) Unregister(instanceId skeltype.UUID) (err ex.Error) {
+func (service *_WrapperPortalRegistryServiceServerER) Unregister(instanceId uuid.UUID) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Unregister(instanceId)
 	return
@@ -622,7 +622,7 @@ type PortalRegistryServiceClient interface {
 	Register(registration PortalRegistration, _ivOpts ...rpc.InvokeOption)
 	// Unregister Unregister a Portal instance.
 	//   @param instanceId - Portal instance ID
-	Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption)
+	Unregister(instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption)
 	// Heartbeat Portal instance heartbeat.
 	//   @param status - Portal instance status
 	//   @returns bool - Whether the current Portal instance is still registered in the Hub
@@ -642,7 +642,7 @@ func (client *_PortalRegistryServiceClient) Register(registration PortalRegistra
 	ex.PanicIfError(err)
 }
 
-func (client *_PortalRegistryServiceClient) Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) {
+func (client *_PortalRegistryServiceClient) Unregister(instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Unregister(instanceId, _ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -661,7 +661,7 @@ type PortalRegistryServiceClientER interface {
 	Register(registration PortalRegistration, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Unregister Unregister a Portal instance.
 	//   @param instanceId - Portal instance ID
-	Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error
+	Unregister(instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Heartbeat Portal instance heartbeat.
 	//   @param status - Portal instance status
 	//   @returns bool - Whether the current Portal instance is still registered in the Hub
@@ -685,7 +685,7 @@ func (client *_PortalRegistryServiceClientER) Register(registration PortalRegist
 	return err
 }
 
-func (client *_PortalRegistryServiceClientER) Unregister(instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error {
+func (client *_PortalRegistryServiceClientER) Unregister(instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_PortalRegistryServiceUnregisterSpec.Info(), &_PortalRegistryServiceUnregisterArguments{
 		InstanceId: instanceId,
 	}, _ivOpts...)
@@ -781,8 +781,8 @@ type _RegistryServiceRegisterArguments struct {
 }
 
 type _RegistryServiceUnregisterArguments struct {
-	Name       string        `json:"name" skel:"index(0)"`
-	InstanceId skeltype.UUID `json:"instanceId" skel:"index(1)"`
+	Name       string    `json:"name" skel:"index(0)"`
+	InstanceId uuid.UUID `json:"instanceId" skel:"index(1)"`
 }
 
 type _RegistryServiceHeartbeatArguments struct {
@@ -798,7 +798,7 @@ type RegistryServiceServer interface {
 	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
-	Unregister(name string, instanceId skeltype.UUID)
+	Unregister(name string, instanceId uuid.UUID)
 	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
@@ -815,7 +815,7 @@ func (*DefaultRegistryServiceServer) Register(AppRegistration) {
 	ex.PanicNew(ex.InvalidRequest, "method register is not implemented")
 }
 
-func (*DefaultRegistryServiceServer) Unregister(string, skeltype.UUID) {
+func (*DefaultRegistryServiceServer) Unregister(string, uuid.UUID) {
 	ex.PanicNew(ex.InvalidRequest, "method unregister is not implemented")
 }
 
@@ -830,7 +830,7 @@ func (*DefaultRegistryServiceServer) mustBeRegistryServiceServer() {}
 
 type RegistryServiceServerER interface {
 	Register(registration AppRegistration) ex.Error
-	Unregister(name string, instanceId skeltype.UUID) ex.Error
+	Unregister(name string, instanceId uuid.UUID) ex.Error
 	Heartbeat(status AppStatus) (bool, ex.Error)
 
 	mustBeRegistryServiceServerER()
@@ -862,7 +862,7 @@ func (service *_WrapperRegistryServiceServerER) Register(registration AppRegistr
 	return
 }
 
-func (service *_WrapperRegistryServiceServerER) Unregister(name string, instanceId skeltype.UUID) (err ex.Error) {
+func (service *_WrapperRegistryServiceServerER) Unregister(name string, instanceId uuid.UUID) (err ex.Error) {
 	defer func() { err = ex.Recover(recover()) }()
 	service.server().Unregister(name, instanceId)
 	return
@@ -891,7 +891,7 @@ type RegistryServiceClient interface {
 	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
-	Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption)
+	Unregister(name string, instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption)
 	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
@@ -911,7 +911,7 @@ func (client *_RegistryServiceClient) Register(registration AppRegistration, _iv
 	ex.PanicIfError(err)
 }
 
-func (client *_RegistryServiceClient) Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) {
+func (client *_RegistryServiceClient) Unregister(name string, instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption) {
 	err := client.clientER.Unregister(name, instanceId, _ivOpts...)
 	ex.PanicIfError(err)
 }
@@ -931,7 +931,7 @@ type RegistryServiceClientER interface {
 	// Unregister Unregister an application instance.
 	//   @param name - Application name
 	//   @param instanceId - Application instance ID
-	Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error
+	Unregister(name string, instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption) ex.Error
 	// Heartbeat Application instance heartbeat.
 	//   @param status - Application instance ID
 	//   @returns bool - Whether the current instance is still registered in the Hub
@@ -955,7 +955,7 @@ func (client *_RegistryServiceClientER) Register(registration AppRegistration, _
 	return err
 }
 
-func (client *_RegistryServiceClientER) Unregister(name string, instanceId skeltype.UUID, _ivOpts ...rpc.InvokeOption) ex.Error {
+func (client *_RegistryServiceClientER) Unregister(name string, instanceId uuid.UUID, _ivOpts ...rpc.InvokeOption) ex.Error {
 	_, err := client.rpcClient.Invoke(_RegistryServiceUnregisterSpec.Info(), &_RegistryServiceUnregisterArguments{
 		Name:       name,
 		InstanceId: instanceId,

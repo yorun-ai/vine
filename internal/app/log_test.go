@@ -17,6 +17,13 @@ func TestBuildContextLogFieldsHandlesNilValues(t *testing.T) {
 	}
 }
 
+func TestBuildContextLogFieldsWithoutActor(t *testing.T) {
+	fields := buildContextLogFields(meta.NewContext(t.Context(), nil, nil, nil))
+	if len(fields) != 0 {
+		t.Fatalf("expected no identity fields: %v", fields)
+	}
+}
+
 func TestBuildContextLogFieldsIncludesAvailableValues(t *testing.T) {
 	trace, err := meta.NewTrace(meta.NewId(), meta.NewSpan())
 	if err != nil {
@@ -43,6 +50,9 @@ func TestBuildContextLogFieldsIncludesAvailableValues(t *testing.T) {
 	}
 	if fieldMap["actorType"] != string(meta.ActorTypeAuthenticated) {
 		t.Fatalf("unexpected actor field: %v", fieldMap)
+	}
+	if fieldMap["actorRealm"] != "test.realm" || fieldMap["actorIdentifier"] != "test" {
+		t.Fatalf("unexpected actor identity fields: %v", fieldMap)
 	}
 	if fieldMap["clientIp"] != netip.MustParseAddr("127.0.0.1").String() {
 		t.Fatalf("unexpected initiator field: %v", fieldMap)

@@ -130,7 +130,8 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 	if !rpcRequest.MethodInfo().HasArguments() {
 		logArguments = new(spec.EmptyArguments)
 	}
-	logSpan = rpclog.StartServerHandle(s.log, trace, rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App, logArguments)
+	requestLogger := rpclog.WithActor(s.log, rpcRequest.Actor())
+	logSpan = rpclog.StartServerHandle(requestLogger, trace, rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App, logArguments)
 	arguments := rpcRequest.PositionalArguments()
 	methodImpl := rpcRequest.MethodImpl()
 
@@ -162,7 +163,8 @@ func (s *Server) serveRpc(rpcRequest spec.Request) spec.Response {
 	methodImpl, err := s.implDict.GetMethodImplByInfo(rpcRequest.MethodInfo())
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
-		rpclog.ServerRejected(s.log, startedAt, rpcRequest.Trace(), methodInfo, rpcRequest.Client(), s.opt.App, rejectedErr)
+		requestLogger := rpclog.WithActor(s.log, rpcRequest.Actor())
+		rpclog.ServerRejected(requestLogger, startedAt, rpcRequest.Trace(), methodInfo, rpcRequest.Client(), s.opt.App, rejectedErr)
 		return &spec.ResponseImpl{
 			ServerValue: s.opt.App,
 			MethodValue: rpcRequest.MethodInfo(),
@@ -188,7 +190,8 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	rpcRequest, diagnostic, err := httptrans.DecodeRequestWithDiagnostic(r)
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
-		rpclog.ServerRejected(s.log, startedAt, diagnostic.Trace, diagnostic.Method, diagnostic.Client, s.opt.App, rejectedErr,
+		requestLogger := rpclog.WithActor(s.log, diagnostic.Actor)
+		rpclog.ServerRejected(requestLogger, startedAt, diagnostic.Trace, diagnostic.Method, diagnostic.Client, s.opt.App, rejectedErr,
 			diagnostic.ServiceSkelName, diagnostic.MethodSkelName)
 		_ = httptrans.WriteRequestErrorResponse(w, r, s.opt.App, rejectedErr)
 		return
@@ -198,7 +201,8 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	methodImpl, err := s.implDict.GetMethodImplByInfo(rpcRequest.MethodInfo())
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
-		rpclog.ServerRejected(s.log, startedAt, rpcRequest.Trace(), rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App, rejectedErr)
+		requestLogger := rpclog.WithActor(s.log, rpcRequest.Actor())
+		rpclog.ServerRejected(requestLogger, startedAt, rpcRequest.Trace(), rpcRequest.MethodInfo(), rpcRequest.Client(), s.opt.App, rejectedErr)
 		_ = httptrans.WriteRequestErrorResponse(w, r, s.opt.App, rejectedErr)
 		return
 	}

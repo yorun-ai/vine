@@ -5,7 +5,6 @@ import (
 	"time"
 	"uuid"
 
-	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/logger"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/util/goutil"
@@ -59,7 +58,7 @@ func (i *AppInstance) hubKnowsInstance() bool {
 	}, func() {
 		registered = i.minder.RegistryServiceClient.Heartbeat(hubskeled.AppStatus{
 			Name:       i.AppInfo.Name(),
-			InstanceId: skeltype.NewUUID(uuid.MustParse(i.AppInfo.InstanceId())),
+			InstanceId: uuid.MustParse(i.AppInfo.InstanceId()),
 		})
 	})
 	return registered

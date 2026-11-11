@@ -63,7 +63,7 @@ type Binary = skeltype.Binary
 
 // UUID is the runtime representation of the Skel uuid scalar.
 //
-// Deprecated: Use go.yorun.ai/skel/types.UUID instead.
+// Deprecated: Use uuid.UUID instead.
 type UUID = skeltype.UUID
 
 // JSON is the runtime representation of arbitrary Skel JSON data.
@@ -124,7 +124,7 @@ func NewDuration(d time.Duration) Duration {
 
 // NewUUID converts id to the Skel UUID representation.
 //
-// Deprecated: Use go.yorun.ai/skel/types.NewUUID instead.
+// Deprecated: Use uuid.UUID directly.
 func NewUUID(id uuid.UUID) UUID {
 	return skeltype.NewUUID(id)
 }

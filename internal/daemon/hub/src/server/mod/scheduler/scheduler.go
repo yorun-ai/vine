@@ -226,7 +226,7 @@ func (s *Scheduler) publishSchedule(config _ScheduleConfig) {
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: skeltype.NewUUID(uuid.MustParse(s.CurrentApp.InstanceId())),
+			AppInstanceId: uuid.MustParse(s.CurrentApp.InstanceId()),
 			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    config.TaskSkelName,

@@ -2,7 +2,11 @@
 
 package skeled
 
-import skeltype "go.yorun.ai/skel/types"
+import (
+	"uuid"
+
+	skeltype "go.yorun.ai/skel/types"
+)
 
 // AppRegistration Application information registered by App to Link
 type AppRegistration struct {
@@ -61,7 +65,7 @@ type EventEmissionMeta struct {
 	// AppVersion The application version that sent the event
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that sent the event
-	AppInstanceId skeltype.UUID `json:"appInstanceId"`
+	AppInstanceId uuid.UUID `json:"appInstanceId"`
 }
 
 // EventListenerRegistration Event listening capability registration information provided by the application
@@ -109,7 +113,7 @@ type TaskLaunchMeta struct {
 	// AppVersion The application version that initiated the task
 	AppVersion string `json:"appVersion"`
 	// AppInstanceId The application instance ID that initiated the task
-	AppInstanceId skeltype.UUID `json:"appInstanceId"`
+	AppInstanceId uuid.UUID `json:"appInstanceId"`
 }
 
 // TaskRunnerCronScheduler Task execution Cron schedule
