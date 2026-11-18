@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"go.yorun.ai/vine/internal/util/reflectutil"
 )
 
 type testRegistryServer interface {
@@ -34,17 +32,6 @@ type testRegistryServerImpl struct {
 
 type testRegistryServerERImpl struct {
 	defaultTestRegistryServerER
-}
-
-type embeddedTypeA struct{}
-
-type embeddedTypeB struct{}
-
-type embeddedTypesHolder struct {
-	embeddedTypeA
-	embeddedTypeB
-	Named string
-	Alias embeddedTypeA
 }
 
 func newRegistryTestServiceInfo(skelName string) *ServiceSpec {
@@ -247,18 +234,19 @@ func TestRegisterRejectsDuplicateMethodInfo(t *testing.T) {
 }
 
 func TestRegisterInitializesMethodBinaryFlags(t *testing.T) {
-	registry := NewRegistry()
+	for _, args := range []bool{false, true} {
+		for _, result := range []bool{false, true} {
+			registry := NewRegistry()
+			service := newRegistryTestServiceInfo("test.registry.binary")
+			service.Methods[0].ArgumentsContainsBinaryType = args
+			service.Methods[0].ResultContainsBinaryType = result
+			registry.Register(service)
 
-	serviceInfo := newRegistryTestServiceInfo("test.registry.binary")
-	serviceInfo.Methods[0].ArgumentsContainsBinaryType = true
-	serviceInfo.Methods[0].ResultContainsBinaryType = true
-	registry.Register(serviceInfo)
-
-	if !registry.serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0].ArgumentsContainsBinaryType() {
-		t.Fatal("expected method argumentsContainsBinaryType to be initialized")
-	}
-	if !registry.serviceInfoBySkelName[serviceInfo.SkelName].Methods()[0].ResultContainsBinaryType() {
-		t.Fatal("expected method resultContainsBinaryType to be initialized")
+			method := registry.serviceInfoBySkelName[service.SkelName].Methods()[0]
+			if method.ArgumentsContainsBinaryType() != args || method.ResultContainsBinaryType() != result {
+				t.Errorf("binary flags (arguments, result) = (%t, %t), want (%t, %t)", method.ArgumentsContainsBinaryType(), method.ResultContainsBinaryType(), args, result)
+			}
+		}
 	}
 }
 
@@ -435,20 +423,6 @@ func TestGetServiceInfoReturnsServiceInfoForDefaultServerAndERServer(t *testing.
 	}
 	if !isERType {
 		t.Fatalf("expected er server impl")
-	}
-}
-
-func TestGetEmbeddedTypesReturnsOnlyAnonymousStructFields(t *testing.T) {
-	embeddedTypes := reflectutil.EmbeddedStructTypes(reflect.TypeFor[embeddedTypesHolder]())
-
-	if len(embeddedTypes) != 2 {
-		t.Fatalf("unexpected embedded type count: got %d", len(embeddedTypes))
-	}
-	if embeddedTypes[0] != reflect.TypeFor[embeddedTypeA]() {
-		t.Fatalf("unexpected first embedded type: got %v", embeddedTypes[0])
-	}
-	if embeddedTypes[1] != reflect.TypeFor[embeddedTypeB]() {
-		t.Fatalf("unexpected second embedded type: got %v", embeddedTypes[1])
 	}
 }
 

@@ -11,7 +11,7 @@ type testPositionalArgumentsInput struct {
 }
 
 func TestRequestImplPositionalArgumentsUsesMethodArgumentOrder(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeFor[testPositionalArgumentsInput](), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testPositionalArgumentsInput](), nil)
 	method.name = "CreateUser"
 	req := &RequestImpl{
 		MethodInfoValue: method,
@@ -34,7 +34,7 @@ func TestRequestImplPositionalArgumentsUsesMethodArgumentOrder(t *testing.T) {
 }
 
 func TestRequestImplPositionalArgumentsWithoutMethodArgumentsReturnsNil(t *testing.T) {
-	method := newInitializedMethodInfo(nil, nil, false, false)
+	method := newInitializedMethodInfo(nil, nil)
 	method.name = "Ping"
 	req := &RequestImpl{MethodInfoValue: method}
 

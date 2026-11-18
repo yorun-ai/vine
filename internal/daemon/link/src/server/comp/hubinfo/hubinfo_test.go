@@ -82,7 +82,7 @@ func TestHubInfoRefreshRollsBackAndNotifiesEveryListenerAfterRepairFailure(t *te
 	assert.Equal(t, 2, secondCalls)
 }
 
-func TestHubInfoRefreshSkipsLookupInInprocMode(t *testing.T) {
+func TestHubInfoInprocSkipsLookupOnInitAndRefresh(t *testing.T) {
 	client := &_TestInfoServiceClient{}
 	flags := &flag.Flag{
 		HubInprocMode: true,
@@ -145,19 +145,6 @@ func TestConcurrentRefreshAfterFailedRepairKeepsLatestEndpoint(t *testing.T) {
 		assert.Equal(t, want, component.WatchEndpoint())
 		assert.Equal(t, []string{"127.0.0.1:7073", want}, repaired)
 	}
-}
-
-func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
-	client := &_TestInfoServiceClient{}
-	flags := &flag.Flag{
-		HubInprocMode: true,
-		HubEndpoint:   "rpc+inproc://vine/hub",
-	}
-	flags.Normalize(false)
-	component := &HubInfo{Flag: flags, InfoServiceClient: client}
-
-	component.DIInit()
-	assert.Equal(t, 0, client.getInfoCall)
 }
 
 func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {

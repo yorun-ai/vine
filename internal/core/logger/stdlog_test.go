@@ -252,59 +252,28 @@ func TestStandardLogProcessorStopsAtFirstMatch(t *testing.T) {
 	}
 }
 
-func TestStdLogPrefixIdentityProcessor(t *testing.T) {
-	processor := logger.StdLogPrefixIdentityProcessor("deleted key ")
-
-	msg, show, matched := processor("deleted key demo.user")
-	if msg != "deleted key demo.user" || !show || !matched {
-		t.Fatalf("unexpected processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-
-	msg, show, matched = processor("other message")
-	if msg != "" || show || matched {
-		t.Fatalf("unexpected unmatched processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-}
-
-func TestStdLogPrefixFilterProcessor(t *testing.T) {
-	processor := logger.StdLogPrefixFilterProcessor("deleted key ")
-
-	msg, show, matched := processor("deleted key demo.user")
-	if msg != "" || show || !matched {
-		t.Fatalf("unexpected processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-
-	msg, show, matched = processor("other message")
-	if msg != "" || show || matched {
-		t.Fatalf("unexpected unmatched processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-}
-
-func TestStdLogRegexpIdentityProcessor(t *testing.T) {
-	processor := logger.StdLogRegexpIdentityProcessor(`deleted key .+`)
-
-	msg, show, matched := processor("deleted key demo.user")
-	if msg != "deleted key demo.user" || !show || !matched {
-		t.Fatalf("unexpected processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-
-	msg, show, matched = processor("other message")
-	if msg != "" || show || matched {
-		t.Fatalf("unexpected unmatched processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-}
-
-func TestStdLogRegexpFilterProcessor(t *testing.T) {
-	processor := logger.StdLogRegexpFilterProcessor(`deleted key .+`)
-
-	msg, show, matched := processor("deleted key demo.user")
-	if msg != "" || show || !matched {
-		t.Fatalf("unexpected processor result: msg=%q show=%v matched=%v", msg, show, matched)
-	}
-
-	msg, show, matched = processor("other message")
-	if msg != "" || show || matched {
-		t.Fatalf("unexpected unmatched processor result: msg=%q show=%v matched=%v", msg, show, matched)
+func TestStdLogProcessors(t *testing.T) {
+	const message = "deleted key demo.user"
+	for _, tt := range []struct {
+		name        string
+		process     logger.StdLogProcessor
+		wantMessage string
+		wantShow    bool
+	}{
+		{"prefix identity", logger.StdLogPrefixIdentityProcessor("deleted key "), message, true},
+		{"prefix filter", logger.StdLogPrefixFilterProcessor("deleted key "), "", false},
+		{"regexp identity", logger.StdLogRegexpIdentityProcessor(`deleted key .+`), message, true},
+		{"regexp filter", logger.StdLogRegexpFilterProcessor(`deleted key .+`), "", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			msg, show, matched := tt.process(message)
+			if msg != tt.wantMessage || show != tt.wantShow || !matched {
+				t.Errorf("matched message: got (%q, %v, %v), want (%q, %v, true)", msg, show, matched, tt.wantMessage, tt.wantShow)
+			}
+			if msg, show, matched := tt.process("other message"); msg != "" || show || matched {
+				t.Errorf("unmatched message: got (%q, %v, %v)", msg, show, matched)
+			}
+		})
 	}
 }
 

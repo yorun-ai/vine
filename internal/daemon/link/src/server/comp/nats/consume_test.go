@@ -14,19 +14,14 @@ func TestConsumeSanitizesConsumerName(t *testing.T) {
 	client.setConn(connectTestNATS(t, "nats://"+server.Addr().String()))
 	defer client.conn.Close()
 
-	consumeCtx := client.Consume(broadcastStreamConfigForTest(), formatTestBroadcastSubject("alpha.created"), "consumer.alpha/demo:app", func(jetstream.Msg) {})
+	consumeCtx := client.Consume(broadcastStreamConfigForTest(), formatTestBroadcastSubject("alpha.created"), "Alpha-123_beta.demo/app:end", func(jetstream.Msg) {})
 	defer consumeCtx.Stop()
-
-	managedCtx := consumeCtx.(*_ConsumeContext)
-	if managedCtx.consumerName != "consumer_alpha_demo_app" {
-		t.Fatalf("unexpected managed consumer name: %s", managedCtx.consumerName)
-	}
 
 	stream, err := client.jetStream.Stream(context.Background(), testBroadcastStreamName)
 	if err != nil {
 		t.Fatalf("read stream failed: %v", err)
 	}
-	_, err = stream.Consumer(context.Background(), "consumer_alpha_demo_app")
+	_, err = stream.Consumer(context.Background(), "Alpha-123_beta_demo_app_end")
 	if err != nil {
 		t.Fatalf("read sanitized consumer failed: %v", err)
 	}
@@ -127,20 +122,6 @@ func TestConsumeStoppedManagedConsumerIsRemoved(t *testing.T) {
 	managedCtx.mutex.Unlock()
 	if consumerCount != 0 || consumeContext != nil {
 		t.Fatalf("stopped consumer recovered: count=%d context=%v", consumerCount, consumeContext)
-	}
-}
-
-func TestSanitizeNATSResourceNamePreservesAllowedChars(t *testing.T) {
-	got := sanitizeNATSResourceName("Alpha-123_beta")
-	if got != "Alpha-123_beta" {
-		t.Fatalf("unexpected sanitized value: %s", got)
-	}
-}
-
-func TestSanitizeNATSResourceNameReplacesUnsupportedChars(t *testing.T) {
-	got := sanitizeNATSResourceName("alpha.beta/gamma:delta")
-	if got != "alpha_beta_gamma_delta" {
-		t.Fatalf("unexpected sanitized value: %s", got)
 	}
 }
 

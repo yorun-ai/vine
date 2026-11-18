@@ -25,7 +25,12 @@ test('JSON5 values and separators use the same highlighting tags as JSON', () =>
 })
 
 test('key decorations cover quoted, unquoted and nested keys without including values', () => {
-  const source = `{name: 'value', 'port': 7099, "nested": {"host": "localhost"}}`
+  const source = `{ // description
+    name: 'value', 'port': [0x50, +1, .5,], "nested": {"host": "localhost"},
+  }`
+  configJsonLanguage.parser.parse(source).iterate({
+    enter(node) { assert.equal(node.type.isError, false, source.slice(node.from, node.to)) },
+  })
   assert.deepEqual(getConfigJsonKeyRanges(source).map((range) =>
     source.slice(range.from, range.to),
   ), ['name', "'port'", '"nested"', '"host"'])

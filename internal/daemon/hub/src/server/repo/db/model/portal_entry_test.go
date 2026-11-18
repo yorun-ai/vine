@@ -61,15 +61,10 @@ func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 func TestPortalEntryDaoKeepsOneEntryPerAccess(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
 
-	user := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`})
-	require.NotZero(t, user.Id)
-	byAccess, ok := dao.ById(user.Id)
-	require.True(t, ok)
-	assert.Equal(t, user.Id, byAccess.Id)
-
-	// One access never has two entries.
+	const access = `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`
+	dao.Save(&PortalEntry{Name: "first", Protocol: "http", HTTPConfig: access})
 	require.Panics(t, func() {
-		dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"","http":"ENABLED","httpPort":7099,"https":"DISABLED","httpsPort":443,"autohttps":"DISABLED"}`})
+		dao.Save(&PortalEntry{Name: "second", Protocol: "http", HTTPConfig: access})
 	})
 }
 

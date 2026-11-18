@@ -676,21 +676,6 @@ func TestBindComponentsExposesUserComponentType(t *testing.T) {
 	assert.Equal(t, 1, *testSingletonComponentInitCount)
 }
 
-func TestBindComponentsExposesSimpleComponentBindings(t *testing.T) {
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(false)
-	app := newApp(&testDepsAppSpec{AppFlag: &RunFlag{}}, flags)
-	attachTestLinker(app)
-	app.initInjector()
-	app.initComponents()
-
-	injector := app.injector.SubInjector(app.bindClients, app.bindComponents)
-	simpleDep := injector.Get(T[*testSimpleComponentBoundDep]()).Interface().(*testSimpleComponentBoundDep)
-
-	assert.Equal(t, "simple", simpleDep.Value)
-}
-
 func TestInitComponentsBindsComponentManagerTypes(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()

@@ -28,13 +28,9 @@ func testVarsDescriptors() []*skeldesc.Domain {
 	}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}}}
 }
 
-func TestVarsRuleUsesCanonicalTargetType(t *testing.T) {
-	for _, field := range []string{"port"} {
-		t.Run(field, func(t *testing.T) {
-			_, _, err := resolveSeedInputWithDescriptors([]byte("portalEntries: [{name: app.entry, "+field+": '${port}'}]"), []byte("port: null"), nil, nil)
-			require.ErrorContains(t, err, "null is not allowed")
-		})
-	}
+func TestVarsRejectsNullEntryPort(t *testing.T) {
+	_, _, err := resolveSeedInputWithDescriptors([]byte("portalEntries: [{name: app.entry, port: '${port}'}]"), []byte("port: null"), nil, nil)
+	require.ErrorContains(t, err, "null is not allowed")
 }
 
 func TestVarsDescriptorOnlyChecksReferencedValues(t *testing.T) {

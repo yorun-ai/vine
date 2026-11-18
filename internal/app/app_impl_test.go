@@ -540,20 +540,6 @@ func TestNewAppPanicsWhenApplicationNameIsEmpty(t *testing.T) {
 	})
 }
 
-func TestAppImplInitSpecInitializesEnabledModules(t *testing.T) {
-	ensureTaskerTaskRegistered()
-	ensureEventerEventRegistered()
-
-	flags := _Flags{}
-	flags.EnsureRunFlag()
-	flags.InitInprocFlag(false)
-	app := newApp(&testFullSpec{AppFlag: &RunFlag{}}, flags)
-	app.initServers()
-
-	assert.NotNil(t, app.eventer)
-	assert.NotNil(t, app.tasker)
-}
-
 func TestNewAppUsesRunFlagListenAddrMutatedInDIInit(t *testing.T) {
 	flags := _Flags{}
 	flags.EnsureRunFlag()

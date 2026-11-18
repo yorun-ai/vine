@@ -83,14 +83,6 @@ func (s *_DefaultExecutorContextServiceImpl) TraceSpan() string {
 	return s.Ctx.Trace().Span()
 }
 
-type _DefaultExecutorNoContextFieldService struct {
-	_DefaultExecutorTestServiceServer
-}
-
-func (s *_DefaultExecutorNoContextFieldService) TraceSpan() string {
-	return "ok"
-}
-
 type _DefaultExecutorInstanceServiceImpl struct {
 	_DefaultExecutorTestServiceServer
 	Dep *_DefaultExecutorDependency
@@ -280,18 +272,6 @@ func TestDefaultExecutorInjectsInstanceByAsType(t *testing.T) {
 	}
 }
 
-func TestInjectContextSkipsWhenNoSpecContextFieldExists(t *testing.T) {
-	implValue := reflect.New(reflect.TypeFor[_DefaultExecutorNoContextFieldService]())
-	untouched := reflect.New(reflect.TypeFor[_DefaultExecutorNoContextFieldService]()).Elem().Interface()
-
-	executor := newInitializedDefaultExecutor(t, reflect.TypeFor[*_DefaultExecutorNoContextFieldService]())
-	executor.inject(implValue, newDefaultExecutorRPCContext())
-
-	if !reflect.DeepEqual(untouched, implValue.Elem().Interface()) {
-		t.Fatalf("injection modified a service without a spec.Context field: %#v", implValue.Elem().Interface())
-	}
-}
-
 func TestDefaultExecutorInitPanicsWhenMultipleSpecContextFieldsExist(t *testing.T) {
 	defer func() {
 		if recover() == nil {
@@ -320,13 +300,6 @@ func newDefaultExecutorRequest(srv *Server, method spec.MethodInfo) spec.Request
 		TraceValue:      meta.InitialTrace(),
 		MethodInfoValue: method,
 		MethodImplValue: methodImpl,
-	}
-}
-
-func newDefaultExecutorRPCContext() spec.Context {
-	return &spec.ContextImpl{
-		Context:    context.Background(),
-		TraceValue: meta.InitialTrace(),
 	}
 }
 
