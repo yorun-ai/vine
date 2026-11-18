@@ -45,7 +45,9 @@ func (d *PortalCertDao) EnsureSchema() {
 }
 
 func (d *PortalCertDao) ListOrdered() []*PortalCert {
-	return d.Query().Order("name").List()
+	return listWithFieldSources(d.GormDB().Order("name"), func(row *PortalCert) (int, *string) {
+		return row.Id, &row.FieldSources
+	})
 }
 
 func (d *PortalCertDao) ByName(name string) (*PortalCert, bool) {
