@@ -31,7 +31,7 @@ func (d *_Driver) Open(name string) (driver.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &_Conn{Conn: conn}, nil
+	return newConn(conn), nil
 }
 
 // OpenConnector wraps the underlying connector, falling back to Open
@@ -66,7 +66,14 @@ func (c *_Connector) Connect(ctx context.Context) (driver.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &_Conn{Conn: conn}, nil
+	return newConn(conn), nil
+}
+
+func newConn(conn driver.Conn) *_Conn {
+	if pg, ok := conn.(*stdlib.Conn); ok {
+		registerPostgresUUIDText(pg.Conn().TypeMap())
+	}
+	return &_Conn{Conn: conn}
 }
 
 func convertUUIDParameter(value *driver.NamedValue) {
