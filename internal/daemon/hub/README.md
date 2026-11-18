@@ -323,6 +323,15 @@ Hub handles registrations differently in normal and inproc modes:
 
 This removes the need for heartbeat-based lease maintenance in single-process mode.
 
+In network mode, the shared Watch client reconciles each active subscription
+every 25–35 seconds. Inproc subscriptions do not start a reconciliation timer.
+Snapshot reads have a 5-second deadline and must complete with an unchanged
+revision before updating the cache. Failed reads retain the cache.
+Reconciliation and incremental delivery share the consumer
+loop: a successful snapshot covers all events at or below its revision, while
+equal revisions in later incremental batches remain valid. Canceling the
+subscription stops its reconciliation timer.
+
 ### Certificate representation
 
 Hub's domain, Admin API, Dashboard and seed use PEM `certificate` and `privateKey`

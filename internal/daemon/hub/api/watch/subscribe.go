@@ -3,15 +3,28 @@ package watch
 import (
 	"context"
 	"encoding/json/v2"
+	"math/rand/v2"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vpre"
 )
+
+var watchLogger = logger.New("daemon:hub:watch")
+
+const (
+	reconcileMinInterval = 25 * time.Second
+	reconcileMaxInterval = 35 * time.Second
+)
+
+func nextReconcileDelay() time.Duration {
+	return reconcileMinInterval + time.Duration(rand.Int64N(int64(reconcileMaxInterval-reconcileMinInterval)))
+}
 
 func (c *Client) LoadAndSubscribe(ctx context.Context, key string, handle func(event Event)) (string, bool, Subscription) {
 	c.lockLifecycle()
@@ -186,7 +199,8 @@ func (w *_Watcher) start(redisClient *redis.Client) error {
 
 	go func() {
 		defer close(done)
-		w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.subscriptionCount(), w.snapshot.handleSubscription, handleEvent, pubsub.Close)
+		periodicReconcile := redisClient.Options().Addr != WatchInprocEndpoint
+		w.client.consumePatternMessages(consumeCtx, pubsub.ChannelWithSubscriptions(), revision, w.subscriptionCount(), periodicReconcile, w.snapshot.handleSubscription, handleEvent, pubsub.Close)
 	}()
 	return nil
 }
@@ -308,6 +322,7 @@ func (c *Client) consumePatternMessages(
 	messageCh <-chan any,
 	revision uint64,
 	subscriptionCount int,
+	periodicReconcile bool,
 	handleSubscription func(handle func(event Event)) (uint64, error),
 	handleEvent func(event Event),
 	closeFn func() error,
@@ -315,10 +330,29 @@ func (c *Client) consumePatternMessages(
 	defer func() {
 		_ = closeFn()
 	}()
+	// A snapshot covers its entire revision, whereas incremental events in the
+	// same batch share a revision and must all be delivered.
+	snapshotRevision := revision
+	var timer *time.Timer
+	var reconcileCh <-chan time.Time
+	if periodicReconcile {
+		timer = time.NewTimer(nextReconcileDelay())
+		defer timer.Stop()
+		reconcileCh = timer.C
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-reconcileCh:
+			nextRevision, err := handleSubscription(handleEvent)
+			if err == nil {
+				snapshotRevision = nextRevision
+				revision = nextRevision
+			} else if ctx.Err() == nil {
+				watchLogger.Warn("watch reconciliation failed", "error", err)
+			}
+			timer.Reset(nextReconcileDelay())
 		case message, ok := <-messageCh:
 			if !ok {
 				return
@@ -329,6 +363,7 @@ func (c *Client) consumePatternMessages(
 					for {
 						nextRevision, err := handleSubscription(handleEvent)
 						if err == nil {
+							snapshotRevision = nextRevision
 							revision = nextRevision
 							break
 						}
@@ -344,7 +379,7 @@ func (c *Client) consumePatternMessages(
 				if err := json.Unmarshal([]byte(message.Payload), &event); err != nil {
 					continue
 				}
-				if event.Revision < revision {
+				if event.Revision <= snapshotRevision || event.Revision < revision {
 					continue
 				}
 				revision = event.Revision

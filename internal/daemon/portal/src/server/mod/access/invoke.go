@@ -27,23 +27,26 @@ func (o *Auther) buildInvokeRequest(serviceSkelName string, methodSkelName strin
 }
 
 func (o *Auther) forwardInvokeRequest(request *http.Request, serviceSkelName string, serviceLabel string) (*http.Response, ex.Code, string, bool) {
-	registration, configured := o.endpointManager.NextRpcEndpoint(serviceSkelName)
+	registration, attempt, configured := o.endpointManager.NextRpcEndpoint(serviceSkelName)
 	if !configured || registration == nil {
 		return nil, ex.ServiceUnavailable, serviceLabel + " is unavailable: " + serviceSkelName, false
 	}
 
 	transport, err := o.identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), registration.Endpoint)
 	if err != nil {
+		attempt.Finish(err)
 		return nil, ex.ServiceUnavailable, serviceLabel + " endpoint is insecure: " + err.Error(), false
 	}
 	response, err := gwutil.ForwardRequestWithTransport(request, registration.Endpoint, transport)
 	if err != nil {
+		attempt.Finish(err)
 		code := ex.ServiceUnavailable
 		if errors.Is(err, context.DeadlineExceeded) {
 			code = ex.GatewayTimeout
 		}
 		return nil, code, serviceLabel + " forward failed: " + err.Error(), false
 	}
+	response.Body = attempt.TrackBody(response.Body)
 	return response, ex.OK, "", true
 }
 

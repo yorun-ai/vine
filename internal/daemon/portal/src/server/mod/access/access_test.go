@@ -69,7 +69,7 @@ func TestAdmissionChangesReconcileEndpointWatches(t *testing.T) {
 	})
 	assertConfigured := func(name string, expected bool) {
 		t.Helper()
-		_, configured := target.Epmgr.NextRpcEndpoint(name)
+		_, _, configured := target.Epmgr.NextRpcEndpoint(name)
 		require.Equal(t, expected, configured, name)
 	}
 	assertConfigured("demo.Auth", true)
@@ -81,7 +81,7 @@ func TestAdmissionChangesReconcileEndpointWatches(t *testing.T) {
 	actor.Hash = "updated"
 	actor.Auth.Service = new(skeldesc.Service{SkelName: "demo.NextAuth"})
 	target.Desc.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: watched.FormatDescriptorActorKey(actor.SkelName), Value: vcode.MustMarshalJsonS(actor)})
-	require.Eventually(t, func() bool { _, configured := target.Epmgr.NextRpcEndpoint("demo.NextAuth"); return configured }, time.Second, time.Millisecond)
+	require.Eventually(t, func() bool { _, _, configured := target.Epmgr.NextRpcEndpoint("demo.NextAuth"); return configured }, time.Second, time.Millisecond)
 	assertConfigured("demo.Auth", false)
 	target.mutex.Lock()
 	retained := target.serviceWatches["permission:demo.User"]
@@ -89,7 +89,7 @@ func TestAdmissionChangesReconcileEndpointWatches(t *testing.T) {
 	require.Same(t, original, retained, "an unchanged endpoint watch must not be recreated")
 
 	target.Desc.Watch.(*watchtest.Client).Publish(hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: watched.FormatDescriptorResourceKey(resource.SkelName)})
-	require.Eventually(t, func() bool { _, configured := target.Epmgr.NextRpcEndpoint("demo.Check"); return !configured }, time.Second, time.Millisecond)
+	require.Eventually(t, func() bool { _, _, configured := target.Epmgr.NextRpcEndpoint("demo.Check"); return !configured }, time.Second, time.Millisecond)
 	target.AfterAppStop()
 	assertConfigured("demo.NextAuth", false)
 	assertConfigured("demo.Permission", false)

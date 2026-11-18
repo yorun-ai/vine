@@ -54,7 +54,9 @@ func invalidForwardRequestError(err error) error {
 
 func normalizeForwardError(ctx context.Context, err error) error {
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return context.DeadlineExceeded
+		// Keep the underlying network operation so endpoint health can distinguish
+		// a failed dial from an RPC that simply exceeded its overall deadline.
+		return errors.Join(context.DeadlineExceeded, err)
 	}
 	return err
 }

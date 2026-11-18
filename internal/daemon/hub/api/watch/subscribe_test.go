@@ -27,7 +27,7 @@ func TestSubscriptionSnapshotFailureRetriesAndRemainsCancellable(t *testing.T) {
 		done := make(chan struct{})
 		go func() {
 			defer close(done)
-			new(Client).consumePatternMessages(ctx, messages, 0, 1, func(func(Event)) (uint64, error) {
+			new(Client).consumePatternMessages(ctx, messages, 0, 1, true, func(func(Event)) (uint64, error) {
 				if calls.Add(1) == 1 {
 					return 0, errors.New("temporary snapshot failure")
 				}
@@ -190,7 +190,8 @@ func TestKeySetReadsGrowLinearlyAndReconcileAfterReconnect(t *testing.T) {
 	_, sub, err := client.LoadKeysAndSubscribe(t.Context(), keys, func(event Event) { delivered <- event })
 	require.NoError(t, err)
 	sub.Start()
-	server.Publish(keys[0], fmt.Sprintf(`{"revision":1,"kind":"upsert","key":%q,"value":"sentinel"}`, keys[0]))
+	server.Set(RevisionKey, "2")
+	server.Publish(keys[0], fmt.Sprintf(`{"revision":2,"kind":"upsert","key":%q,"value":"sentinel"}`, keys[0]))
 	select {
 	case <-delivered:
 	case <-time.After(5 * time.Second):
@@ -203,7 +204,7 @@ func TestKeySetReadsGrowLinearlyAndReconcileAfterReconnect(t *testing.T) {
 	before := counter.gets.Load()
 	server.Close()
 	server.Set(keys[0], "restored")
-	server.Set(RevisionKey, "2")
+	server.Set(RevisionKey, "3")
 	require.NoError(t, server.Restart())
 	select {
 	case event := <-delivered:
@@ -240,7 +241,7 @@ func TestGroupAcknowledgementsReconcileOnlyWhenComplete(t *testing.T) {
 	}
 	close(messages)
 	calls := 0
-	new(Client).consumePatternMessages(t.Context(), messages, 0, 3, func(func(Event)) (uint64, error) {
+	new(Client).consumePatternMessages(t.Context(), messages, 0, 3, true, func(func(Event)) (uint64, error) {
 		calls++
 		return 1, nil
 	}, func(Event) {}, func() error { return nil })
@@ -277,4 +278,147 @@ func TestFailedKeySetAttachmentReleasesPartialSubscription(t *testing.T) {
 	require.Nil(t, subscription)
 	require.Empty(t, client.watcherSnapshot())
 	require.Eventually(t, func() bool { return server.PubSubNumPat() == 0 }, time.Second, time.Millisecond)
+}
+
+func TestPeriodicReconciliationRepairsMissedEventsWithoutReconnect(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		messages := make(chan any, 4)
+		cached := map[string]string{"rpc:old": "old-ip", "rpc:updated": "old-ip"}
+		snapshot := &_WatchListSnapshot{valuesByKey: maps.Clone(cached)}
+		var calls atomic.Int32
+		var cacheMutex sync.Mutex
+		readCache := func() map[string]string {
+			cacheMutex.Lock()
+			defer cacheMutex.Unlock()
+			return maps.Clone(cached)
+		}
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			new(Client).consumePatternMessages(ctx, messages, 1, 1, true, func(handle func(Event)) (uint64, error) {
+				calls.Add(1)
+				// Hub changed while the subscription stayed connected, but its
+				// notifications were missed. Only the periodic snapshot can repair it.
+				return snapshot.reconcile(map[string]string{"rpc:new": "new-ip", "rpc:updated": "new-ip"}, 3, handle), nil
+			}, snapshot.handleEvent(func(event Event) {
+				cacheMutex.Lock()
+				defer cacheMutex.Unlock()
+				applyTestEvent(cached, event)
+			}), func() error { return nil })
+		}()
+		synctest.Wait()
+		require.Zero(t, calls.Load())
+		synctest.Sleep(35 * time.Second)
+		synctest.Wait()
+		require.Equal(t, int32(1), calls.Load())
+		require.Equal(t, map[string]string{"rpc:new": "new-ip", "rpc:updated": "new-ip"}, readCache())
+		// Buffered events from the snapshot's revision must not resurrect old keys.
+		messages <- &redis.Message{Payload: `{"revision":3,"kind":"upsert","key":"rpc:old","value":"old-ip"}`}
+		messages <- &redis.Message{Payload: `{"revision":4,"kind":"upsert","key":"rpc:a","value":"a"}`}
+		messages <- &redis.Message{Payload: `{"revision":4,"kind":"upsert","key":"rpc:b","value":"b"}`}
+		synctest.Wait()
+		require.NotContains(t, readCache(), "rpc:old")
+		require.Equal(t, "a", readCache()["rpc:a"])
+		require.Equal(t, "b", readCache()["rpc:b"], "same-revision incremental batch members must all apply")
+		cancel()
+		<-done
+		synctest.Sleep(time.Minute)
+		require.Equal(t, int32(1), calls.Load(), "canceled subscriptions stop reconciling")
+	})
+}
+
+func TestPeriodicSnapshotFailurePreservesCacheAndContinuesEvents(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		messages := make(chan any, 1)
+		cached := map[string]string{"rpc:old": "old-ip"}
+		snapshot := &_WatchListSnapshot{valuesByKey: maps.Clone(cached)}
+		var calls atomic.Int32
+		var cacheMutex sync.Mutex
+		readCache := func() map[string]string {
+			cacheMutex.Lock()
+			defer cacheMutex.Unlock()
+			return maps.Clone(cached)
+		}
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			new(Client).consumePatternMessages(ctx, messages, 1, 1, true, func(handle func(Event)) (uint64, error) {
+				if calls.Add(1) == 1 {
+					return 0, errors.New("snapshot read failed")
+				}
+				return snapshot.reconcile(map[string]string{"rpc:new": "new-ip"}, 3, handle), nil
+			}, snapshot.handleEvent(func(event Event) {
+				cacheMutex.Lock()
+				defer cacheMutex.Unlock()
+				applyTestEvent(cached, event)
+			}), func() error { return nil })
+		}()
+		synctest.Wait()
+		synctest.Sleep(35 * time.Second)
+		synctest.Wait()
+		require.Equal(t, map[string]string{"rpc:old": "old-ip"}, readCache())
+		messages <- &redis.Message{Payload: `{"revision":2,"kind":"upsert","key":"rpc:new","value":"new-ip"}`}
+		synctest.Wait()
+		require.Equal(t, "new-ip", readCache()["rpc:new"])
+		require.Contains(t, readCache(), "rpc:old")
+		synctest.Sleep(35 * time.Second)
+		synctest.Wait()
+		require.Equal(t, int32(2), calls.Load())
+		require.Equal(t, map[string]string{"rpc:new": "new-ip"}, readCache())
+		cancel()
+		<-done
+	})
+}
+
+func TestSnapshotRevisionFiltersEqualEventsButRetainsNewBatch(t *testing.T) {
+	messages := make(chan any, 4)
+	for _, payload := range []string{
+		`{"revision":5,"kind":"upsert","key":"rpc:old","value":"old-ip"}`,
+		`{"revision":6,"kind":"delete","key":"rpc:a"}`,
+		`{"revision":6,"kind":"delete","key":"rpc:b"}`,
+		`{"revision":4,"kind":"upsert","key":"rpc:old","value":"old-ip"}`,
+	} {
+		messages <- &redis.Message{Payload: payload}
+	}
+	close(messages)
+	var keys []string
+	new(Client).consumePatternMessages(t.Context(), messages, 5, 1, true, func(func(Event)) (uint64, error) {
+		t.Fatal("unexpected snapshot reload")
+		return 0, nil
+	}, func(event Event) { keys = append(keys, event.Key) }, func() error { return nil })
+	require.Equal(t, []string{"rpc:a", "rpc:b"}, keys)
+}
+
+func TestInprocConsumerDoesNotPeriodicallyReconcile(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		messages := make(chan any, 1)
+		events := make(chan Event, 1)
+		var reloads atomic.Int32
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			new(Client).consumePatternMessages(ctx, messages, 1, 1, false, func(func(Event)) (uint64, error) {
+				reloads.Add(1)
+				return 2, nil
+			}, func(event Event) { events <- event }, func() error { return nil })
+		}()
+		synctest.Wait()
+		synctest.Sleep(2 * time.Minute)
+		synctest.Wait()
+		require.Zero(t, reloads.Load())
+		messages <- &redis.Message{Payload: `{"revision":2,"kind":"delete","key":"rpc:old"}`}
+		require.Equal(t, EventKindDelete, (<-events).Kind)
+		// Subscription attachment/reconnection still reloads its snapshot.
+		messages <- &redis.Subscription{Kind: "subscribe", Count: 1}
+		synctest.Wait()
+		require.Equal(t, int32(1), reloads.Load())
+		cancel()
+		<-done
+	})
 }

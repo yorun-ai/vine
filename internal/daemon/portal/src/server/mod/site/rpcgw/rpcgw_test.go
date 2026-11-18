@@ -645,7 +645,7 @@ func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
 		RpcgwConfig: &watched.PortalRpcgwConfig{},
 	})
 
-	if registration, configured := target.routeService("demo.OrderService"); configured || registration != nil {
+	if registration, _, configured := target.routeService("demo.OrderService"); configured || registration != nil {
 		t.Fatal("expected service to be outside configured list")
 	}
 }
@@ -654,7 +654,7 @@ func TestRpcGatewayDoesNotRouteServicesWatchedByAnotherSite(t *testing.T) {
 	target := newTestRpcGateway(t, nil)
 	other := target.epmgr.WatchRpc("demo.OtherService")
 	t.Cleanup(other.Release)
-	registration, configured := target.routeService("demo.OtherService")
+	registration, _, configured := target.routeService("demo.OtherService")
 	if configured || registration != nil {
 		t.Fatal("a shared endpoint watch must not add a service to this site")
 	}

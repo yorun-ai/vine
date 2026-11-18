@@ -36,6 +36,8 @@ Portal has four primary responsibilities:
 3. Endpoint discovery
    `epmgr` subscribes to Rpc/Web endpoint keys, manages watcher reference counts, and provides `NextRpcEndpoint` and `NextWebEndpoint` to gateways.
 
+   Rpc selection also returns an `Attempt`, which RpcGW and auth/permission forwarding complete after a transport failure or response-body completion. Dial failures immediately isolate that registration; other network failures require three consecutive failures. Business errors, cancellation, and overall Rpc deadlines do not count as endpoint failures. Isolation skips the endpoint without deleting its Hub registration. Cooldowns start at 5 seconds and double up to 30 seconds after failed probes; only one new request may probe an endpoint at a time. The current request is never replayed against another endpoint. Replaced/removed registrations and older circuit states ignore late results. Web endpoint selection remains round-robin.
+
 4. Authentication, permission, and certificates
    `desc` reads and watches `descriptor:actor:*`, `descriptor:service:*`, `descriptor:web:*`, and `descriptor:resource:*` state. `access` queries this cache and observes actor/resource changes to maintain auth and permission endpoint watches. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
 
@@ -60,7 +62,7 @@ External callers should assemble only `src/server/app` and `src/server/flag`; th
 
 Preserve these ownership and dependency boundaries when modifying Portal:
 
-- `epmgr` is the single owner of Rpc/Web endpoint subscriptions, watcher reference counts, and round-robin selection. Sites and access logic obtain endpoints through it.
+- `epmgr` is the single owner of Rpc/Web endpoint subscriptions, watcher reference counts, endpoint selection, and Rpc isolation state. Sites and access logic obtain endpoints through it and report Rpc transport results; they must not maintain separate isolation state.
 - `desc` owns all descriptor subscriptions and caches, including API type dependencies. `access` owns Rpc/Web admission and its auth/permission endpoint watches. Gateways and access must not maintain a second descriptor cache.
 - `entry` owns listener entries and rule dispatch only; `site` owns RpcGW/WebGW instances only; `vault` owns certificate loading and matching only.
 - RpcGW and WebGW must continue propagating the active trace, initiator, actor, deadline, and remaining timeout. Do not replace the request context with a new background context.

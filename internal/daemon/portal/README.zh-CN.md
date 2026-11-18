@@ -36,6 +36,8 @@ Portal 的职责可以拆成四条主线：
 3. Endpoint 发现
    `epmgr` 统一订阅 Rpc/Web endpoint key，内部维护 watcher 引用计数，并为 gateway 提供 `NextRpcEndpoint` 和 `NextWebEndpoint`。
 
+   Rpc 选址还返回 `Attempt`，由 RpcGW 和认证/权限转发在传输失败或响应体读取完成后上报结果。连接建立失败立即隔离对应注册；其他网络错误连续三次后隔离。业务错误、取消及 Rpc 整体期限到期不计为端点失败。隔离仅影响本地选址，不删除 Hub 注册。冷却从 5 秒开始，探测失败后翻倍，最多 30 秒；每个端点同时只允许一个新请求试探恢复。当前请求不会换端点重放。注册被替换、删除，或隔离状态已切换后，旧请求的迟到结果会被忽略。Web 端点仍采用轮询选择。
+
 4. Auth、Permission 与证书
    `desc` 从 `descriptor:actor:*`、`descriptor:service:*`、`descriptor:web:*`、`descriptor:resource:*` 读取并监听准入相关 descriptor。`access` 查询这份缓存，并通过 Actor/Resource 变更通知维护认证、权限检查所需的 endpoint 订阅。RpcGW 在转发前调用 `access`，由它按需调用后端 auth service、actor permission service 和 resource check service。`vault` 从 Watch 读取并监听证书，用于 HTTPS SNI 匹配。
 
@@ -60,7 +62,7 @@ Portal 内部主要依赖关系是：
 
 修改 Portal 时必须保持以下 owner 和依赖边界：
 
-- `epmgr` 是 Rpc/Web endpoint 订阅、watcher 引用计数和轮询选择的唯一 owner；site 和 access 通过它获取 endpoint。
+- `epmgr` 是 Rpc/Web endpoint 订阅、watcher 引用计数、端点选择和 Rpc 隔离状态的唯一 owner；site 和 access 通过它获取 endpoint 并上报 Rpc 传输结果，不另行维护隔离状态。
 - `desc` 是所有 descriptor 订阅、缓存及 API 类型依赖的 owner；`access` 负责 Rpc/Web 准入及认证、权限检查所需的 endpoint 订阅。Gateway 和 access 不应维护第二份 descriptor 缓存。
 - `entry` 只管理监听入口和 rule 分发，`site` 只管理 RpcGW/WebGW，`vault` 只管理证书加载与匹配。
 - RpcGW/WebGW 必须继续传播当前 trace、initiator、actor、deadline 和剩余 timeout，不能用新的后台 context 覆盖请求上下文。

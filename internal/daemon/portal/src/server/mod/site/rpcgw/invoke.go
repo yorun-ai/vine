@@ -12,6 +12,7 @@ import (
 	rpchttp "go.yorun.ai/vine/internal/core/rpc/transport/http"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/access"
+	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/epmgr"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/mod/site/spec"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/computil"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/util/gwutil"
@@ -90,7 +91,7 @@ func (g *RpcGateway) invoke(ctx *spec.Context, trace meta.Trace, initiator meta.
 		return
 	}
 
-	registration, configured := g.routeService(serviceName)
+	registration, attempt, configured := g.routeService(serviceName)
 	if !configured {
 		rpcGatewayLogger.Warn("vine.portal rpcgw service is not configured", "site", g.name, "service", serviceName)
 		g.writeError(ctx.ResponseWriter, invokeRequest, ex.NotFound, "rpcgw service is not configured: "+serviceName)
@@ -106,10 +107,11 @@ func (g *RpcGateway) invoke(ctx *spec.Context, trace meta.Trace, initiator meta.
 		Request:        invokeRequest,
 		ResponseWriter: ctx.ResponseWriter,
 		RemoteAddr:     ctx.RemoteAddr,
-	}, registration)
+	}, registration, attempt)
 }
 
-func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *watched.RpcServiceRegistration) {
+func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *watched.RpcServiceRegistration, attempt *epmgr.Attempt) {
+	defer attempt.Finish(context.Canceled)
 	endpoint := registration.Endpoint
 	acceptEncoding, forwardRequest := prepareForwardRequest(ctx.Request)
 	transport, err := g.access.Identity.BackendTransport(registration.ServerIdentity.SPIFFEPath(), endpoint)
@@ -120,6 +122,7 @@ func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *watched.RpcS
 	}
 	response, err := gwutil.ForwardRequestWithTransport(forwardRequest, endpoint, transport)
 	if err != nil {
+		attempt.Finish(err)
 		statusCode := ex.ServiceUnavailable
 		if errors.Is(err, context.DeadlineExceeded) {
 			statusCode = ex.GatewayTimeout
@@ -131,6 +134,7 @@ func (g *RpcGateway) forwardInvoke(ctx *spec.Context, registration *watched.RpcS
 		return
 	}
 
+	response.Body = attempt.TrackBody(response.Body)
 	defer func() { _ = response.Body.Close() }()
 	body, err := rpchttp.ReadResponseBody(response)
 	if err != nil {
