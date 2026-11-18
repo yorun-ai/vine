@@ -2,9 +2,9 @@ package syncer
 
 import (
 	"slices"
-	"strings"
 
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -15,115 +15,98 @@ func (s *Syncer) SyncPortalEntry(entry *core.PortalEntry) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
+	batch := s.WatchServer.NotifyBatch()
 	stored := core.NormalizePortalEntry(*entry)
 	stored.EffectiveHTTP = nil
-	if previous := s.portalEntriesById[entry.Id]; previous != nil && previous.Name != entry.Name {
-		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(previous.Name))
+	previous := s.portalEntriesById[entry.Id]
+	if previous != nil && previous.Name != entry.Name {
+		batch.Delete(watched.FormatPortalEntryKey(previous.Name))
 	}
-	s.publishPortalEntryLocked(&stored)
+	s.publishPortalEntryLocked(batch, &stored)
 	stored.ListenIPs = slices.Clone(stored.ListenIPs)
 	s.portalEntriesById[entry.Id] = &stored
-	for _, rule := range s.portalRulesById {
-		if rule.EntryId != entry.Id {
-			continue
-		}
-		s.publishPortalRuleLocked(rule, s.portalSiteOfRuleLocked(rule))
+	if previous == nil || previous.Enabled != stored.Enabled || previous.Name != stored.Name ||
+		previous.Protocol != stored.Protocol || !previous.Http.Equal(*stored.Http) {
+		s.updateEntryRules(batch, entry.Id)
 	}
+	batch.Notify()
 }
 
 func (s *Syncer) RemovePortalEntry(entry *core.PortalEntry) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(entry.Name))
+	batch := s.WatchServer.NotifyBatch()
+	batch.Delete(watched.FormatPortalEntryKey(entry.Name))
 	delete(s.portalEntriesById, entry.Id)
-	for _, rule := range s.portalRulesById {
-		if rule.EntryId != entry.Id {
-			continue
-		}
-		// A rule cannot be published without its entry reference.
-		s.publishPortalRuleLocked(rule, s.portalSiteOfRuleLocked(rule))
-	}
+	s.updateEntryRules(batch, entry.Id)
+	batch.Notify()
 }
 
-// SyncPortalSite publishes a complete portal site, including the services it
-// derives from the descriptors registered for its actor.
+func (s *Syncer) updateEntryRules(batch *watchserver.NotifyBatch, entryID int) {
+	changed := make(map[string]struct{})
+	s.reindexRules(s.rules.byEntry[entryID], changed)
+	s.publishRuleGroups(batch, changed)
+}
+
+// SyncPortalSite publishes the site and any changes to its rules in one revision.
 func (s *Syncer) SyncPortalSite(site *core.PortalSite) {
+	s.SyncPortalSites([]*core.PortalSite{site})
+}
+
+// SyncPortalSites applies all mount paths from one descriptor refresh together.
+func (s *Syncer) SyncPortalSites(sites []*core.PortalSite) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.cachePortalSiteLocked(site)
-	if !site.Enabled {
-		// Portal keeps reading what Hub already published for the site, and a
-		// disabled site stops serving its rules.
-		s.WatchServer.DeleteAndNotify(watched.FormatPortalSiteKey(site.Name))
-		delete(s.portalSiteNamesById, site.Id)
-		for _, rule := range s.portalRulesById {
-			if rule.RouteSiteName == site.Name {
-				s.publishPortalRuleLocked(rule, site)
-			}
-		}
-		return
-	}
-	s.removeRenamedKeyLocked(s.portalSiteNamesById, site.Id, site.Name, watched.FormatPortalSiteKey)
-	s.WatchServer.SetAndNotify(watched.FormatPortalSiteKey(site.Name), vcode.MustMarshalJsonS(toWatchedPortalSite(site)))
-	s.saveNameByIdLocked(s.portalSiteNamesById, site.Id, site.Name)
-	for _, rule := range s.portalRulesById {
-		if rule.RouteSiteName == site.Name {
-			s.publishPortalRuleLocked(rule, site)
+	batch := s.WatchServer.NotifyBatch()
+	changedSites := make(map[string]struct{})
+	// Resolve old names first, so a name can move to another site in this refresh.
+	for _, site := range sites {
+		oldName := s.portalSiteNamesById[site.Id]
+		if oldName != "" && oldName != site.Name {
+			delete(s.portalSitesByName, oldName)
+			changedSites[oldName] = struct{}{}
 		}
 	}
+	for _, site := range sites {
+		previous := s.portalSitesByName[site.Name]
+		s.portalSiteNamesById[site.Id] = site.Name
+		s.portalSitesByName[site.Name] = new(*site)
+		key := watched.FormatPortalSiteKey(site.Name)
+		if site.Enabled {
+			batch.Set(key, vcode.MustMarshalJsonS(toWatchedPortalSite(site)))
+		} else {
+			batch.Delete(key)
+		}
+		if previous == nil || previous.Enabled != site.Enabled ||
+			previous.Type != site.Type || previous.WebMountPath != site.WebMountPath {
+			changedSites[site.Name] = struct{}{}
+		}
+	}
+	changed := make(map[string]struct{})
+	for name := range changedSites {
+		if s.portalSitesByName[name] == nil {
+			batch.Delete(watched.FormatPortalSiteKey(name))
+		}
+		s.reindexRules(s.rules.bySite[name], changed)
+	}
+	s.publishRuleGroups(batch, changed)
+	batch.Notify()
 }
 
 func (s *Syncer) RemovePortalSite(site *core.PortalSite) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
-	s.removePortalSiteLocked(site)
-	s.WatchServer.DeleteAndNotify(watched.FormatPortalSiteKey(site.Name))
+	batch := s.WatchServer.NotifyBatch()
+	batch.Delete(watched.FormatPortalSiteKey(site.Name))
+	delete(s.portalSitesByName, site.Name)
 	delete(s.portalSiteNamesById, site.Id)
-	for _, rule := range s.portalRulesById {
-		if rule.RouteSiteName == site.Name {
-			s.publishPortalRuleLocked(rule, nil)
-		}
-	}
-}
-
-func (s *Syncer) SyncPortalRule(rule *core.PortalRule) {
-	s.namesMutex.Lock()
-	defer s.namesMutex.Unlock()
-
-	s.removeRenamedKeyLocked(s.portalRuleNamesById, rule.Id, rule.Name, watched.FormatPortalRuleKey)
-	s.saveNameByIdLocked(s.portalRuleNamesById, rule.Id, rule.Name)
-	s.portalRulesById[rule.Id] = clonePortalRule(rule)
-	// The rule that changed can stop matching the request another rule serves,
-	// so the whole set follows it instead of that one rule alone.
-	s.refreshRulesLocked()
-}
-
-func (s *Syncer) RemovePortalRule(rule *core.PortalRule) {
-	s.namesMutex.Lock()
-	defer s.namesMutex.Unlock()
-
-	s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
-	delete(s.portalRuleNamesById, rule.Id)
-	delete(s.portalRulesById, rule.Id)
-	// The rule that leaves can have kept another rule out of Portal, so the
-	// remaining rules decide again.
-	s.refreshRulesLocked()
-}
-
-// refreshRulesLocked publishes every rule Hub holds, so the choices a conflict
-// forces on Hub stay current after one of them changed.
-func (s *Syncer) refreshRulesLocked() {
-	for _, rule := range s.portalRulesById {
-		s.publishPortalRuleLocked(rule, s.portalSiteOfRuleLocked(rule))
-	}
-}
-
-func clonePortalRule(rule *core.PortalRule) *core.PortalRule {
-	copy := *rule
-	return &copy
+	changed := make(map[string]struct{})
+	s.reindexRules(s.rules.bySite[site.Name], changed)
+	s.publishRuleGroups(batch, changed)
+	batch.Notify()
 }
 
 func (s *Syncer) SyncPortalCert(cert *core.PortalCert) {
@@ -157,76 +140,7 @@ func (s *Syncer) RemovePortalCert(cert *core.PortalCert) {
 	s.republishPortalEntriesLocked()
 }
 
-// publishPortalRuleLocked publishes one rule for Portal, or removes it when Hub
-// does not publish it: a disabled rule, a rule of a disabled entry, a SITE rule
-// whose site is disabled, or a rule another rule supersedes because both match
-// one request.
-func (s *Syncer) publishPortalRuleLocked(rule *core.PortalRule, site *core.PortalSite) {
-	if s.publishesPortalRuleLocked(rule, site) && !s.losesConflictLocked(rule, site) {
-		s.WatchServer.SetAndNotify(watched.FormatPortalRuleKey(rule.Name), vcode.MustMarshalJsonS(s.toWatchedPortalRule(rule, site)))
-		return
-	}
-	s.WatchServer.DeleteAndNotify(watched.FormatPortalRuleKey(rule.Name))
-}
-
-// losesConflictLocked reports whether a publishable rule that sorts before rule
-// matches the same request. Portal resolves matching rules by their longest path
-// prefix, so two rules that match identically have no defined order, and Hub
-// publishes the rule whose name sorts first.
-func (s *Syncer) losesConflictLocked(rule *core.PortalRule, site *core.PortalSite) bool {
-	key := s.portalRuleMatchKeyLocked(rule, site)
-	if key == "" {
-		return false
-	}
-	for _, other := range s.portalRulesById {
-		if other.Id == rule.Id {
-			continue
-		}
-		otherSite := s.portalSiteOfRuleLocked(other)
-		if !s.publishesPortalRuleLocked(other, otherSite) {
-			continue
-		}
-		if s.portalRuleMatchKeyLocked(other, otherSite) != key {
-			continue
-		}
-		if published, _ := core.PortalRuleConflictWinner(rule.Name, other.Name); published != rule.Name {
-			return true
-		}
-	}
-	return false
-}
-
-// portalRuleMatchKeyLocked identifies the request a rule matches: the access of
-// the entry it belongs to and the prefix its site resolves. An entry Hub has not
-// published leaves the rule without a request to compare.
-func (s *Syncer) portalRuleMatchKeyLocked(rule *core.PortalRule, site *core.PortalSite) string {
-	entry, ok := s.portalEntriesById[rule.EntryId]
-	if !ok {
-		return ""
-	}
-	matchPathPrefix, _ := core.ResolvePortalRulePaths(rule, site)
-	return core.PortalEntryMatchKey(*entry, matchPathPrefix)
-}
-
-func (s *Syncer) publishesPortalRuleLocked(rule *core.PortalRule, site *core.PortalSite) bool {
-	if !rule.Enabled {
-		return false
-	}
-	entry, ok := s.portalEntriesById[rule.EntryId]
-	if !ok || !entry.Enabled {
-		return false
-	}
-	if strings.HasPrefix(entry.Http.Host, "*.") && (rule.RouteType != core.PortalRuleRouteTypeSite || site == nil || site.Type != core.PortalSiteTypeWEBGW) {
-		return false
-	}
-	if rule.RouteType == core.PortalRuleRouteTypeSite && site != nil && !site.Enabled {
-		return false
-	}
-	return true
-}
-
-// portalSiteOfRuleLocked returns the site a rule targets, from the sites Hub has
-// published.
+// portalSiteOfRuleLocked returns the site a rule targets, including disabled sites.
 func (s *Syncer) portalSiteOfRuleLocked(rule *core.PortalRule) *core.PortalSite {
 	if rule.RouteType != core.PortalRuleRouteTypeSite {
 		return nil
@@ -263,11 +177,9 @@ func toWatchedPortalSite(site *core.PortalSite) *watched.PortalSite {
 	return ret
 }
 
-func (s *Syncer) toWatchedPortalRule(rule *core.PortalRule, sites ...*core.PortalSite) *watched.PortalRule {
+func (s *Syncer) toWatchedPortalRule(rule *core.PortalRule, site *core.PortalSite) *watched.PortalRule {
 	ret := ToWatchedPortalRule(rule, s.portalEntriesById[rule.EntryId])
-	if len(sites) > 0 {
-		ret.ResolvedMatchPathPrefix, ret.ResolvedRoutePathPrefix = core.ResolvePortalRulePaths(rule, sites[0])
-	}
+	ret.ResolvedMatchPathPrefix, ret.ResolvedRoutePathPrefix = core.ResolvePortalRulePaths(rule, site)
 	return ret
 }
 
@@ -295,18 +207,10 @@ func ToWatchedPortalCert(cert *core.PortalCert) *watched.PortalCert {
 		ValidTo:     cert.ValidTo,
 	}
 }
-func (s *Syncer) cachePortalSiteLocked(site *core.PortalSite) {
-	stored := *site
-	s.portalSitesByName[site.Name] = &stored
-}
 
-func (s *Syncer) removePortalSiteLocked(site *core.PortalSite) {
-	delete(s.portalSitesByName, site.Name)
-}
-
-func (s *Syncer) publishPortalEntryLocked(entry *core.PortalEntry) {
+func (s *Syncer) publishPortalEntryLocked(batch *watchserver.NotifyBatch, entry *core.PortalEntry) {
 	if !entry.Enabled {
-		s.WatchServer.DeleteAndNotify(watched.FormatPortalEntryKey(entry.Name))
+		batch.Delete(watched.FormatPortalEntryKey(entry.Name))
 		return
 	}
 	certs := make([]*core.PortalCert, 0, len(s.portalCertsById))
@@ -314,10 +218,13 @@ func (s *Syncer) publishPortalEntryLocked(entry *core.PortalEntry) {
 		certs = append(certs, cert)
 	}
 	h := entry.Http.Effective(core.HasPortalCertificate(entry.Http.Host, certs))
-	s.WatchServer.SetAndNotify(watched.FormatPortalEntryKey(entry.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: entry.Name, Protocol: entry.Protocol, ListenIPs: entry.ListenIPs, EffectiveHTTP: watched.PortalEntryHTTP{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPSEnabled: h.AutoHTTPSEnabled}}))
+	batch.Set(watched.FormatPortalEntryKey(entry.Name), vcode.MustMarshalJsonS(watched.PortalEntry{Name: entry.Name, Protocol: entry.Protocol, ListenIPs: entry.ListenIPs, EffectiveHTTP: watched.PortalEntryHTTP{Host: h.Host, HttpEnabled: h.HttpEnabled, HttpPort: h.HttpPort, HttpsEnabled: h.HttpsEnabled, HttpsPort: h.HttpsPort, AutoHTTPSEnabled: h.AutoHTTPSEnabled}}))
 }
+
 func (s *Syncer) republishPortalEntriesLocked() {
+	batch := s.WatchServer.NotifyBatch()
 	for _, entry := range s.portalEntriesById {
-		s.publishPortalEntryLocked(entry)
+		s.publishPortalEntryLocked(batch, entry)
 	}
+	batch.Notify()
 }

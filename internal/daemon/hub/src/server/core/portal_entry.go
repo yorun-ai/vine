@@ -168,7 +168,6 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 	m.validateListeners(entry)
 	m.validateCertificates(entry)
 	m.PortalEntryRepo.Save(&entry)
-	m.saveRules(entry.Id, entry.Id)
 	return &entry
 }
 
@@ -250,11 +249,6 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 	m.validateListeners(next)
 	m.validateCertificates(next)
 	m.PortalEntryRepo.Save(&next)
-	// Save republishes listener changes through Syncer. An access change also
-	// saves the attached rules to refresh their access-dependent domain state.
-	if accessChanged {
-		m.saveRules(next.Id, next.Id)
-	}
 	return m.view(next)
 }
 
@@ -341,18 +335,6 @@ func (m *PortalEntryCore) view(entry PortalEntry) PortalEntryView {
 	return PortalEntryView{
 		PortalEntry: entry,
 		Rules:       sortedPortalEntryRules(m.rulesByEntry()[entry.Id]),
-	}
-}
-
-// saveRules points the rules of one entry at another entry and saves them, so
-// Hub republishes them with the access they now resolve through the entry.
-func (m *PortalEntryCore) saveRules(from int, to int) {
-	for _, rule := range m.PortalRuleRepo.List() {
-		if rule.EntryId != from {
-			continue
-		}
-		rule.EntryId = to
-		m.PortalRuleRepo.Save(rule)
 	}
 }
 

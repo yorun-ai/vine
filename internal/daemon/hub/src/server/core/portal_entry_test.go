@@ -48,13 +48,15 @@ func (s *entryRuleRepoSpy) GetByName(name string) (*PortalRule, bool) {
 	return nil, false
 }
 
-func (s *entryRuleRepoSpy) Save(rule *PortalRule) {
-	s.calls = append(s.calls, "Save")
-	if s.rules == nil {
-		s.rules = map[int]*PortalRule{}
+func (s *entryRuleRepoSpy) Save(rules ...*PortalRule) {
+	for _, rule := range rules {
+		s.calls = append(s.calls, "Save")
+		if s.rules == nil {
+			s.rules = map[int]*PortalRule{}
+		}
+		value := *rule
+		s.rules[value.Id] = &value
 	}
-	value := *rule
-	s.rules[value.Id] = &value
 }
 
 func (s *entryRuleRepoSpy) Remove(id int) bool {
@@ -214,7 +216,7 @@ func TestPortalEntryCoreRejectsMissingCertificateBeforeWriting(t *testing.T) {
 
 func TestPortalEntryCoreSaveReplacesByName(t *testing.T) {
 	// A seed applies entries before rules: an entry keeps its identity, and
-	// replacing it republishes the rules it routes.
+	// rules keep referencing it when its access changes.
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "web", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}})
 	ruleRepo := &entryRuleRepoSpy{
 		rules: map[int]*PortalRule{
@@ -414,7 +416,7 @@ func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 	assert.Equal(t, ex.OperationFailed, err.Code())
 }
 
-func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
+func TestPortalEntryCoreUpdateChangesAccessWithoutRewritingRules(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(
 		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
 		&PortalEntry{Id: 2, Protocol: "http", Http: &PortalEntryHTTP{Host: "demo.local", Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
@@ -447,8 +449,8 @@ func TestPortalEntryCoreUpdateSavesEntryAndRepublishesRules(t *testing.T) {
 		"List",
 		"Save",
 	}, entryRepo.calls)
-	// The access change republishes the rules of the entry.
-	assert.Equal(t, []string{"List", "Save", "Save", "Save", "List"}, ruleRepo.calls)
+	// Building the returned view reads the rules once.
+	assert.Equal(t, []string{"List"}, ruleRepo.calls)
 	// The members of the entry stay where they are: the entry owns the access
 	// they resolve through.
 	assert.Equal(t, 1, ruleRepo.rules[1].EntryId)
@@ -518,7 +520,7 @@ func TestPortalEntryCoreUpdateNormalizesPatch(t *testing.T) {
 		"List",
 		"Save",
 	}, entryRepo.calls)
-	assert.Equal(t, []string{"List", "Save", "List"}, ruleRepo.calls)
+	assert.Equal(t, []string{"List"}, ruleRepo.calls)
 }
 
 func TestPortalEntryCoreUpdateKeepsEntryOnUnchangedPatch(t *testing.T) {

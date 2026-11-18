@@ -59,7 +59,7 @@ type PortalRuleRepo interface {
 	List() []*PortalRule
 	GetById(id int) (*PortalRule, bool)
 	GetByName(name string) (*PortalRule, bool)
-	Save(rule *PortalRule)
+	Save(rules ...*PortalRule)
 	Remove(id int) bool
 }
 
@@ -223,6 +223,22 @@ func PortalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
 	return fmt.Sprintf("%s\x00%s\x00%t:%d:%t:%d\x00%s", entry.Protocol, h.Host, h.HttpEnabled, h.HttpPort, h.HttpsEnabled, h.HttpsPort, matchPathPrefix)
 }
 
+// PortalRuleMatchKey returns the effective conflict group of a publishable rule.
+// An empty key means the entry, site, or rule currently excludes it from Portal.
+func PortalRuleMatchKey(rule *PortalRule, entry *PortalEntry, site *PortalSite) string {
+	if !rule.Enabled || entry == nil || !entry.Enabled {
+		return ""
+	}
+	if rule.RouteType == PortalRuleRouteTypeSite && site != nil && !site.Enabled {
+		return ""
+	}
+	if entry.Http != nil && strings.HasPrefix(entry.Http.Host, "*.") && (rule.RouteType != PortalRuleRouteTypeSite || site == nil || site.Type != PortalSiteTypeWEBGW) {
+		return ""
+	}
+	prefix, _ := ResolvePortalRulePaths(rule, site)
+	return PortalEntryMatchKey(*entry, prefix)
+}
+
 // PortalRuleConflict names two published rules that match the same request: the
 // entry they belong to and the match path prefix their sites resolve.
 type PortalRuleConflict struct {
@@ -268,15 +284,42 @@ func (c PortalRuleConflict) MatchText() string {
 // ID, the way a seed applies its entities. The caller resolves the entry the
 // rule belongs to.
 func (m *PortalRuleCore) Save(rule PortalRule) *PortalRule {
-	rule.Id = 0
-	if current, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
-		rule.Id = current.Id
-	}
-	return m.save(rule)
+	m.SaveAll([]*PortalRule{&rule})
+	return &rule
 }
 
-// save stores a validated rule under the entry it belongs to.
+// SaveAll applies seed declarations by name, preserving existing IDs. Repeated
+// names retain their first insertion position and their last declared value.
+func (m *PortalRuleCore) SaveAll(rules []*PortalRule) {
+	byName := make(map[string]*PortalRule, len(rules))
+	unique := make([]*PortalRule, 0, len(rules))
+	for _, input := range rules {
+		rule := m.validateForEntry(*input)
+		if previous := byName[rule.Name]; previous != nil {
+			rule.Id = previous.Id
+			*previous = rule
+			continue
+		}
+		rule.Id = 0
+		if current, ok := m.PortalRuleRepo.GetByName(rule.Name); ok {
+			rule.Id = current.Id
+		}
+		*input = rule
+		byName[rule.Name] = input
+		unique = append(unique, input)
+	}
+	if len(unique) > 0 {
+		m.PortalRuleRepo.Save(unique...)
+	}
+}
+
 func (m *PortalRuleCore) save(rule PortalRule) *PortalRule {
+	rule = m.validateForEntry(rule)
+	m.PortalRuleRepo.Save(&rule)
+	return &rule
+}
+
+func (m *PortalRuleCore) validateForEntry(rule PortalRule) PortalRule {
 	ex.PanicNewIfNot(rule.EntryId != 0, ex.OperationFailed,
 		ex.F("portal rule %q: the entry it belongs to is required", rule.Name))
 	entry := m.PortalEntryCore.Get(rule.EntryId)
@@ -284,8 +327,7 @@ func (m *PortalRuleCore) save(rule PortalRule) *PortalRule {
 	if strings.HasPrefix(entry.Http.Host, "*.") {
 		rule.ValidateWildcardTarget(*entry, m.ruleSite(&rule))
 	}
-	m.PortalRuleRepo.Save(&rule)
-	return &rule
+	return rule
 }
 
 // Conflicts returns the requests more than one published rule matches, once the
@@ -310,11 +352,10 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 			continue
 		}
 		site := m.ruleSite(rule)
-		if rule.RouteType == PortalRuleRouteTypeSite && site != nil && !site.Enabled {
+		key := PortalRuleMatchKey(rule, entry, site)
+		if key == "" {
 			continue
 		}
-		matchPathPrefix, _ := ResolvePortalRulePaths(rule, site)
-		key := PortalEntryMatchKey(*entry, matchPathPrefix)
 		matchedRule, found := matched[key]
 		if !found {
 			matched[key] = _Match{
@@ -323,6 +364,7 @@ func (m *PortalRuleCore) Conflicts() []PortalRuleConflict {
 			}
 			continue
 		}
+		matchPathPrefix, _ := ResolvePortalRulePaths(rule, site)
 		published, suppressed := PortalRuleConflictWinner(rule.Name, matchedRule.name)
 		conflicts = append(conflicts, PortalRuleConflict{
 			Entry:           *entry,

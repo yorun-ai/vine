@@ -55,12 +55,8 @@ func (i *Initializer) DIInit() {
 	for _, entry := range i.PortalEntryRepo.List() {
 		i.Syncer.SyncPortalEntry(entry)
 	}
-	for _, site := range i.PortalSiteRepo.List() {
-		i.Syncer.SyncPortalSite(site)
-	}
-	for _, rule := range i.PortalRuleRepo.List() {
-		i.Syncer.SyncPortalRule(rule)
-	}
+	i.Syncer.SyncPortalSites(i.PortalSiteRepo.List())
+	i.Syncer.SyncPortalRules(i.PortalRuleRepo.List())
 	i.checkPortalRuleConflicts()
 	if i.Flag.NoDB {
 		i.Access.Lock()

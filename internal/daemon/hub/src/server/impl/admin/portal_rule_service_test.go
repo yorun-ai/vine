@@ -190,9 +190,11 @@ func (s *_PortalRuleRepoSpy) GetByName(name string) (*core.PortalRule, bool) {
 	return nil, false
 }
 
-func (s *_PortalRuleRepoSpy) Save(rule *core.PortalRule) {
-	value := *rule
-	s.rules[value.Id] = &value
+func (s *_PortalRuleRepoSpy) Save(rules ...*core.PortalRule) {
+	for _, rule := range rules {
+		value := *rule
+		s.rules[value.Id] = &value
+	}
 }
 
 func (s *_PortalRuleRepoSpy) Remove(id int) bool {

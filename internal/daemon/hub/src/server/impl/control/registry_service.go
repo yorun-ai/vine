@@ -48,9 +48,7 @@ func (s *RegistryServiceServerImpl) Heartbeat(status skeled.AppStatus) bool {
 }
 
 func (s *RegistryServiceServerImpl) refreshPortalSiteRpcgwServices() {
-	for _, site := range s.PortalSiteCore.List() {
-		s.Syncer.SyncPortalSite(site)
-	}
+	s.Syncer.SyncPortalSites(s.PortalSiteCore.List())
 }
 
 func (s *RegistryServiceServerImpl) refreshDescriptors() {

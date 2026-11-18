@@ -147,7 +147,9 @@ func (s *Seeder) applySeed() {
 	for _, entry := range entities.PortalEntries {
 		s.EntryCore.Save(*entry)
 	}
+	rules := make([]*core.PortalRule, 0, len(entities.PortalRules))
 	for _, rule := range entities.PortalRules {
-		s.RuleCore.Save(*resolveSeedRule(s.EntryCore, rule))
+		rules = append(rules, resolveSeedRule(s.EntryCore, rule))
 	}
+	s.RuleCore.SaveAll(rules)
 }
