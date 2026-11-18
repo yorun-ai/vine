@@ -3,6 +3,7 @@ package di
 import (
 	"reflect"
 
+	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vmath"
 	"go.yorun.ai/vine/util/vpre"
 	"go.yorun.ai/vine/util/vslice"
@@ -45,7 +46,7 @@ func compareTypeName(left reflect.Type, right reflect.Type) int {
 }
 
 func (i *_PlainInjector) checkDependencies() {
-	graph := newDependencyGraph(i.visibleBounds())
+	graph := newDependencyGraph(vmap.Values(i.bounds))
 	if cycle := graph.findCycle(); cycle != nil {
 		vpre.Panicf("cycle dependency detected: %s", _BuildStack(cycle))
 	}

@@ -73,7 +73,7 @@ func TestRedirectionResolverReturnsEmptyDispose(t *testing.T) {
 
 	execution := injector.StartExecution().(*_ExecutionInjector)
 
-	resolver, ok := execution.resolvers[T[*resolverSingletonResource]()].(*_RedirectionResolver)
+	resolver, ok := execution.GetResolver(T[*resolverSingletonResource]()).(*_RedirectionResolver)
 	assert.True(t, ok)
 
 	instance, dispose := resolver.GetInstance(_BuildStack{T[*resolverSingletonResource]()}, T[*resolverSingletonResource]())
@@ -90,7 +90,7 @@ func TestPersistedResolverSeededInstanceReturnsEmptyDispose(t *testing.T) {
 	}).(*_PlainInjector)
 
 	execution := injector.StartExecution().(*_ExecutionInjector)
-	resolver, ok := execution.resolvers[T[*resolverExecutionResource]()].(*_PersistedResolver)
+	resolver, ok := execution.GetResolver(T[*resolverExecutionResource]()).(*_PersistedResolver)
 	assert.True(t, ok)
 
 	seeded := &resolverExecutionResource{}

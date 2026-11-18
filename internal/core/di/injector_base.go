@@ -38,23 +38,21 @@ func (i *_BaseInjector) getDynamicResolver(targetType reflect.Type) _Resolver {
 	}
 	i.dynamicMutex.RUnlock()
 
-	resolver := resolveDynamic(targetType)
-	if resolver == nil {
-		return nil
-	}
-
 	i.dynamicMutex.Lock()
 	defer i.dynamicMutex.Unlock()
 	if cachedResolver, ok := i.dynamicResolvers[targetType]; ok {
 		return cachedResolver
 	}
 
-	i.dynamicResolvers[targetType] = resolver
+	// Construct only the resolver under the lock. Its factory runs in GetInstance.
+	resolver := resolveDynamic(targetType)
+	if resolver != nil {
+		i.dynamicResolvers[targetType] = resolver
+	}
 	return resolver
 }
 
 func (i *_BaseInjector) Get(targetType reflect.Type) reflect.Value {
-	vpre.Check(i.canGet(targetType), "type %s is not bind to injector", targetType)
 	return i.get(targetType, _BuildStack{targetType})
 }
 
@@ -68,20 +66,19 @@ func (i *_BaseInjector) getWithDispose(targetType reflect.Type, stack _BuildStac
 		vpre.Panicf("cycle dependency detected at runtime, build stack=%s", stack.push(targetType))
 	}
 
-	instance, dispose := i.GetResolver(targetType).GetInstance(stack, targetType)
+	resolver := i.GetResolver(targetType)
+	if resolver == nil {
+		vpre.Panicf("type %s is not bind to injector", targetType)
+	}
+	instance, dispose := resolver.GetInstance(stack, targetType)
 	if i.trackDispose != nil {
 		i.trackDispose(dispose)
 	}
 	return instance, dispose
 }
 
-func (i *_BaseInjector) canGet(targetType reflect.Type) bool {
-	return i.GetResolver(targetType) != nil
-}
-
 func (i *_BaseInjector) Resolve(targetPtr any) {
 	targetType := parseResolveTargetType(targetPtr)
-	vpre.Check(i.canGet(targetType), "type %s is not bind to injector", targetType)
 	reflect.ValueOf(targetPtr).Elem().Set(i.Get(targetType))
 }
 

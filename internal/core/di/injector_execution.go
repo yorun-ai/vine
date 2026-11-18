@@ -56,21 +56,13 @@ func (i *_PlainInjector) StartExecution(seedAppliers ...SeedApplier) ExecutionIn
 		disposeFuncs:   []_DisposeFunc{},
 	}
 	execution.trackDispose = execution.trackDisposable
-	execution.initResolvers()
+	execution.dynamicResolvers = map[reflect.Type]_Resolver{}
+	execution.resolveDynamic = execution.resolveDynamicResolver
 	for _, seedApplier := range seedAppliers {
 		seedApplier(newSeeder(execution))
 	}
 	execution.finishSeeding()
 	return execution
-}
-
-func (e *_ExecutionInjector) initResolvers() {
-	e.resolvers = map[reflect.Type]_Resolver{injectorType: newInjectorResolver(e)}
-	e.dynamicResolvers = map[reflect.Type]_Resolver{}
-	e.resolveDynamic = e.resolveDynamicResolver
-	for _, bound := range e.executor.visibleBounds() {
-		e.resolvers[bound.TargetType()] = e.buildResolver(bound)
-	}
 }
 
 func (e *_ExecutionInjector) buildResolver(bound *_Bound) _Resolver {
@@ -94,6 +86,12 @@ func (e *_ExecutionInjector) buildResolver(bound *_Bound) _Resolver {
 }
 
 func (e *_ExecutionInjector) resolveDynamicResolver(targetType reflect.Type) _Resolver {
+	if bound := e.executor.bounds[targetType]; bound != nil {
+		return e.buildResolver(bound)
+	}
+	if targetType == injectorType {
+		return newInjectorResolver(e)
+	}
 	bound := e.executor.lookupAbstractBound(targetType)
 	if bound == nil {
 		return nil
