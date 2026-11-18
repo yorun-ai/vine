@@ -3,6 +3,7 @@ package app
 import (
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/buildinfo"
@@ -69,7 +70,7 @@ func (s *testInternalAppSpec) DIInit() {
 	currentApp := testRuntimeApp{
 		name:       "internal." + s.Flag.Value,
 		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000321",
+		instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000321"),
 	}
 	s.InternalAttrs.CurrentApp = currentApp
 	s.InternalAttrs.Linker = link.NewRedirectedInternalLinker(currentApp, "http://"+s.Flag.Value+".local:7071")
@@ -160,7 +161,7 @@ func TestNewDerivesAppInfoFromSpecNameAndBuildVersion(t *testing.T) {
 
 	assert.Equal(t, "demo.worker", app.currentApp.Name())
 	assert.Equal(t, version, app.currentApp.Version())
-	assert.True(t, meta.IsValidInstanceId(app.currentApp.InstanceId()))
+	assert.True(t, meta.IsValidInstanceId(app.currentApp.InstanceId().String()))
 }
 
 func TestNewGivesEachApplicationItsOwnInstanceID(t *testing.T) {
@@ -180,7 +181,7 @@ func TestNewUsesInternalAttrsInfoAndLinker(t *testing.T) {
 	assert.Equal(t, testRuntimeApp{
 		name:       "internal.demo",
 		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000321",
+		instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000321"),
 	}, app.currentApp)
 	assert.Equal(t, "http://demo.local:7071/rpc/invoke", app.linker.RpcProxyEndpoint())
 }

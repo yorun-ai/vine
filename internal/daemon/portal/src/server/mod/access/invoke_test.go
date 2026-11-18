@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -25,11 +26,11 @@ func authForwarder(t *testing.T, endpoint string) *Auther {
 	m := &epmgr.Manager{
 		Context: t.Context(),
 		Watch: watchtest.New(t, map[string]string{
-			watched.FormatRpcServiceRegistrationKey(service, "demo", "instance"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+			watched.FormatRpcServiceRegistrationKey(service, "demo", uuid.MustParse("00000000-0000-0000-0000-00000000000a")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 				Endpoint:      endpoint,
 				ServiceName:   service,
 				AppName:       "demo",
-				AppInstanceId: "instance",
+				AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-00000000000a"),
 			}),
 		}),
 	}

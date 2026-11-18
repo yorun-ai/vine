@@ -2,7 +2,6 @@ package debug
 
 import (
 	"strings"
-	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
@@ -100,7 +99,7 @@ func (s *TaskDebugApiServiceServerImpl) LaunchTask(request skeled.TaskDebugLaunc
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: uuid.MustParse(s.CurrentApp.InstanceId()),
+			AppInstanceId: s.CurrentApp.InstanceId(),
 			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    request.TaskSkelName,

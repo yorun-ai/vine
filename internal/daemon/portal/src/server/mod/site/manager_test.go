@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"testing/synctest"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -209,7 +210,7 @@ func newTestManager(t *testing.T, valuesByKey map[string]string) *Manager {
 	epmgrManager := newTestEpmgr(t, valuesByKey)
 	manager := &Manager{
 		Context:    context.Background(),
-		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
+		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099")),
 		Watch:      watchtest.New(t, valuesByKey),
 		Access:     newTestAccess(t),
 		Epmgr:      epmgrManager,

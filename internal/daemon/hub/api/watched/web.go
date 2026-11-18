@@ -2,6 +2,7 @@ package watched
 
 import (
 	"fmt"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/daemon"
 )
@@ -17,10 +18,10 @@ type WebRegistration struct {
 	WebSkelName    string          `json:"webSkelName"`
 	AppName        string          `json:"appName"`
 	AppVersion     string          `json:"appVersion"`
-	AppInstanceId  string          `json:"appInstanceId"`
+	AppInstanceId  uuid.UUID       `json:"appInstanceId"`
 }
 
-func FormatWebRegistrationKey(webSkelName string, appName string, instanceId string) string {
+func FormatWebRegistrationKey(webSkelName string, appName string, instanceId uuid.UUID) string {
 	return fmt.Sprintf(webRegistrationKeyFormat, webSkelName, appName, instanceId)
 }
 

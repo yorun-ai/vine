@@ -29,7 +29,7 @@ type defaultTestServerEmitter struct{}
 func (*defaultTestServerEmitter) mustBeTestServerEmitter() {}
 
 func testEventServerApp() meta.App {
-	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174010")
+	return meta.MustNewApp("test.app", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174010"))
 }
 
 func TestNewServerRequiresApp(t *testing.T) {

@@ -1,8 +1,6 @@
 package task
 
 import (
-	"uuid"
-
 	"go.yorun.ai/skel/types/codec"
 	linkskeled "go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -80,7 +78,7 @@ func (l *Launcher) buildLaunch(triggerInfo spec.TriggerInfo, arguments any, opti
 			TraceSpan:     l.context.Trace().Span(),
 			AppName:       l.clientApp.Name(),
 			AppVersion:    l.clientApp.Version(),
-			AppInstanceId: uuid.MustParse(l.clientApp.InstanceId()),
+			AppInstanceId: l.clientApp.InstanceId(),
 		},
 		TaskSkelName:    triggerInfo.Task().SkelName(),
 		TriggerSkelName: triggerInfo.SkelName(),

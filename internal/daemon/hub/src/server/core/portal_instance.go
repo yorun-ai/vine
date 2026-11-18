@@ -2,6 +2,7 @@ package core
 
 import (
 	"time"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/di"
 	"go.yorun.ai/vine/internal/util/goutil"
@@ -11,7 +12,7 @@ import (
 // processing capabilities to advertise, so Hub only tracks its identity and
 // liveness.
 type PortalInstance struct {
-	InstanceId string
+	InstanceId uuid.UUID
 	Version    string
 	ExpiresAt  time.Time
 }
@@ -21,10 +22,10 @@ type PortalInstance struct {
 type PortalInstanceRepo interface {
 	Save(instance *PortalInstance)
 	List() []*PortalInstance
-	GetById(instanceId string) (*PortalInstance, bool)
-	Keep(instanceId string) bool
-	Remove(instanceId string)
-	ListExpiredLeases() []string
+	GetById(instanceId uuid.UUID) (*PortalInstance, bool)
+	Keep(instanceId uuid.UUID) bool
+	Remove(instanceId uuid.UUID)
+	ListExpiredLeases() []uuid.UUID
 }
 
 // PortalInstanceCore tracks the Portal daemons registered with Hub.
@@ -36,21 +37,21 @@ type PortalInstanceCore struct {
 
 // Register records a Portal instance, replacing the record of the same identity.
 func (m *PortalInstanceCore) Register(instance PortalInstance) {
-	unlock := m.locks.lock("", instance.InstanceId)
+	unlock := m.locks.lock("", instance.InstanceId.String())
 	defer unlock()
 	m.PortalInstanceRepo.Save(&instance)
 }
 
 // Unregister removes a Portal instance.
-func (m *PortalInstanceCore) Unregister(instanceId string) {
-	unlock := m.locks.lock("", instanceId)
+func (m *PortalInstanceCore) Unregister(instanceId uuid.UUID) {
+	unlock := m.locks.lock("", instanceId.String())
 	defer unlock()
 	m.PortalInstanceRepo.Remove(instanceId)
 }
 
 // Heartbeat reports whether Hub still knows the instance.
-func (m *PortalInstanceCore) Heartbeat(instanceId string) bool {
-	unlock := m.locks.lock("", instanceId)
+func (m *PortalInstanceCore) Heartbeat(instanceId uuid.UUID) bool {
+	unlock := m.locks.lock("", instanceId.String())
 	defer unlock()
 	return m.PortalInstanceRepo.Keep(instanceId)
 }
@@ -63,7 +64,7 @@ func (m *PortalInstanceCore) SweepExpired() int {
 		goutil.RunWithRecover(func(err any) {
 			registryLogger.Error("expired portal cleanup failed", "instanceId", instanceId, "error", err)
 		}, func() {
-			unlock := m.locks.lock("", instanceId)
+			unlock := m.locks.lock("", instanceId.String())
 			defer unlock()
 			instance, ok := m.PortalInstanceRepo.GetById(instanceId)
 			if ok && (instance.ExpiresAt.IsZero() || time.Now().Before(instance.ExpiresAt)) {

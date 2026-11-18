@@ -2,6 +2,7 @@ package rpcproxy
 
 import (
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/mtls/mtlstest"
@@ -11,12 +12,12 @@ import (
 )
 
 func TestResolveOutboundTargetRejectsPlaintextWithMTLS(t *testing.T) {
-	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
-	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
+	callerApp := mustMetaApp(t, "caller.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	remoteApp := mustMetaApp(t, "remote.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
 			ServiceName:    "demo.service.UserService",
-			Endpoint:       "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId(),
+			Endpoint:       "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId().String(),
 			ServerIdentity: daemon.LinkIdentity,
 			AppName:        remoteApp.Name(),
 			AppVersion:     remoteApp.Version(),
@@ -36,11 +37,11 @@ func TestResolveOutboundTargetRejectsPlaintextWithMTLS(t *testing.T) {
 }
 
 func TestResolveOutboundTargetRoundRobin(t *testing.T) {
-	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
-	firstApp := mustMetaApp(t, "first.app", "22222222-2222-2222-2222-222222222222")
-	secondApp := mustMetaApp(t, "second.app", "33333333-3333-3333-3333-333333333333")
-	firstEndpoint := "http://first.invalid/rpc/proxy/in/" + firstApp.InstanceId()
-	secondEndpoint := "http://second.invalid/rpc/proxy/in/" + secondApp.InstanceId()
+	callerApp := mustMetaApp(t, "caller.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	firstApp := mustMetaApp(t, "first.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+	secondApp := mustMetaApp(t, "second.app", uuid.MustParse("33333333-3333-3333-3333-333333333333"))
+	firstEndpoint := "http://first.invalid/rpc/proxy/in/" + firstApp.InstanceId().String()
+	secondEndpoint := "http://second.invalid/rpc/proxy/in/" + secondApp.InstanceId().String()
 
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {
@@ -90,9 +91,9 @@ func TestResolveOutboundTargetRoundRobin(t *testing.T) {
 }
 
 func TestOnDestroyCleansAppAndServiceState(t *testing.T) {
-	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
-	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
-	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId()
+	callerApp := mustMetaApp(t, "caller.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	remoteApp := mustMetaApp(t, "remote.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId().String()
 
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
@@ -124,9 +125,9 @@ func TestOnDestroyCleansAppAndServiceState(t *testing.T) {
 }
 
 func TestOnDrainKeepsOutboundSourceState(t *testing.T) {
-	callerApp := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
-	remoteApp := mustMetaApp(t, "remote.app", "22222222-2222-2222-2222-222222222222")
-	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId()
+	callerApp := mustMetaApp(t, "caller.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	remoteApp := mustMetaApp(t, "remote.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+	remoteEndpoint := "http://remote.invalid/rpc/proxy/in/" + remoteApp.InstanceId().String()
 
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
 		"demo.service.UserService": {{
@@ -151,13 +152,13 @@ func TestOnDrainKeepsOutboundSourceState(t *testing.T) {
 }
 
 func TestDestinationRoundRobin(t *testing.T) {
-	caller := mustMetaApp(t, "caller.app", "11111111-1111-1111-1111-111111111111")
+	caller := mustMetaApp(t, "caller.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	service := "demo.service.UserService"
 	proxy := newTestRpcProxy(t, newTestHubWatchClient(t, map[string][]watched.RpcServiceRegistration{
 		service: {
-			{ServiceName: service, AppName: "target.app", AppInstanceId: "one", Endpoint: "http://one.invalid"},
-			{ServiceName: service, AppName: "target.app", AppInstanceId: "two", Endpoint: "http://two.invalid"},
-			{ServiceName: service, AppName: "other.app", AppInstanceId: "three", Endpoint: "http://three.invalid"},
+			{ServiceName: service, AppName: "target.app", AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-00000000006b"), Endpoint: "http://one.invalid"},
+			{ServiceName: service, AppName: "target.app", AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-00000000006d"), Endpoint: "http://two.invalid"},
+			{ServiceName: service, AppName: "other.app", AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-00000000006c"), Endpoint: "http://three.invalid"},
 		},
 	}))
 	registerLocalApp(proxy, caller, "http://caller.invalid", "http://caller.invalid", nil)

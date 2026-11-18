@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
@@ -31,11 +32,11 @@ func mcpBackend(t *testing.T, watch *watchtest.Client, service string, handler h
 	t.Helper()
 	endpoint := "link+inproc://vine/mcp-" + meta.NewId()
 	registerTestIngress(t, endpoint, handler)
-	watch.SetValue(watched.FormatRpcServiceRegistrationKey(service, "demo.app", "instance-1"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+	watch.SetValue(watched.FormatRpcServiceRegistrationKey(service, "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 		Endpoint:      endpoint,
 		ServiceName:   service,
 		AppName:       "demo.app",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}))
 }
 

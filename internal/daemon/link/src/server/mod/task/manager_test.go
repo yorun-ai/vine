@@ -67,7 +67,7 @@ func newTestManager(t *testing.T) (*Manager, func()) {
 
 	natsClient, conn := newTestNATSClient(t)
 
-	appInfo, err := meta.NewApp("vine.link", "1.0.0", "22222222-2222-2222-2222-222222222222")
+	appInfo, err := meta.NewApp("vine.link", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	require.NoError(t, err)
 	appMinder := &minder.AppMinder{
 		Context:               context.Background(),

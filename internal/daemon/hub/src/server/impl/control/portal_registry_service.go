@@ -17,15 +17,15 @@ type PortalRegistryServiceServerImpl struct {
 
 func (s *PortalRegistryServiceServerImpl) Register(registration skeled.PortalRegistration) {
 	s.PortalInstanceCore.Register(core.PortalInstance{
-		InstanceId: registration.InstanceId.String(),
+		InstanceId: registration.InstanceId,
 		Version:    registration.Version,
 	})
 }
 
 func (s *PortalRegistryServiceServerImpl) Unregister(instanceId uuid.UUID) {
-	s.PortalInstanceCore.Unregister(instanceId.String())
+	s.PortalInstanceCore.Unregister(instanceId)
 }
 
 func (s *PortalRegistryServiceServerImpl) Heartbeat(status skeled.PortalStatus) bool {
-	return s.PortalInstanceCore.Heartbeat(status.InstanceId.String())
+	return s.PortalInstanceCore.Heartbeat(status.InstanceId)
 }

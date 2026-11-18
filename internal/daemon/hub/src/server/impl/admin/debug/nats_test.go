@@ -92,7 +92,7 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 			assert.Equal(t, spanId, decodedEvent.Metadata.TraceSpan)
 			assert.Equal(t, "vine.hub", decodedEvent.Metadata.AppName)
 			assert.Equal(t, "1.2.3", decodedEvent.Metadata.AppVersion)
-			assert.Equal(t, eventService.CurrentApp.InstanceId(), decodedEvent.Metadata.AppInstanceId.String())
+			assert.Equal(t, eventService.CurrentApp.InstanceId(), decodedEvent.Metadata.AppInstanceId)
 			assert.False(t, decodedEvent.Metadata.EmittedAt.Time.Before(before.Add(-time.Second)))
 			require.NoError(t, event.Ack())
 			// Empty descriptor hash selects any registered version and missing trace creates one.
@@ -108,7 +108,7 @@ func TestDebugMessagesPublishThroughConfiguredBroker(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, "vine.hub", decodedTask.Metadata.AppName)
 			assert.Equal(t, "1.2.3", decodedTask.Metadata.AppVersion)
-			assert.Equal(t, taskService.CurrentApp.InstanceId(), decodedTask.Metadata.AppInstanceId.String())
+			assert.Equal(t, taskService.CurrentApp.InstanceId(), decodedTask.Metadata.AppInstanceId)
 			assert.False(t, decodedTask.Metadata.LaunchedAt.Time.Before(before.Add(-time.Second)))
 			require.NoError(t, task.Ack())
 			for _, name := range []string{eventspec.NATSStreamName, taskspec.NATSStreamName} {

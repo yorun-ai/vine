@@ -1,5 +1,7 @@
 package app
 
+import "uuid"
+
 const (
 	PathConsole   = "/console"
 	PathRpcInvoke = "/rpc/invoke"
@@ -8,6 +10,6 @@ const (
 	PathTask      = "/task"
 )
 
-func InprocHostPath(instanceId string) string {
-	return "app/" + instanceId
+func InprocHostPath(instanceId uuid.UUID) string {
+	return "app/" + instanceId.String()
 }

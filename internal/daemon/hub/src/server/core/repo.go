@@ -2,6 +2,7 @@ package core
 
 import (
 	"time"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/daemon"
@@ -43,7 +44,7 @@ type TaskRunnerCronScheduler struct {
 
 type AppRegistration struct {
 	Name              string
-	InstanceId        string
+	InstanceId        uuid.UUID
 	Version           string
 	Endpoint          string
 	ServiceHandlers   []ServiceHandlerRegistration
@@ -55,11 +56,11 @@ type AppRegistration struct {
 
 type AppHeartbeat struct {
 	Name       string
-	InstanceId string
+	InstanceId uuid.UUID
 }
 
 type AppStatus struct {
-	InstanceId      string
+	InstanceId      uuid.UUID
 	Name            string
 	Version         string
 	Endpoint        string
@@ -108,7 +109,7 @@ type RpcServiceRegistration struct {
 	Api            bool
 	AppName        string
 	AppVersion     string
-	AppInstanceId  string
+	AppInstanceId  uuid.UUID
 }
 
 type WebRegistration struct {
@@ -117,7 +118,7 @@ type WebRegistration struct {
 	WebSkelName    string
 	AppName        string
 	AppVersion     string
-	AppInstanceId  string
+	AppInstanceId  uuid.UUID
 }
 
 // RegistryRepo tracks several entity kinds at once - application instances, Rpc
@@ -126,20 +127,20 @@ type WebRegistration struct {
 type RegistryRepo interface {
 	SaveAppStatus(status *AppStatus)
 	ListAppStatuses() []*AppStatus
-	GetAppStatus(appName string, instanceId string) (*AppStatus, bool)
-	KeepAppStatus(appName string, instanceId string) bool
-	RemoveAppStatus(appName string, instanceId string)
+	GetAppStatus(appName string, instanceId uuid.UUID) (*AppStatus, bool)
+	KeepAppStatus(appName string, instanceId uuid.UUID) bool
+	RemoveAppStatus(appName string, instanceId uuid.UUID)
 	ListExpiredAppLeases() []AppHeartbeat
 
 	SaveRpcServiceRegistration(registration *RpcServiceRegistration)
-	GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*RpcServiceRegistration, bool)
-	KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool
-	RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string)
+	GetRpcServiceRegistration(serviceName string, appName string, instanceId uuid.UUID) (*RpcServiceRegistration, bool)
+	KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId uuid.UUID) bool
+	RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId uuid.UUID)
 
 	SaveWebRegistration(registration *WebRegistration)
-	GetWebRegistration(name string, appName string, instanceId string) (*WebRegistration, bool)
-	KeepWebRegistration(name string, appName string, appInstanceId string) bool
-	RemoveWebRegistration(name string, appName string, appInstanceId string)
+	GetWebRegistration(name string, appName string, instanceId uuid.UUID) (*WebRegistration, bool)
+	KeepWebRegistration(name string, appName string, appInstanceId uuid.UUID) bool
+	RemoveWebRegistration(name string, appName string, appInstanceId uuid.UUID)
 }
 
 // DescriptorRepo stores the descriptors applications register and selects the versions

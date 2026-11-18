@@ -1,8 +1,10 @@
 package repo
 
 import (
+	"bytes"
 	"cmp"
 	"time"
+	"uuid"
 
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -18,7 +20,7 @@ const hubRegistryLeaseTTL = 30 * time.Second
 // Structs
 
 type _AppStatus struct {
-	InstanceId      string                            `json:"instanceId"`
+	InstanceId      uuid.UUID                         `json:"instanceId"`
 	Name            string                            `json:"name"`
 	Version         string                            `json:"version"`
 	Endpoint        string                            `json:"endpoint"`
@@ -30,8 +32,8 @@ type _AppStatus struct {
 }
 
 type _AppLease struct {
-	Name       string `json:"name"`
-	InstanceId string `json:"instanceId"`
+	Name       string    `json:"name"`
+	InstanceId uuid.UUID `json:"instanceId"`
 }
 
 // Repo
@@ -63,11 +65,11 @@ func (r *RegistryRepo) ListAppStatuses() []*core.AppStatus {
 		if a.Name != b.Name {
 			return cmp.Compare(a.Name, b.Name) < 0
 		}
-		return cmp.Compare(a.InstanceId, b.InstanceId) < 0
+		return bytes.Compare(a.InstanceId[:], b.InstanceId[:]) < 0
 	})
 }
 
-func (r *RegistryRepo) GetAppStatus(appName string, instanceId string) (*core.AppStatus, bool) {
+func (r *RegistryRepo) GetAppStatus(appName string, instanceId uuid.UUID) (*core.AppStatus, bool) {
 	status, ok := r.getAppStatus(appName, instanceId)
 	if !ok {
 		return nil, false
@@ -75,7 +77,7 @@ func (r *RegistryRepo) GetAppStatus(appName string, instanceId string) (*core.Ap
 	return toCoreAppStatus(status), true
 }
 
-func (r *RegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
+func (r *RegistryRepo) KeepAppStatus(appName string, instanceId uuid.UUID) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -90,7 +92,7 @@ func (r *RegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
 	return true
 }
 
-func (r *RegistryRepo) RemoveAppStatus(appName string, instanceId string) {
+func (r *RegistryRepo) RemoveAppStatus(appName string, instanceId uuid.UUID) {
 	key := watched.FormatAppStatusKey(appName, instanceId)
 	r.WatchServer.DeleteAndNotify(key)
 	r.removeAppLease(appName, instanceId)
@@ -103,7 +105,7 @@ func (r *RegistryRepo) SaveRpcServiceRegistration(registration *core.RpcServiceR
 	r.WatchServer.SetAndNotify(key, value)
 }
 
-func (r *RegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
+func (r *RegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId uuid.UUID) (*core.RpcServiceRegistration, bool) {
 	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -112,7 +114,7 @@ func (r *RegistryRepo) GetRpcServiceRegistration(serviceName string, appName str
 	return toCoreRpcServiceRegistration(vcode.MustUnmarshalJsonS[*watched.RpcServiceRegistration](value)), true
 }
 
-func (r *RegistryRepo) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool {
+func (r *RegistryRepo) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId uuid.UUID) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -121,7 +123,7 @@ func (r *RegistryRepo) KeepRpcServiceRegistration(serviceName string, appName st
 	return ok
 }
 
-func (r *RegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
+func (r *RegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId uuid.UUID) {
 	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
 	r.WatchServer.DeleteAndNotify(key)
 }
@@ -133,7 +135,7 @@ func (r *RegistryRepo) SaveWebRegistration(registration *core.WebRegistration) {
 	r.WatchServer.SetAndNotify(key, value)
 }
 
-func (r *RegistryRepo) GetWebRegistration(name string, appName string, instanceId string) (*core.WebRegistration, bool) {
+func (r *RegistryRepo) GetWebRegistration(name string, appName string, instanceId uuid.UUID) (*core.WebRegistration, bool) {
 	key := watched.FormatWebRegistrationKey(name, appName, instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -142,7 +144,7 @@ func (r *RegistryRepo) GetWebRegistration(name string, appName string, instanceI
 	return toCoreWebRegistration(vcode.MustUnmarshalJsonS[*watched.WebRegistration](value)), true
 }
 
-func (r *RegistryRepo) KeepWebRegistration(name string, appName string, appInstanceId string) bool {
+func (r *RegistryRepo) KeepWebRegistration(name string, appName string, appInstanceId uuid.UUID) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -151,7 +153,7 @@ func (r *RegistryRepo) KeepWebRegistration(name string, appName string, appInsta
 	return ok
 }
 
-func (r *RegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId string) {
+func (r *RegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId uuid.UUID) {
 	key := watched.FormatWebRegistrationKey(name, appName, appInstanceId)
 	r.WatchServer.DeleteAndNotify(key)
 }
@@ -198,17 +200,17 @@ func (r *RegistryRepo) ListExpiredAppLeases() []core.AppHeartbeat {
 	return leases
 }
 
-func (r *RegistryRepo) saveAppLease(appName string, instanceId string) {
+func (r *RegistryRepo) saveAppLease(appName string, instanceId uuid.UUID) {
 	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
 	r.WatchServer.KeepLease(hubRegistryLeaseKey, member, hubRegistryLeaseTTL)
 }
 
-func (r *RegistryRepo) removeAppLease(appName string, instanceId string) {
+func (r *RegistryRepo) removeAppLease(appName string, instanceId uuid.UUID) {
 	member := vcode.MustMarshalJsonS(_AppLease{Name: appName, InstanceId: instanceId})
 	r.WatchServer.RemoveLease(hubRegistryLeaseKey, member)
 }
 
-func (r *RegistryRepo) getAppStatus(appName string, instanceId string) (*_AppStatus, bool) {
+func (r *RegistryRepo) getAppStatus(appName string, instanceId uuid.UUID) (*_AppStatus, bool) {
 	value, ok := r.WatchServer.Get(watched.FormatAppStatusKey(appName, instanceId))
 	if !ok {
 		return nil, false

@@ -1,6 +1,9 @@
 package meta
 
-import "net/netip"
+import (
+	"net/netip"
+	"uuid"
+)
 
 type Initiator interface {
 	App
@@ -14,7 +17,7 @@ type _Initiator struct {
 	dialer string
 }
 
-func NewInitiator(name string, version string, instanceId string, dialer string, ipAddr string) (Initiator, error) {
+func NewInitiator(name string, version string, instanceId uuid.UUID, dialer string, ipAddr string) (Initiator, error) {
 	appInfo, err := NewApp(name, version, instanceId)
 	if err != nil {
 		return nil, err
@@ -60,14 +63,18 @@ func DecodeInitiatorFromBase64(value string) (Initiator, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewInitiator(payload.Name, payload.Version, payload.InstanceId, payload.Dialer, payload.IpAddr)
+	id, err := uuid.Parse(payload.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	return NewInitiator(payload.Name, payload.Version, id, payload.Dialer, payload.IpAddr)
 }
 
 func EncodeInitiatorToBase64(initiator Initiator) string {
 	return encodePayloadToBase64(&_InitiatorPayload{
 		Name:       initiator.Name(),
 		Version:    initiator.Version(),
-		InstanceId: initiator.InstanceId(),
+		InstanceId: initiator.InstanceId().String(),
 		Dialer:     initiator.Dialer(),
 		IpAddr:     initiator.IpAddr(),
 	})

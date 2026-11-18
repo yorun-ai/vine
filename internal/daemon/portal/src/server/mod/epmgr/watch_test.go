@@ -2,6 +2,7 @@ package epmgr
 
 import (
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 func TestManagerRpcWatchUsesRefCount(t *testing.T) {
 	prefix := watched.FormatRpcServiceRegistrationPrefix("demo.UserService")
 	manager := newTestManager(t, map[string]string{
-		testRpcRegistrationKey("demo.UserService", "instance-1"): testRpcRegistrationValue("demo.UserService", "instance-1", "http://127.0.0.1:23001"),
+		testRpcRegistrationKey("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000001")): testRpcRegistrationValue("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000001"), "http://127.0.0.1:23001"),
 	})
 
 	watcher1 := manager.WatchRpc("demo.UserService")
@@ -41,11 +42,11 @@ func TestManagerHandlesRpcRegistrationEvents(t *testing.T) {
 	watcher := manager.WatchRpc("demo.UserService")
 	t.Cleanup(watcher.Release)
 
-	key := testRpcRegistrationKey("demo.UserService", "instance-1")
+	key := testRpcRegistrationKey("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 	manager.handleRegistrationEvent(prefix, hubwatch.Event{
 		Kind:  hubwatch.EventKindUpsert,
 		Key:   key,
-		Value: testRpcRegistrationValue("demo.UserService", "instance-1", "http://127.0.0.1:23001"),
+		Value: testRpcRegistrationValue("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000001"), "http://127.0.0.1:23001"),
 	})
 	endpoint, configured := manager.nextEndpoint(prefix)
 	require.True(t, configured)
@@ -65,7 +66,7 @@ func TestManagerHandlesRpcRegistrationEvents(t *testing.T) {
 func TestManagerWebWatchUsesRefCount(t *testing.T) {
 	prefix := watched.FormatWebRegistrationPrefix("admin@demo.app")
 	manager := newTestManager(t, map[string]string{
-		testWebRegistrationKey("admin@demo.app", "instance-1"): testWebRegistrationValue("admin@demo.app", "instance-1", "http://127.0.0.1:23001"),
+		testWebRegistrationKey("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): testWebRegistrationValue("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001"), "http://127.0.0.1:23001"),
 	})
 
 	watcher1 := manager.WatchWeb("admin@demo.app")
@@ -94,11 +95,11 @@ func TestManagerHandlesWebRegistrationEvents(t *testing.T) {
 	watcher := manager.WatchWeb("admin@demo.app")
 	t.Cleanup(watcher.Release)
 
-	key := testWebRegistrationKey("admin@demo.app", "instance-1")
+	key := testWebRegistrationKey("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 	manager.handleRegistrationEvent(prefix, hubwatch.Event{
 		Kind:  hubwatch.EventKindUpsert,
 		Key:   key,
-		Value: testWebRegistrationValue("admin@demo.app", "instance-1", "http://127.0.0.1:23001"),
+		Value: testWebRegistrationValue("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001"), "http://127.0.0.1:23001"),
 	})
 	endpoint, configured := manager.nextEndpoint(prefix)
 	require.True(t, configured)

@@ -2,11 +2,12 @@ package meta
 
 import (
 	"context"
+	"uuid"
 
 	internalmeta "go.yorun.ai/vine/internal/core/meta"
 )
 
-// App identifies one running application instance.
+// App identifies one running application instance with a native UUID.
 type App = internalmeta.App
 
 // CurrentApp identifies the application instance that owns the component graph
@@ -43,8 +44,9 @@ const (
 	ActorTypeImpersonated = internalmeta.ActorTypeImpersonated
 )
 
-// NewApp validates and creates an application identity.
-func NewApp(name string, version string, instanceId string) (App, error) {
+// NewApp validates the name and version and creates an identity with instanceId.
+// Parse external UUID text with uuid.Parse before calling NewApp.
+func NewApp(name string, version string, instanceId uuid.UUID) (App, error) {
 	return internalmeta.NewApp(name, version, instanceId)
 }
 
@@ -59,7 +61,7 @@ func EncodeAppToDelimited(app App) string {
 }
 
 // MustNewApp is like NewApp but panics when the identity is invalid.
-func MustNewApp(name string, version string, instanceId string) App {
+func MustNewApp(name string, version string, instanceId uuid.UUID) App {
 	return internalmeta.MustNewApp(name, version, instanceId)
 }
 
@@ -80,7 +82,7 @@ func IsValidVersion(version string) bool {
 	return internalmeta.IsValidVersion(version)
 }
 
-// IsValidInstanceId reports whether instanceId is a valid application instance identifier.
+// IsValidInstanceId reports whether instanceId is parseable UUID text.
 func IsValidInstanceId(instanceId string) bool {
 	return internalmeta.IsValidInstanceId(instanceId)
 }
@@ -91,7 +93,7 @@ func NewContext(ctx context.Context, trace Trace, initiator Initiator, actor Act
 }
 
 // NewInitiator validates and creates call-origin metadata.
-func NewInitiator(name string, version string, instanceId string, dialer string, ipStr string) (Initiator, error) {
+func NewInitiator(name string, version string, instanceId uuid.UUID, dialer string, ipStr string) (Initiator, error) {
 	return internalmeta.NewInitiator(name, version, instanceId, dialer, ipStr)
 }
 

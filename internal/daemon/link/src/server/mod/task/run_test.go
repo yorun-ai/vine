@@ -43,7 +43,7 @@ func TestManagerRetriesFailedMessageThroughJetStreamDelay(t *testing.T) {
 		return nil
 	}
 	manager.AppMinder.RegisterInstance(minder.AppRegistration{
-		AppInfo:      meta.MustNewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111"),
+		AppInfo:      meta.MustNewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111")),
 		TaskEndpoint: testLocalAppEndpoint(8080) + testPathTask,
 		TaskRunners: []skeled.TaskRunnerRegistration{{
 			TaskSkelName: "demo.task",
@@ -98,7 +98,7 @@ func TestManagerRegistersListenerAndDispatchesRun(t *testing.T) {
 		return client.RunTask(run)
 	}
 
-	appInfo, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	appInfo, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	require.NoError(t, err)
 	endpoint := testLocalAppEndpoint(8080)
 	manager.AppMinder.RegisterInstance(minder.AppRegistration{
@@ -264,9 +264,9 @@ func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
 		return client.RunTask(run)
 	}
 
-	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	require.NoError(t, err)
-	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", "22222222-2222-2222-2222-222222222222")
+	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	require.NoError(t, err)
 
 	firstEndpoint := testLocalAppEndpoint(8080)
@@ -352,9 +352,9 @@ func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
 		return client.RunTask(run)
 	}
 
-	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	require.NoError(t, err)
-	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", "22222222-2222-2222-2222-222222222222")
+	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	require.NoError(t, err)
 
 	manager.AppMinder.RegisterInstance(minder.AppRegistration{
@@ -474,10 +474,10 @@ func (m *dispatcherMessages) Stop() { m.stop.Do(func() { close(m.stopped) }) }
 func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubscription, *dispatcherMessages, []*_TaskRunnerState) {
 	t.Helper()
 	messages := new(dispatcherMessages{queue: make(chan jetstream.Msg, 100), stopped: make(chan struct{})})
-	state := new(_TaskSubscription{messages: messages, runnerByApp: map[string]*_TaskRunnerState{}, changed: make(chan struct{}), done: make(chan struct{})})
+	state := new(_TaskSubscription{messages: messages, runnerByApp: map[uuid.UUID]*_TaskRunnerState{}, changed: make(chan struct{}), done: make(chan struct{})})
 	manager := new(Manager{
 		Context:                    t.Context(),
-		runnerByAppInstanceID:      map[string]map[string]*_TaskRunnerState{},
+		runnerByAppInstanceID:      map[uuid.UUID]map[string]*_TaskRunnerState{},
 		subscriptionByTaskSkelName: map[string]*_TaskSubscription{"demo.task": state},
 	})
 	runners := make([]*_TaskRunnerState, 0, len(capacities))
@@ -486,8 +486,8 @@ func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubs
 		ctx, cancel := context.WithCancel(manager.Context)
 		t.Cleanup(cancel)
 		runner := new(_TaskRunnerState{
-			instance:      new(minder.AppInstance{AppInfo: meta.MustNewApp("demo.app", "1.0.0", id)}),
-			appInstanceID: id,
+			instance:      new(minder.AppInstance{AppInfo: meta.MustNewApp("demo.app", "1.0.0", uuid.MustParse(id))}),
+			appInstanceID: uuid.MustParse(id),
 			registration:  skeled.TaskRunnerRegistration{TaskSkelName: "demo.task", Concurrency: capacity},
 			semaphore:     make(chan struct{}, capacity),
 			readContext:   ctx,
@@ -495,8 +495,8 @@ func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubs
 			subscription:  state,
 		})
 		runners = append(runners, runner)
-		state.runnerByApp[id] = runner
-		manager.runnerByAppInstanceID[id] = map[string]*_TaskRunnerState{"demo.task": runner}
+		state.runnerByApp[uuid.MustParse(id)] = runner
+		manager.runnerByAppInstanceID[uuid.MustParse(id)] = map[string]*_TaskRunnerState{"demo.task": runner}
 	}
 	return manager, state, messages, runners
 }

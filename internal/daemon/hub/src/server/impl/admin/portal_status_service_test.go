@@ -29,8 +29,8 @@ func TestPortalStatusServiceListsRegisteredPortals(t *testing.T) {
 	service := &PortalStatusApiServiceServerImpl{
 		PortalInstanceRepo: &_PortalStatusServicePortalInstanceRepo{
 			instances: []*core.PortalInstance{
-				{InstanceId: "22222222-2222-2222-2222-222222222222", Version: "1.2.3"},
-				{InstanceId: "11111111-1111-1111-1111-111111111111", Version: "1.2.3"},
+				{InstanceId: uuid.MustParse("22222222-2222-2222-2222-222222222222"), Version: "1.2.3"},
+				{InstanceId: uuid.MustParse("11111111-1111-1111-1111-111111111111"), Version: "1.2.3"},
 			},
 		},
 	}

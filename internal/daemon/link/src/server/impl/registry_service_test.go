@@ -52,7 +52,7 @@ func newTestAppMinder(t *testing.T, app meta.App, client *_LinkRegistryRegistryS
 }
 
 func TestRegistryServiceRegisterStartsHeartbeat(t *testing.T) {
-	app, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	app, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	assert.NoError(t, err)
 
 	client := &_LinkRegistryRegistryServiceClient{}
@@ -75,7 +75,7 @@ func TestRegistryServiceRegisterStartsHeartbeat(t *testing.T) {
 	})
 
 	assert.Len(t, client.registrations, 1)
-	assert.Equal(t, uuid.MustParse(app.InstanceId()), client.registrations[0].InstanceId)
+	assert.Equal(t, app.InstanceId(), client.registrations[0].InstanceId)
 	assert.Equal(t, ing.Endpoint(), client.registrations[0].Endpoint)
 	assert.Equal(t, []hubskeled.ServiceHandlerRegistration{{
 		ServiceSkelName: "demo.service.UserService",
@@ -91,7 +91,7 @@ func TestRegistryServiceRegisterStartsHeartbeat(t *testing.T) {
 }
 
 func TestRegistryServiceUnregisterStopsHeartbeat(t *testing.T) {
-	app, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	app, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	assert.NoError(t, err)
 
 	client := &_LinkRegistryRegistryServiceClient{}
@@ -112,7 +112,7 @@ func TestRegistryServiceUnregisterStopsHeartbeat(t *testing.T) {
 
 	service.Unregister()
 
-	assert.Equal(t, []uuid.UUID{uuid.MustParse(app.InstanceId())}, client.unregistered)
+	assert.Equal(t, []uuid.UUID{app.InstanceId()}, client.unregistered)
 }
 
 func newLinkServiceSpecContext(t *testing.T, app meta.App) spec.Context {

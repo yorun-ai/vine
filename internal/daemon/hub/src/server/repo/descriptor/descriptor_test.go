@@ -2,6 +2,7 @@ package descriptor
 
 import (
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,8 +14,8 @@ func TestDescriptorRepoSaveDomainDescriptorsOnce(t *testing.T) {
 	repo := new(DescriptorRepo)
 	descriptor := testDomainDescriptor()
 
-	repo.SaveDomainDescriptors("demo.app", "instance-1", []*skeldesc.Domain{descriptor})
-	repo.SaveDomainDescriptors("demo.app", "instance-1", []*skeldesc.Domain{descriptor})
+	repo.SaveDomainDescriptors("demo.app", "00000000-0000-0000-0000-000000000001", []*skeldesc.Domain{descriptor})
+	repo.SaveDomainDescriptors("demo.app", "00000000-0000-0000-0000-000000000001", []*skeldesc.Domain{descriptor})
 
 	entry := repo.byHash[descriptor.Hash]
 	require.NotNil(t, entry)
@@ -27,7 +28,7 @@ func TestDescriptorRepoInstancesAreIndependent(t *testing.T) {
 	reader := new(DescriptorRepo)
 	descriptor := testDomainDescriptor()
 
-	writer.SaveDomainDescriptors("demo.app", "instance-1", []*skeldesc.Domain{descriptor})
+	writer.SaveDomainDescriptors("demo.app", "00000000-0000-0000-0000-000000000001", []*skeldesc.Domain{descriptor})
 
 	// Hub binds one repository per application, so readers inside an application
 	// share state while separate instances stay independent.
@@ -41,9 +42,9 @@ func TestDescriptorRepoReleaseDomainDescriptors(t *testing.T) {
 	newDescriptor := testDomainDescriptor()
 	newDescriptor.Hash = "pkg-hash-2"
 
-	repo.SaveDomainDescriptors("demo.app", "instance-1", []*skeldesc.Domain{oldDescriptor})
-	repo.SaveDomainDescriptors("demo.app", "instance-2", []*skeldesc.Domain{newDescriptor})
-	repo.ReleaseDomainDescriptors("demo.app", "instance-2")
+	repo.SaveDomainDescriptors("demo.app", "00000000-0000-0000-0000-000000000001", []*skeldesc.Domain{oldDescriptor})
+	repo.SaveDomainDescriptors("demo.app", "00000000-0000-0000-0000-000000000002", []*skeldesc.Domain{newDescriptor})
+	repo.ReleaseDomainDescriptors("demo.app", "00000000-0000-0000-0000-000000000002")
 
 	_, ok := repo.byHash[newDescriptor.Hash]
 	assert.False(t, ok)
@@ -80,14 +81,16 @@ func TestDescriptorRepoGetWebDescriptorTracksSelectedVersion(t *testing.T) {
 func TestDescriptorRepoRejectsInvalidPolicyBeforeReplacingOwner(t *testing.T) {
 	repo := new(DescriptorRepo)
 	original := testDomainDescriptor()
-	repo.SaveDomainDescriptors("demo", "instance", []*skeldesc.Domain{original})
+	repo.SaveDomainDescriptors("demo", "00000000-0000-0000-0000-00000000000a", []*skeldesc.Domain{original})
 	invalid := testDomainDescriptor()
 	invalid.Hash = "replacement"
 	invalid.Services[0].Methods = []*skeldesc.Method{{Name: "Get", SkelName: "get", AuthMode: skeldesc.AuthModeInherit, EffectiveAuthMode: skeldesc.AuthModeOptional}}
-	require.Panics(t, func() { repo.SaveDomainDescriptors("demo", "instance", []*skeldesc.Domain{invalid}) })
+	require.Panics(t, func() {
+		repo.SaveDomainDescriptors("demo", "00000000-0000-0000-0000-00000000000a", []*skeldesc.Domain{invalid})
+	})
 	require.Same(t, original, repo.byHash[original.Hash].Descriptor)
 	require.Len(t, repo.byHash, 1)
-	repo.ReleaseDomainDescriptors("demo", "instance")
+	repo.ReleaseDomainDescriptors("demo", "00000000-0000-0000-0000-00000000000a")
 	require.Empty(t, repo.byHash)
 }
 
@@ -96,7 +99,7 @@ type registrationWriteSpy struct {
 	writes []string
 }
 
-func (*registrationWriteSpy) GetAppStatus(string, string) (*core.AppStatus, bool) {
+func (*registrationWriteSpy) GetAppStatus(string, uuid.UUID) (*core.AppStatus, bool) {
 	return nil, false
 }
 
@@ -116,7 +119,7 @@ func TestRejectedRegistrationDoesNotPublishEndpoints(t *testing.T) {
 		t.Run(string(mode), func(t *testing.T) {
 			descriptors := new(DescriptorRepo)
 			original := testDomainDescriptor()
-			descriptors.SaveDomainDescriptors("demo", "instance", []*skeldesc.Domain{original})
+			descriptors.SaveDomainDescriptors("demo", "00000000-0000-0000-0000-00000000000a", []*skeldesc.Domain{original})
 			registry := new(registrationWriteSpy)
 			target := core.RegistryCore{DescriptorRepo: descriptors, RegistryRepo: registry}
 			invalid := testDomainDescriptor()
@@ -124,7 +127,7 @@ func TestRejectedRegistrationDoesNotPublishEndpoints(t *testing.T) {
 			invalid.Services[0].AuthMode = mode
 			reg := core.AppRegistration{
 				Name:              "demo",
-				InstanceId:        "instance",
+				InstanceId:        uuid.MustParse("00000000-0000-0000-0000-00000000000a"),
 				ServiceHandlers:   []core.ServiceHandlerRegistration{{ServiceSkelName: invalid.Services[0].SkelName, Endpoint: "http://replacement"}},
 				WebHandlers:       []core.WebHandlerRegistration{{WebSkelName: "demo.Web", Endpoint: "http://replacement"}},
 				DomainDescriptors: []*skeldesc.Domain{invalid},

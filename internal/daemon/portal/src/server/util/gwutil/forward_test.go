@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
@@ -296,7 +297,7 @@ type _TestRpcHandler struct{}
 
 func (_TestRpcHandler) ServeRpc(rpcRequest rpcspec.Request) rpcspec.Response {
 	return &rpcspec.ResponseImpl{
-		ServerValue: meta.MustNewApp("vine.hub", "0.0.0", "123e4567-e89b-12d3-a456-426614174002"),
+		ServerValue: meta.MustNewApp("vine.hub", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")),
 		MethodValue: rpcRequest.MethodInfo(),
 		ResultValue: []skeled.AppConfigItem{{
 			Key:       "demo.Config",

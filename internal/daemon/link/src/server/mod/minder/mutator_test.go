@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 
@@ -13,9 +14,9 @@ import (
 
 type _Mutator struct {
 	mutex        sync.Mutex
-	setupIDs     []string
-	drainedIDs   []string
-	destroyedIDs []string
+	setupIDs     []uuid.UUID
+	drainedIDs   []uuid.UUID
+	destroyedIDs []uuid.UUID
 }
 
 func (w *_Mutator) OnSetup(instance *AppInstance) {
@@ -59,9 +60,9 @@ func TestDrainAndDestroyNotifyMutatorsOnce(t *testing.T) {
 
 	mutator.mutex.Lock()
 	defer mutator.mutex.Unlock()
-	assert.Equal(t, []string{mustTestMetaApp().InstanceId()}, mutator.setupIDs)
-	assert.Equal(t, []string{mustTestMetaApp().InstanceId()}, mutator.drainedIDs)
-	assert.Equal(t, []string{mustTestMetaApp().InstanceId()}, mutator.destroyedIDs)
+	assert.Equal(t, []uuid.UUID{mustTestMetaApp().InstanceId()}, mutator.setupIDs)
+	assert.Equal(t, []uuid.UUID{mustTestMetaApp().InstanceId()}, mutator.drainedIDs)
+	assert.Equal(t, []uuid.UUID{mustTestMetaApp().InstanceId()}, mutator.destroyedIDs)
 }
 
 func TestAddInstanceRejectsDuplicateInstanceID(t *testing.T) {

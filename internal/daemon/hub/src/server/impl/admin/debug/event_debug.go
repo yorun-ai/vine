@@ -2,7 +2,6 @@ package debug
 
 import (
 	"strings"
-	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
@@ -81,7 +80,7 @@ func (s *EventDebugApiServiceServerImpl) EmitEvent(request skeled.EventDebugEmit
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: uuid.MustParse(s.CurrentApp.InstanceId()),
+			AppInstanceId: s.CurrentApp.InstanceId(),
 			EmittedAt:     skeltype.NewTimestampNow(),
 		},
 		EventSkelName: request.EventSkelName,

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -39,7 +40,7 @@ func resetRegistryForTest(t *testing.T) {
 func registryTestRequest(t *testing.T) spec.Request {
 	t.Helper()
 
-	app, err := meta.NewApp("registry.client", "1.0.0", "123e4567-e89b-12d3-a456-426614174010")
+	app, err := meta.NewApp("registry.client", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174010"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}

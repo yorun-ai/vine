@@ -3,6 +3,7 @@ package config
 import (
 	"sync"
 	"testing"
+	"uuid"
 
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -21,8 +22,8 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 			Value: []byte(firstValue),
 		},
 	})
-	registerTestAppInstance(reader, appInstanceID)
-	if value := reader.GetInstant(appInstanceID, configName); value != firstValue {
+	registerTestAppInstance(reader, uuid.MustParse(appInstanceID))
+	if value := reader.GetInstant(uuid.MustParse(appInstanceID), configName); value != firstValue {
 		t.Fatalf("unexpected initial config value: %s", value)
 	}
 
@@ -47,9 +48,9 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	waitGroup.Go(func() {
 		<-start
 		for idx := range 1000 {
-			value := reader.GetInstant(appInstanceID, configName)
+			value := reader.GetInstant(uuid.MustParse(appInstanceID), configName)
 			if idx%2 != 0 {
-				value = reader.retainInstantConfig(appInstanceID, configName)
+				value = reader.retainInstantConfig(uuid.MustParse(appInstanceID), configName)
 			}
 			if value == firstValue || value == secondValue {
 				continue

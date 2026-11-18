@@ -54,7 +54,7 @@ func (c *_RegistryServiceClient) Heartbeat(status hubskeled.AppStatus, _ ...clie
 }
 
 func mustTestMetaApp() meta.App {
-	app, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	app, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func TestRegisterInstanceRegistersHubAndProfileState(t *testing.T) {
 
 	client.mutex.Lock()
 	assert.Len(t, client.registrations, 1)
-	assert.Equal(t, uuid.MustParse(appInfo.InstanceId()), client.registrations[0].InstanceId)
+	assert.Equal(t, appInfo.InstanceId(), client.registrations[0].InstanceId)
 	assert.Equal(t, "", client.registrations[0].Endpoint)
 	assert.Equal(t, []hubskeled.ServiceHandlerRegistration{{
 		ServiceSkelName: "demo.service.UserService",
@@ -163,7 +163,7 @@ func TestUnregisterInstanceRemovesCatalogState(t *testing.T) {
 	minder.UnregisterInstance(appInfo.InstanceId())
 
 	client.mutex.Lock()
-	assert.Equal(t, []uuid.UUID{uuid.MustParse(appInfo.InstanceId())}, client.unregistered)
+	assert.Equal(t, []uuid.UUID{appInfo.InstanceId()}, client.unregistered)
 	client.mutex.Unlock()
 	_, ok := minder.appInstance(appInfo.InstanceId())
 	assert.False(t, ok)

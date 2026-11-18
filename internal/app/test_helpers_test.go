@@ -5,6 +5,7 @@ import (
 	"go.yorun.ai/vine/internal/utilfortest/linktest"
 	"os"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/link"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -15,7 +16,7 @@ type testLinker = linktest.Linker
 type testRuntimeApp struct {
 	name       string
 	version    string
-	instanceID string
+	instanceID uuid.UUID
 }
 
 func (a testRuntimeApp) Name() string {
@@ -26,7 +27,7 @@ func (a testRuntimeApp) Version() string {
 	return a.version
 }
 
-func (a testRuntimeApp) InstanceId() string {
+func (a testRuntimeApp) InstanceId() uuid.UUID {
 	return a.instanceID
 }
 
@@ -76,7 +77,7 @@ func newTestAppImpl() *_AppImpl {
 		currentApp: testRuntimeApp{
 			name:       "test.app",
 			version:    "1.2.3",
-			instanceID: "00000000-0000-0000-0000-000000000123",
+			instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 		},
 		ctx:    context.Background(),
 		cancel: func() {},

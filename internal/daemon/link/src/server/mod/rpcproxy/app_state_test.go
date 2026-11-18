@@ -3,11 +3,12 @@ package rpcproxy
 import (
 	"sync"
 	"testing"
+	"uuid"
 )
 
 func TestOnDrainPublishesImmutableAppState(t *testing.T) {
 	proxy := newTestRpcProxy(t, nil)
-	localApp := mustMetaApp(t, "demo.app", "11111111-1111-1111-1111-111111111111")
+	localApp := mustMetaApp(t, "demo.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	registerLocalApp(proxy, localApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.UserService"})
 
 	beforeDrain, ok := proxy.getAppStateByInstanceID(localApp.InstanceId())
@@ -33,7 +34,7 @@ func TestOnDrainPublishesImmutableAppState(t *testing.T) {
 
 func TestAppStateConcurrentReadAndLifecycleUpdates(t *testing.T) {
 	proxy := newTestRpcProxy(t, nil)
-	localApp := mustMetaApp(t, "demo.app", "11111111-1111-1111-1111-111111111111")
+	localApp := mustMetaApp(t, "demo.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	registerLocalApp(proxy, localApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.UserService"})
 	state, ok := proxy.getAppStateByInstanceID(localApp.InstanceId())
 	if !ok {

@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"sync"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
@@ -20,12 +21,12 @@ type Manager struct {
 	AppMinder  *minder.AppMinder `inject:""`
 
 	mutex                    sync.Mutex
-	listenersByAppInstanceID map[string][]*_EventListenerState
+	listenersByAppInstanceID map[uuid.UUID][]*_EventListenerState
 }
 
 type _EventListenerState struct {
 	instance       *minder.AppInstance
-	appInstanceID  string
+	appInstanceID  uuid.UUID
 	eventEndpoint  string
 	registration   skeled.EventListenerRegistration
 	semaphore      chan struct{}
@@ -33,7 +34,7 @@ type _EventListenerState struct {
 }
 
 func (m *Manager) DIInit() {
-	m.listenersByAppInstanceID = map[string][]*_EventListenerState{}
+	m.listenersByAppInstanceID = map[uuid.UUID][]*_EventListenerState{}
 	m.AppMinder.AddMutator(m)
 }
 
@@ -45,7 +46,7 @@ func (m *Manager) AfterAppStop() {
 			consumeContexts = append(consumeContexts, listenerState.consumeContext)
 		}
 	}
-	m.listenersByAppInstanceID = map[string][]*_EventListenerState{}
+	m.listenersByAppInstanceID = map[uuid.UUID][]*_EventListenerState{}
 	m.mutex.Unlock()
 
 	for _, consumeContext := range consumeContexts {

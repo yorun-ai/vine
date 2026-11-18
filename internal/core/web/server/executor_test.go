@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/gin-gonic/gin"
 	"go.yorun.ai/vine/internal/core/di"
@@ -79,7 +80,7 @@ func TestContainerExecutorInjectsExecutionScopeValuesWithActorHeader(t *testing.
 	gin.SetMode(gin.TestMode)
 
 	actor := meta.NewAuthenticatedActor(new(executorTestActorInfo{Id: "test"}))
-	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}
@@ -135,7 +136,7 @@ func TestContainerExecutorInjectsExecutionScopeValuesWithActorHeader(t *testing.
 func TestContainerExecutorReturnsBadRequestWhenRequestMetaInvalid(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}
@@ -195,7 +196,7 @@ func TestContainerExecutorAppliesWebOptionsTimeout(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	actor := meta.NewAuthenticatedActor(new(executorTestActorInfo{Id: "test"}))
-	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}

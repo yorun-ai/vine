@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -31,7 +32,7 @@ func (b *closeTrackingBody) Close() error {
 
 func TestRoundTripUsesConfiguredTransport(t *testing.T) {
 	proxy := newTestRpcProxy(t, nil)
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	methodInfo := ensureTestInboundMethodInfo()
 	trace := meta.InitialTrace()
 	rpcRequest := &spec.RequestImpl{

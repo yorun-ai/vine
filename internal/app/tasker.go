@@ -125,7 +125,7 @@ func (t *_Tasker) bindLogger(b *di.Binder) {
 			fields = append(fields,
 				slog.String("name", t.currentApp.Name()),
 				slog.String("version", t.currentApp.Version()),
-				slog.String("instanceId", t.currentApp.InstanceId()),
+				slog.String("instanceId", t.currentApp.InstanceId().String()),
 			)
 		}
 		return newAppLogger(t.currentApp.Name()).With(fields...)

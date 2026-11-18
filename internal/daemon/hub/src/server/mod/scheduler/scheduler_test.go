@@ -6,6 +6,7 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -81,8 +82,8 @@ func (p *_SchedulerTaskPublisher) PublishTask(message taskspec.NATSMessage) erro
 func TestSchedulerRefreshSchedulesDeduplicatesAppInstances(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
 	target := newTestScheduler([]*core.AppStatus{
-		newTestScheduledAppStatus("instance-1"),
-		newTestScheduledAppStatus("instance-2"),
+		newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001")),
+		newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000002")),
 	}, publisher)
 
 	require.NoError(t, target.refreshSchedules())
@@ -92,7 +93,7 @@ func TestSchedulerRefreshSchedulesDeduplicatesAppInstances(t *testing.T) {
 
 func TestSchedulerRefreshSchedulesAddsMultipleCronSchedulers(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	status := newTestScheduledAppStatus("instance-1")
+	status := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 	status.TaskRunners[0].CronSchedulers = append(status.TaskRunners[0].CronSchedulers, core.TaskRunnerCronScheduler{
 		TriggerSkelName: "rebuild",
 		CronExpr:        "30 * * * *",
@@ -106,7 +107,7 @@ func TestSchedulerRefreshSchedulesAddsMultipleCronSchedulers(t *testing.T) {
 
 func TestSchedulerRefreshSchedulesRemovesMissingRegistrations(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus("instance-1")}}
+	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}}
 	target := newTestSchedulerWithRegistry(registryRepo, publisher)
 
 	require.NoError(t, target.refreshSchedules())
@@ -118,14 +119,14 @@ func TestSchedulerRefreshSchedulesRemovesMissingRegistrations(t *testing.T) {
 
 func TestSchedulerPublishSchedulePublishesTaskMessage(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
+	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}, publisher)
 
 	target.publishSchedule(newTestScheduleConfig())
 
 	require.Len(t, publisher.messages, 1)
 	assert.Equal(t, target.CurrentApp.Name(), publisher.messages[0].Metadata.AppName)
 	assert.Equal(t, target.CurrentApp.Version(), publisher.messages[0].Metadata.AppVersion)
-	assert.Equal(t, target.CurrentApp.InstanceId(), publisher.messages[0].Metadata.AppInstanceId.String())
+	assert.Equal(t, target.CurrentApp.InstanceId(), publisher.messages[0].Metadata.AppInstanceId)
 	assert.Equal(t, "demo.booker.RebuildCatalogIndexTask", publisher.messages[0].TaskSkelName)
 	assert.Equal(t, "rebuild", publisher.messages[0].TriggerSkelName)
 	assert.Equal(t, "{}", publisher.messages[0].ArgumentsJson)
@@ -142,7 +143,7 @@ func TestSchedulerPublishScheduleSkipsInactiveRunner(t *testing.T) {
 
 func TestSchedulerPublishScheduleHandlesPublisherError(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{err: errors.New("nats unavailable")}
-	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
+	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}, publisher)
 
 	assert.NotPanics(t, func() {
 		target.publishSchedule(newTestScheduleConfig())
@@ -152,7 +153,7 @@ func TestSchedulerPublishScheduleHandlesPublisherError(t *testing.T) {
 
 func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus("instance-1")}, publisher)
+	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}, publisher)
 	target.DescriptorRepo = &_SchedulerDescriptorRepo{
 		taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
 			DescriptorHash: "task-hash",
@@ -177,7 +178,7 @@ func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 
 func TestSchedulerRejectsInvalidCronWithoutChangingExistingJobs(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus("instance-1")}}
+	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}}
 	target := newTestSchedulerWithRegistry(registryRepo, publisher)
 	require.NoError(t, target.refreshSchedules())
 	require.Len(t, target.jobs, 1)
@@ -281,7 +282,7 @@ func newTestScheduler(statuses []*core.AppStatus, publisher *_SchedulerTaskPubli
 
 func newTestSchedulerWithRegistry(registryRepo *_SchedulerRegistryRepo, publisher *_SchedulerTaskPublisher) *Scheduler {
 	target := &Scheduler{
-		CurrentApp:   meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
+		CurrentApp:   meta.MustNewApp("vine.hub", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099")),
 		RegistryRepo: registryRepo,
 		DescriptorRepo: &_SchedulerDescriptorRepo{
 			taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
@@ -300,7 +301,7 @@ func newTestSchedulerWithRegistry(registryRepo *_SchedulerRegistryRepo, publishe
 	return target
 }
 
-func newTestScheduledAppStatus(instanceId string) *core.AppStatus {
+func newTestScheduledAppStatus(instanceId uuid.UUID) *core.AppStatus {
 	return &core.AppStatus{
 		Name:       "booker",
 		InstanceId: instanceId,

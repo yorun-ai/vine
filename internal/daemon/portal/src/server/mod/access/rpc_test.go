@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -217,11 +218,11 @@ func testAuthValues(authEndpoint string) map[string]string {
 		}),
 	}
 	if authEndpoint != "" {
-		values[watched.FormatRpcServiceRegistrationKey("demo.UserActorAuthService", "demo.app", "123e4567-e89b-12d3-a456-426614174011")] = vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		values[watched.FormatRpcServiceRegistrationKey("demo.UserActorAuthService", "demo.app", uuid.MustParse("123e4567-e89b-12d3-a456-426614174011"))] = vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      authEndpoint,
 			ServiceName:   "demo.UserActorAuthService",
 			AppName:       "demo.app",
-			AppInstanceId: "123e4567-e89b-12d3-a456-426614174011",
+			AppInstanceId: uuid.MustParse("123e4567-e89b-12d3-a456-426614174011"),
 		})
 	}
 	return values
@@ -534,7 +535,7 @@ func setTestRequestHeaders(t *testing.T, request *http.Request) {
 
 	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
 	request.Header.Set(rpchttp.HeaderRpcClient, "name=demo.client,version=0.0.0,instanceId=123e4567-e89b-12d3-a456-426614174001")
-	initiator, err := meta.NewInitiator("demo.client", "0.0.0", "123e4567-e89b-12d3-a456-426614174001", "curl/8.0", "192.0.2.1")
+	initiator, err := meta.NewInitiator("demo.client", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"), "curl/8.0", "192.0.2.1")
 	require.NoError(t, err)
 	request.Header.Set(rpchttp.HeaderRpcInitiator, meta.EncodeInitiatorToBase64(initiator))
 }
@@ -548,7 +549,7 @@ func assertRpcAuthError(t *testing.T, recorder *httptest.ResponseRecorder, code 
 }
 
 func testServerApp() meta.App {
-	return meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099")
+	return meta.MustNewApp("vine.portal", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099"))
 }
 
 func TestAccessAllowRpcPreservesAuthErrorReason(t *testing.T) {

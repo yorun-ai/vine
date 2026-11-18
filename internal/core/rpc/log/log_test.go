@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/logger"
@@ -388,8 +389,8 @@ func TestServerSpanBuildsLifecycleFieldsLazilyWithoutDebug(t *testing.T) {
 	log := logger.New("vine:test", logger.WithOption{Format: logger.FormatJSON, Level: logger.LevelInfo, OutputPath: path})
 	method := testRpcLogMethodInfo()
 	trace := meta.InitialTrace()
-	client := meta.MustNewApp("client", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
-	server := meta.MustNewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174002")
+	client := meta.MustNewApp("client", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"))
+	server := meta.MustNewApp("server", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"))
 
 	successSpan := StartServerHandle(log, trace, method, client, server, &spec.EmptyArguments{})
 	if successSpan.fieldsInitialized || successSpan.fields != nil {

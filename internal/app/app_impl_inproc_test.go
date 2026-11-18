@@ -28,7 +28,7 @@ func TestAppImplStartInprocServerAllowsEmptyEndpointWithoutInprocRoutes(t *testi
 			CurrentApp: testRuntimeApp{
 				name:       "test.portal",
 				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
+				instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 			},
 			Linker:         &testLinker{},
 			DisableConsole: true,

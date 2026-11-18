@@ -6,6 +6,7 @@ import (
 	"net"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 	setTimeNowForTest(t, func() time.Time { return now })
 
 	status := &core.AppStatus{
-		InstanceId:      "instance-1",
+		InstanceId:      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		Name:            "demo.app",
 		Version:         "1.2.3",
 		Endpoint:        "http://127.0.0.1:23001/rpc",
@@ -87,7 +88,7 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 func TestRegistryRepoGetAppStatusReturnsFalseWhenMissing(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 
-	got, ok := repo.GetAppStatus("", "missing")
+	got, ok := repo.GetAppStatus("", uuid.MustParse("00000000-0000-0000-0000-0000000000d8"))
 	assert.False(t, ok)
 	assert.Nil(t, got)
 }
@@ -96,12 +97,12 @@ func TestRegistryRepoListAppStatuses(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 
 	repo.SaveAppStatus(&core.AppStatus{
-		InstanceId: "instance-2",
+		InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000002"),
 		Name:       "demo.beta",
 		Version:    "2.0.0",
 	})
 	repo.SaveAppStatus(&core.AppStatus{
-		InstanceId: "instance-1",
+		InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		Name:       "demo.alpha",
 		Version:    "1.0.0",
 	})
@@ -110,7 +111,7 @@ func TestRegistryRepoListAppStatuses(t *testing.T) {
 
 	assert.Len(t, items, 2)
 	assert.Equal(t, "demo.alpha", items[0].Name)
-	assert.Equal(t, "instance-1", items[0].InstanceId)
+	assert.Equal(t, uuid.MustParse("00000000-0000-0000-0000-000000000001"), items[0].InstanceId)
 	assert.Equal(t, "1.0.0", items[0].Version)
 	assert.Equal(t, "demo.beta", items[1].Name)
 }
@@ -118,7 +119,7 @@ func TestRegistryRepoListAppStatuses(t *testing.T) {
 func TestRegistryRepoKeepAndRemoveAppStatus(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, false)
 
-	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
+	status := &core.AppStatus{InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
@@ -142,7 +143,7 @@ func TestRegistryRepoListExpiredAppLeases(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
+	status := &core.AppStatus{InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	now = now.Add(hubRegistryLeaseTTL - time.Second)
@@ -151,7 +152,7 @@ func TestRegistryRepoListExpiredAppLeases(t *testing.T) {
 	now = now.Add(2 * time.Second)
 	leases := repo.ListExpiredAppLeases()
 
-	assert.Equal(t, []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}}, leases)
+	assert.Equal(t, []core.AppHeartbeat{{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")}}, leases)
 	assert.Equal(t, leases, repo.ListExpiredAppLeases())
 	repo.RemoveAppStatus(status.Name, status.InstanceId)
 	assert.Empty(t, repo.ListExpiredAppLeases())
@@ -161,7 +162,7 @@ func TestRegistryRepoKeepAppStatusRefreshesAppLease(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
+	status := &core.AppStatus{InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	now = now.Add(hubRegistryLeaseTTL / 2)
@@ -175,7 +176,7 @@ func TestRegistryRepoListExpiredAppLeasesLeavesRenewalCheckToCore(t *testing.T) 
 	repo, watchServer := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
-	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
+	status := &core.AppStatus{InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
@@ -192,7 +193,7 @@ func TestRegistryRepoListExpiredAppLeasesLeavesRenewalCheckToCore(t *testing.T) 
 func TestRegistryRepoInprocDoesNotSaveAppLease(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, true)
 
-	repo.SaveAppStatus(&core.AppStatus{InstanceId: "instance-1", Name: "demo.app"})
+	repo.SaveAppStatus(&core.AppStatus{InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Name: "demo.app"})
 
 	assert.Empty(t, repo.ListExpiredAppLeases())
 }
@@ -206,7 +207,7 @@ func TestRegistryRepoSaveAndGetRpcServiceRegistration(t *testing.T) {
 		Api:           true,
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 
 	repo.SaveRpcServiceRegistration(registration)
@@ -233,7 +234,7 @@ func TestRegistryRepoSaveAndGetWebRegistration(t *testing.T) {
 		WebSkelName:   "default@demo.app",
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 
 	repo.SaveWebRegistration(registration)
@@ -255,7 +256,7 @@ func TestRegistryRepoSaveAndGetWebRegistration(t *testing.T) {
 func TestRegistryRepoGetRpcServiceRegistrationReturnsFalseWhenMissing(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 
-	got, ok := repo.GetRpcServiceRegistration("svc.alpha", "demo.app", "missing")
+	got, ok := repo.GetRpcServiceRegistration("svc.alpha", "demo.app", uuid.MustParse("00000000-0000-0000-0000-0000000000d8"))
 	assert.False(t, ok)
 	assert.Nil(t, got)
 }
@@ -263,7 +264,7 @@ func TestRegistryRepoGetRpcServiceRegistrationReturnsFalseWhenMissing(t *testing
 func TestRegistryRepoGetWebRegistrationReturnsFalseWhenMissing(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 
-	got, ok := repo.GetWebRegistration("default@demo.app", "demo.app", "missing")
+	got, ok := repo.GetWebRegistration("default@demo.app", "demo.app", uuid.MustParse("00000000-0000-0000-0000-0000000000d8"))
 	assert.False(t, ok)
 	assert.Nil(t, got)
 }
@@ -276,7 +277,7 @@ func TestRegistryRepoKeepAndRemoveRpcServiceRegistration(t *testing.T) {
 		ServiceName:   "svc.alpha",
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 	repo.SaveRpcServiceRegistration(registration)
 
@@ -306,7 +307,7 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 		WebSkelName:   "default@demo.app",
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 	repo.SaveWebRegistration(registration)
 
@@ -331,7 +332,7 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, true)
 
-	status := &core.AppStatus{InstanceId: "instance-1", Name: "demo.app"}
+	status := &core.AppStatus{InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"), Name: "demo.app"}
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
@@ -346,7 +347,7 @@ func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 		ServiceName:   "svc.alpha",
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 	repo.SaveRpcServiceRegistration(registration)
 
@@ -359,7 +360,7 @@ func TestRegistryRepoInprocSavesWithoutTTL(t *testing.T) {
 		WebSkelName:   "default@demo.app",
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 	repo.SaveWebRegistration(webRegistration)
 
@@ -396,7 +397,7 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 		WebSkelName:   "default@demo.app",
 		AppName:       "demo.app",
 		AppVersion:    "1.2.3",
-		AppInstanceId: "instance-1",
+		AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 	}
 	repo.SaveWebRegistration(registration)
 
@@ -428,7 +429,7 @@ func TestRegistryRetainsExpiredStateUntilCompleteCleanup(t *testing.T) {
 	setTimeNowForTest(t, func() time.Time { return now })
 	status := &core.AppStatus{
 		Name:            "demo.app",
-		InstanceId:      "old",
+		InstanceId:      uuid.MustParse("00000000-0000-0000-0000-0000000000d5"),
 		ServiceHandlers: []core.ServiceHandlerRegistration{{ServiceSkelName: "demo.Service"}},
 		WebHandlers:     []core.WebHandlerRegistration{{WebSkelName: "demo.Web"}},
 	}
@@ -473,7 +474,7 @@ func TestRegistryRetainsExpiredStateUntilCompleteCleanup(t *testing.T) {
 	_, ok = repo.GetAppStatus(status.Name, status.InstanceId)
 	require.False(t, ok)
 	require.Empty(t, repo.ListExpiredAppLeases())
-	require.Equal(t, []string{"demo.app:old"}, descriptors.released)
+	require.Equal(t, []string{"demo.app:00000000-0000-0000-0000-0000000000d5"}, descriptors.released)
 	require.False(t, registry.SweepExpiredLeases())
 }
 
@@ -484,30 +485,30 @@ func TestRegistryRetriesFailedCleanupWithoutBlockingOtherInstances(t *testing.T)
 	for _, name := range []string{"failed", "healthy"} {
 		repo.SaveAppStatus(&core.AppStatus{
 			Name:            name,
-			InstanceId:      "old",
+			InstanceId:      uuid.MustParse("00000000-0000-0000-0000-0000000000d5"),
 			ServiceHandlers: []core.ServiceHandlerRegistration{{ServiceSkelName: "demo.Service"}},
 			WebHandlers:     []core.WebHandlerRegistration{{WebSkelName: "demo.Web"}},
 		})
-		repo.SaveRpcServiceRegistration(&core.RpcServiceRegistration{ServiceName: "demo.Service", AppName: name, AppInstanceId: "old"})
-		repo.SaveWebRegistration(&core.WebRegistration{WebSkelName: "demo.Web", AppName: name, AppInstanceId: "old"})
+		repo.SaveRpcServiceRegistration(&core.RpcServiceRegistration{ServiceName: "demo.Service", AppName: name, AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")})
+		repo.SaveWebRegistration(&core.WebRegistration{WebSkelName: "demo.Web", AppName: name, AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")})
 	}
 	now = time.Now()
 	descriptors := &cleanupDescriptorRepo{failOwner: "failed"}
 	registry := &core.RegistryCore{RegistryRepo: repo, DescriptorRepo: descriptors}
 	require.True(t, registry.SweepExpiredLeases())
-	require.Equal(t, []core.AppHeartbeat{{Name: "failed", InstanceId: "old"}}, repo.ListExpiredAppLeases())
-	_, ok := repo.GetAppStatus("failed", "old")
+	require.Equal(t, []core.AppHeartbeat{{Name: "failed", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")}}, repo.ListExpiredAppLeases())
+	_, ok := repo.GetAppStatus("failed", uuid.MustParse("00000000-0000-0000-0000-0000000000d5"))
 	require.True(t, ok)
-	_, ok = repo.GetAppStatus("healthy", "old")
+	_, ok = repo.GetAppStatus("healthy", uuid.MustParse("00000000-0000-0000-0000-0000000000d5"))
 	require.False(t, ok)
-	_, ok = repo.GetRpcServiceRegistration("demo.Service", "failed", "old")
+	_, ok = repo.GetRpcServiceRegistration("demo.Service", "failed", uuid.MustParse("00000000-0000-0000-0000-0000000000d5"))
 	require.False(t, ok, "endpoint removal already completed before descriptor cleanup failed")
-	_, ok = repo.GetWebRegistration("demo.Web", "failed", "old")
+	_, ok = repo.GetWebRegistration("demo.Web", "failed", uuid.MustParse("00000000-0000-0000-0000-0000000000d5"))
 	require.False(t, ok)
 	descriptors.failOwner = ""
 	require.True(t, registry.SweepExpiredLeases())
 	require.Empty(t, repo.ListExpiredAppLeases())
-	require.Equal(t, []string{"healthy:old", "failed:old"}, descriptors.released)
+	require.Equal(t, []string{"healthy:00000000-0000-0000-0000-0000000000d5", "failed:00000000-0000-0000-0000-0000000000d5"}, descriptors.released)
 }
 
 func TestRegistryReregisterRemovesWithdrawnEndpoints(t *testing.T) {
@@ -515,7 +516,7 @@ func TestRegistryReregisterRemovesWithdrawnEndpoints(t *testing.T) {
 	registry := &core.RegistryCore{RegistryRepo: repo, DescriptorRepo: new(descriptor.DescriptorRepo)}
 	reg := core.AppRegistration{
 		Name:       "demo.app",
-		InstanceId: "instance-1",
+		InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		ServiceHandlers: []core.ServiceHandlerRegistration{
 			{ServiceSkelName: "demo.RemovedService", Endpoint: "old-ip"},
 			{ServiceSkelName: "demo.KeptService", Endpoint: "old-ip"},

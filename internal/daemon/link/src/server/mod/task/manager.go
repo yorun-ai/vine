@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"sync"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
@@ -20,13 +21,13 @@ type Manager struct {
 	AppMinder  *minder.AppMinder `inject:""`
 
 	mutex                      sync.Mutex
-	runnerByAppInstanceID      map[string]map[string]*_TaskRunnerState
+	runnerByAppInstanceID      map[uuid.UUID]map[string]*_TaskRunnerState
 	subscriptionByTaskSkelName map[string]*_TaskSubscription
 }
 
 type _TaskRunnerState struct {
 	instance      *minder.AppInstance
-	appInstanceID string
+	appInstanceID uuid.UUID
 	taskEndpoint  string
 	registration  skeled.TaskRunnerRegistration
 	semaphore     chan struct{}
@@ -37,7 +38,7 @@ type _TaskRunnerState struct {
 
 type _TaskSubscription struct {
 	messages    linknats.MessagesContext
-	runnerByApp map[string]*_TaskRunnerState
+	runnerByApp map[uuid.UUID]*_TaskRunnerState
 	nextRunner  int
 	changed     chan struct{}
 	stopped     bool
@@ -45,7 +46,7 @@ type _TaskSubscription struct {
 }
 
 func (m *Manager) DIInit() {
-	m.runnerByAppInstanceID = map[string]map[string]*_TaskRunnerState{}
+	m.runnerByAppInstanceID = map[uuid.UUID]map[string]*_TaskRunnerState{}
 	m.subscriptionByTaskSkelName = map[string]*_TaskSubscription{}
 	m.AppMinder.AddMutator(m)
 }
@@ -60,7 +61,7 @@ func (m *Manager) AfterAppStop() {
 		m.stopSubscriptionLocked(state)
 		states = append(states, state)
 	}
-	m.runnerByAppInstanceID = map[string]map[string]*_TaskRunnerState{}
+	m.runnerByAppInstanceID = map[uuid.UUID]map[string]*_TaskRunnerState{}
 	m.subscriptionByTaskSkelName = map[string]*_TaskSubscription{}
 	m.mutex.Unlock()
 	for _, state := range states {

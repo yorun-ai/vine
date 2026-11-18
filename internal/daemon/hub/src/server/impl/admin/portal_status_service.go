@@ -19,7 +19,7 @@ func (s *PortalStatusApiServiceServerImpl) List() []skeled.PortalStatusView {
 	items := make([]skeled.PortalStatusView, 0, len(instances))
 	for _, instance := range instances {
 		items = append(items, skeled.PortalStatusView{
-			InstanceId: instance.InstanceId,
+			InstanceId: instance.InstanceId.String(),
 			Version:    instance.Version,
 		})
 	}

@@ -27,12 +27,12 @@ func (*_EndpointMutator) OnSetup(instance *AppInstance) {
 func (*_EndpointMutator) OnDrain(*AppInstance)   {}
 func (*_EndpointMutator) OnDestroy(*AppInstance) {}
 
-func testRpcProxyInEndpointOf(endpoint string, instanceID string) string {
-	return endpoint + "/rpc/proxy/in/" + instanceID
+func testRpcProxyInEndpointOf(endpoint string, instanceID uuid.UUID) string {
+	return endpoint + "/rpc/proxy/in/" + instanceID.String()
 }
 
-func testWebProxyInEndpointOf(endpoint string, instanceID string, webSkelName string) string {
-	return endpoint + "/web/proxy/in/" + instanceID + "/" + webSkelName
+func testWebProxyInEndpointOf(endpoint string, instanceID uuid.UUID, webSkelName string) string {
+	return endpoint + "/web/proxy/in/" + instanceID.String() + "/" + webSkelName
 }
 
 func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
@@ -66,7 +66,7 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 	assert.Len(t, client.registrations, 1)
 	assert.Equal(t, hubskeled.AppRegistration{
 		Name:       appInfo.Name(),
-		InstanceId: uuid.MustParse(appInfo.InstanceId()),
+		InstanceId: appInfo.InstanceId(),
 		Version:    appInfo.Version(),
 		Endpoint:   "http://127.0.0.1:8081",
 		ServiceHandlers: []hubskeled.ServiceHandlerRegistration{{
@@ -100,5 +100,5 @@ func TestUnregisterHubInstancePublishesUnregister(t *testing.T) {
 
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
-	assert.Equal(t, []uuid.UUID{uuid.MustParse(appInfo.InstanceId())}, client.unregistered)
+	assert.Equal(t, []uuid.UUID{appInfo.InstanceId()}, client.unregistered)
 }

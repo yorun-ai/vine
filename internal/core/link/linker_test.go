@@ -3,6 +3,7 @@ package link
 import (
 	"net/url"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 
@@ -14,7 +15,7 @@ import (
 type testRuntimeApp struct {
 	name       string
 	version    string
-	instanceID string
+	instanceID uuid.UUID
 }
 
 func (a testRuntimeApp) Name() string {
@@ -25,7 +26,7 @@ func (a testRuntimeApp) Version() string {
 	return a.version
 }
 
-func (a testRuntimeApp) InstanceId() string {
+func (a testRuntimeApp) InstanceId() uuid.UUID {
 	return a.instanceID
 }
 
@@ -39,7 +40,7 @@ func mustHostname(linkBaseEndpoint string) string {
 
 func TestLinkerBuildsRpcProxyEndpointFromInprocEndpointAndPath(t *testing.T) {
 	client := &_Linker{
-		app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
+		app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123")},
 		linkBaseEndpoint: InprocEndpoint,
 		bootInfo:         linkskeled.BootInfo{RpcProxyEndpointPath: "/rpc/proxy/out"},
 	}
@@ -54,7 +55,7 @@ func TestLinkerCheckLoopback(t *testing.T) {
 		"http://[::1]:7079",
 	} {
 		client := &_Linker{
-			app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"},
+			app:              testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123")},
 			linkBaseEndpoint: linkBaseEndpoint,
 		}
 
@@ -65,14 +66,14 @@ func TestLinkerCheckLoopback(t *testing.T) {
 }
 
 func TestInternalLinkerReturnsHubRPCInvokeEndpointWhenRedirectSet(t *testing.T) {
-	client := NewRedirectedInternalLinker(testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"}, "http://demo.local:7071")
+	client := NewRedirectedInternalLinker(testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123")}, "http://demo.local:7071")
 
 	assert.Equal(t, "http://demo.local:7071/rpc/invoke", client.RpcProxyEndpoint())
 	assert.False(t, client.SkipDomainDescriptors())
 }
 
 func TestInternalLinkerCheckLoopbackReturnsFalseForNonLocalEndpoint(t *testing.T) {
-	client := NewRedirectedInternalLinker(testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"}, "http://demo.local:7071")
+	client := NewRedirectedInternalLinker(testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123")}, "http://demo.local:7071")
 
 	host, ok := client.CheckLoopback()
 	assert.False(t, ok)
@@ -80,7 +81,7 @@ func TestInternalLinkerCheckLoopbackReturnsFalseForNonLocalEndpoint(t *testing.T
 }
 
 func TestNewLinkerUsesExplicitEndpoint(t *testing.T) {
-	app := testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"}
+	app := testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123")}
 
 	oldFactory := newLinker
 	var actualLinkBaseEndpoint string
@@ -98,7 +99,7 @@ func TestNewLinkerUsesExplicitEndpoint(t *testing.T) {
 }
 
 func TestNewLinkerUsesRpcInprocEndpointWhenInprocEnabled(t *testing.T) {
-	app := testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: "00000000-0000-0000-0000-000000000123"}
+	app := testRuntimeApp{name: "test.app", version: "1.2.3", instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123")}
 
 	oldFactory := newLinker
 	var actualLinkBaseEndpoint string

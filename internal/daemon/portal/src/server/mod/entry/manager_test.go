@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -230,7 +231,7 @@ func newTestSiteManager(t *testing.T, names ...string) *site.Manager {
 	descriptors.DIInit()
 	t.Cleanup(descriptors.AfterAppStop)
 	manager := &site.Manager{
-		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099"),
+		CurrentApp: meta.MustNewApp("vine.portal", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099")),
 		Context:    context.Background(),
 		Watch:      watchtest.New(t, valuesByKey),
 		Epmgr:      epmgrManager,

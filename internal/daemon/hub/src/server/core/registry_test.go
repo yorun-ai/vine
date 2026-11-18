@@ -4,6 +4,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,7 +115,7 @@ func (s *descriptorRepoSpy) ListWebDescriptors() []*skeldesc.Web {
 }
 
 func (s *registryRepoSpy) SaveAppStatus(status *AppStatus) {
-	s.calls = append(s.calls, "SaveAppStatus:"+status.InstanceId)
+	s.calls = append(s.calls, "SaveAppStatus:"+status.InstanceId.String())
 }
 
 func (s *registryRepoSpy) ListAppStatuses() []*AppStatus {
@@ -125,18 +126,18 @@ func (s *registryRepoSpy) ListAppStatuses() []*AppStatus {
 	return []*AppStatus{s.appStatus}
 }
 
-func (s *registryRepoSpy) GetAppStatus(appName string, instanceId string) (*AppStatus, bool) {
-	s.calls = append(s.calls, "GetAppStatus:"+appName+":"+instanceId)
+func (s *registryRepoSpy) GetAppStatus(appName string, instanceId uuid.UUID) (*AppStatus, bool) {
+	s.calls = append(s.calls, "GetAppStatus:"+appName+":"+instanceId.String())
 	return s.appStatus, s.appStatusOK
 }
 
-func (s *registryRepoSpy) KeepAppStatus(appName string, instanceId string) bool {
-	s.calls = append(s.calls, "KeepAppStatus:"+appName+":"+instanceId)
+func (s *registryRepoSpy) KeepAppStatus(appName string, instanceId uuid.UUID) bool {
+	s.calls = append(s.calls, "KeepAppStatus:"+appName+":"+instanceId.String())
 	return s.keepAppStatusOK
 }
 
-func (s *registryRepoSpy) RemoveAppStatus(appName string, instanceId string) {
-	s.calls = append(s.calls, "RemoveAppStatus:"+appName+":"+instanceId)
+func (s *registryRepoSpy) RemoveAppStatus(appName string, instanceId uuid.UUID) {
+	s.calls = append(s.calls, "RemoveAppStatus:"+appName+":"+instanceId.String())
 }
 
 func (*registryRepoSpy) ListExpiredAppLeases() []AppHeartbeat {
@@ -144,47 +145,47 @@ func (*registryRepoSpy) ListExpiredAppLeases() []AppHeartbeat {
 }
 
 func (s *registryRepoSpy) SaveRpcServiceRegistration(registration *RpcServiceRegistration) {
-	s.calls = append(s.calls, "SaveRpcServiceRegistration:"+registration.ServiceName+":"+registration.AppName+":"+registration.AppInstanceId)
+	s.calls = append(s.calls, "SaveRpcServiceRegistration:"+registration.ServiceName+":"+registration.AppName+":"+registration.AppInstanceId.String())
 	s.rpcRegistrations = append(s.rpcRegistrations, registration)
 }
 
-func (s *registryRepoSpy) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*RpcServiceRegistration, bool) {
-	s.calls = append(s.calls, "GetRpcServiceRegistration:"+serviceName+":"+appName+":"+instanceId)
+func (s *registryRepoSpy) GetRpcServiceRegistration(serviceName string, appName string, instanceId uuid.UUID) (*RpcServiceRegistration, bool) {
+	s.calls = append(s.calls, "GetRpcServiceRegistration:"+serviceName+":"+appName+":"+instanceId.String())
 	return nil, false
 }
 
-func (s *registryRepoSpy) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId string) bool {
-	s.calls = append(s.calls, "KeepRpcServiceRegistration:"+serviceName+":"+appName+":"+appInstanceId)
+func (s *registryRepoSpy) KeepRpcServiceRegistration(serviceName string, appName string, appInstanceId uuid.UUID) bool {
+	s.calls = append(s.calls, "KeepRpcServiceRegistration:"+serviceName+":"+appName+":"+appInstanceId.String())
 	if s.keepRpcOK == nil {
 		return true
 	}
 	return s.keepRpcOK[serviceName]
 }
 
-func (s *registryRepoSpy) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
-	s.calls = append(s.calls, "RemoveRpcServiceRegistration:"+serviceName+":"+appName+":"+appInstanceId)
+func (s *registryRepoSpy) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId uuid.UUID) {
+	s.calls = append(s.calls, "RemoveRpcServiceRegistration:"+serviceName+":"+appName+":"+appInstanceId.String())
 }
 
 func (s *registryRepoSpy) SaveWebRegistration(registration *WebRegistration) {
-	s.calls = append(s.calls, "SaveWebRegistration:"+registration.WebSkelName+":"+registration.AppName+":"+registration.AppInstanceId)
+	s.calls = append(s.calls, "SaveWebRegistration:"+registration.WebSkelName+":"+registration.AppName+":"+registration.AppInstanceId.String())
 	s.webRegistrations = append(s.webRegistrations, registration)
 }
 
-func (s *registryRepoSpy) GetWebRegistration(name string, appName string, instanceId string) (*WebRegistration, bool) {
-	s.calls = append(s.calls, "GetWebRegistration:"+name+":"+appName+":"+instanceId)
+func (s *registryRepoSpy) GetWebRegistration(name string, appName string, instanceId uuid.UUID) (*WebRegistration, bool) {
+	s.calls = append(s.calls, "GetWebRegistration:"+name+":"+appName+":"+instanceId.String())
 	return nil, false
 }
 
-func (s *registryRepoSpy) KeepWebRegistration(name string, appName string, appInstanceId string) bool {
-	s.calls = append(s.calls, "KeepWebRegistration:"+name+":"+appName+":"+appInstanceId)
+func (s *registryRepoSpy) KeepWebRegistration(name string, appName string, appInstanceId uuid.UUID) bool {
+	s.calls = append(s.calls, "KeepWebRegistration:"+name+":"+appName+":"+appInstanceId.String())
 	if s.keepWebOK == nil {
 		return true
 	}
 	return s.keepWebOK[name]
 }
 
-func (s *registryRepoSpy) RemoveWebRegistration(name string, appName string, appInstanceId string) {
-	s.calls = append(s.calls, "RemoveWebRegistration:"+name+":"+appName+":"+appInstanceId)
+func (s *registryRepoSpy) RemoveWebRegistration(name string, appName string, appInstanceId uuid.UUID) {
+	s.calls = append(s.calls, "RemoveWebRegistration:"+name+":"+appName+":"+appInstanceId.String())
 }
 
 func newRegistryCoreForTest(repo RegistryRepo, descriptorRepo DescriptorRepo) *RegistryCore {
@@ -200,7 +201,7 @@ func TestRegistryCoreRegister(t *testing.T) {
 	core := newRegistryCoreForTest(repo, descriptorRepo)
 
 	core.Register(AppRegistration{
-		InstanceId: "instance-1",
+		InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		Name:       "demo.app",
 		Version:    "1.2.3",
 		Endpoint:   "http://127.0.0.1:23001",
@@ -214,11 +215,11 @@ func TestRegistryCoreRegister(t *testing.T) {
 	})
 
 	assert.Equal(t, []string{
-		"GetAppStatus:demo.app:instance-1",
-		"SaveAppStatus:instance-1",
-		"SaveRpcServiceRegistration:svc.alpha:demo.app:instance-1",
-		"SaveRpcServiceRegistration:svc.beta:demo.app:instance-1",
-		"SaveWebRegistration:default@demo.app:demo.app:instance-1",
+		"GetAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
+		"SaveAppStatus:00000000-0000-0000-0000-000000000001",
+		"SaveRpcServiceRegistration:svc.alpha:demo.app:00000000-0000-0000-0000-000000000001",
+		"SaveRpcServiceRegistration:svc.beta:demo.app:00000000-0000-0000-0000-000000000001",
+		"SaveWebRegistration:default@demo.app:demo.app:00000000-0000-0000-0000-000000000001",
 	}, repo.calls)
 	assert.Len(t, repo.rpcRegistrations, 2)
 	assert.Equal(t, "http://127.0.0.1:23001/rpc/proxy/in", repo.rpcRegistrations[0].Endpoint)
@@ -234,7 +235,7 @@ func TestRegistryCoreRegisterKeepsProvidedProxyEndpoints(t *testing.T) {
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
 	core.Register(AppRegistration{
-		InstanceId:      "instance-1",
+		InstanceId:      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		Name:            "demo.app",
 		Version:         "1.2.3",
 		Endpoint:        "",
@@ -259,20 +260,20 @@ func TestRegistryCoreRegisterSavesDomainDescriptors(t *testing.T) {
 	}
 
 	core.Register(AppRegistration{
-		InstanceId:        "instance-1",
+		InstanceId:        uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		Name:              "demo.app",
 		DomainDescriptors: []*skeldesc.Domain{domainDescriptor},
 	})
 
 	assert.Empty(t, descriptorRepo.released)
-	assert.Equal(t, []string{"demo.app:instance-1"}, descriptorRepo.saved)
+	assert.Equal(t, []string{"demo.app:00000000-0000-0000-0000-000000000001"}, descriptorRepo.saved)
 	assert.Equal(t, []*skeldesc.Domain{domainDescriptor}, descriptorRepo.domainDescriptors)
 }
 
 func TestRegistryCoreUnregisterWithStatus(t *testing.T) {
 	repo := &registryRepoSpy{
 		appStatus: &AppStatus{
-			InstanceId:      "instance-1",
+			InstanceId:      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 			Name:            "demo.app",
 			ServiceHandlers: []ServiceHandlerRegistration{{ServiceSkelName: "svc.alpha"}, {ServiceSkelName: "svc.beta"}},
 			WebHandlers:     []WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
@@ -283,33 +284,33 @@ func TestRegistryCoreUnregisterWithStatus(t *testing.T) {
 	descriptorRepo := &descriptorRepoSpy{}
 	core := newRegistryCoreForTest(repo, descriptorRepo)
 
-	core.Unregister("demo.app", "instance-1")
+	core.Unregister("demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 
 	assert.Equal(t, []string{
-		"GetAppStatus:demo.app:instance-1",
-		"RemoveRpcServiceRegistration:svc.alpha:demo.app:instance-1",
-		"RemoveRpcServiceRegistration:svc.beta:demo.app:instance-1",
-		"RemoveWebRegistration:default@demo.app:demo.app:instance-1",
-		"RemoveAppStatus:demo.app:instance-1",
+		"GetAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
+		"RemoveRpcServiceRegistration:svc.alpha:demo.app:00000000-0000-0000-0000-000000000001",
+		"RemoveRpcServiceRegistration:svc.beta:demo.app:00000000-0000-0000-0000-000000000001",
+		"RemoveWebRegistration:default@demo.app:demo.app:00000000-0000-0000-0000-000000000001",
+		"RemoveAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
 	}, repo.calls)
-	assert.Equal(t, []string{"demo.app:instance-1"}, descriptorRepo.released)
+	assert.Equal(t, []string{"demo.app:00000000-0000-0000-0000-000000000001"}, descriptorRepo.released)
 }
 
 func TestRegistryCoreUnregisterWithoutStatus(t *testing.T) {
 	repo := &registryRepoSpy{}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	core.Unregister("demo.app", "instance-1")
+	core.Unregister("demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 
 	assert.Equal(t, []string{
-		"GetAppStatus:demo.app:instance-1",
+		"GetAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
 	}, repo.calls)
 }
 
 func TestRegistryCoreHeartbeatWithStatus(t *testing.T) {
 	repo := &registryRepoSpy{
 		appStatus: &AppStatus{
-			InstanceId:      "instance-1",
+			InstanceId:      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 			Name:            "demo.app",
 			ServiceHandlers: []ServiceHandlerRegistration{{ServiceSkelName: "svc.alpha"}, {ServiceSkelName: "svc.beta"}},
 			WebHandlers:     []WebHandlerRegistration{{WebSkelName: "default@demo.app"}},
@@ -319,14 +320,14 @@ func TestRegistryCoreHeartbeatWithStatus(t *testing.T) {
 	}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
+	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")})
 
 	assert.Equal(t, []string{
-		"GetAppStatus:demo.app:instance-1",
-		"KeepAppStatus:demo.app:instance-1",
-		"KeepRpcServiceRegistration:svc.alpha:demo.app:instance-1",
-		"KeepRpcServiceRegistration:svc.beta:demo.app:instance-1",
-		"KeepWebRegistration:default@demo.app:demo.app:instance-1",
+		"GetAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
+		"KeepAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
+		"KeepRpcServiceRegistration:svc.alpha:demo.app:00000000-0000-0000-0000-000000000001",
+		"KeepRpcServiceRegistration:svc.beta:demo.app:00000000-0000-0000-0000-000000000001",
+		"KeepWebRegistration:default@demo.app:demo.app:00000000-0000-0000-0000-000000000001",
 	}, repo.calls)
 	assert.True(t, registered)
 }
@@ -334,7 +335,7 @@ func TestRegistryCoreHeartbeatWithStatus(t *testing.T) {
 func TestRegistryCoreHeartbeatReturnsFalseWhenKeepFails(t *testing.T) {
 	repo := &registryRepoSpy{
 		appStatus: &AppStatus{
-			InstanceId:      "instance-1",
+			InstanceId:      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 			Name:            "demo.app",
 			ServiceHandlers: []ServiceHandlerRegistration{{ServiceSkelName: "svc.alpha"}},
 		},
@@ -344,12 +345,12 @@ func TestRegistryCoreHeartbeatReturnsFalseWhenKeepFails(t *testing.T) {
 	}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
+	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")})
 
 	assert.Equal(t, []string{
-		"GetAppStatus:demo.app:instance-1",
-		"KeepAppStatus:demo.app:instance-1",
-		"KeepRpcServiceRegistration:svc.alpha:demo.app:instance-1",
+		"GetAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
+		"KeepAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
+		"KeepRpcServiceRegistration:svc.alpha:demo.app:00000000-0000-0000-0000-000000000001",
 	}, repo.calls)
 	assert.False(t, registered)
 }
@@ -358,10 +359,10 @@ func TestRegistryCoreHeartbeatWithoutStatus(t *testing.T) {
 	repo := &registryRepoSpy{}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 
-	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: "instance-1"})
+	registered := core.Heartbeat(AppHeartbeat{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")})
 
 	assert.Equal(t, []string{
-		"GetAppStatus:demo.app:instance-1",
+		"GetAppStatus:demo.app:00000000-0000-0000-0000-000000000001",
 	}, repo.calls)
 	assert.False(t, registered)
 }
@@ -370,7 +371,7 @@ func TestRegistryPropagatesApiBoundaryFromDescriptor(t *testing.T) {
 	repo := &registryRepoSpy{}
 	core := newRegistryCoreForTest(repo, &descriptorRepoSpy{})
 	core.Register(AppRegistration{
-		InstanceId:        "instance-1",
+		InstanceId:        uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		Name:              "demo.app",
 		Version:           "1.0.0",
 		DomainDescriptors: []*skeldesc.Domain{{Name: "demo", Services: []*skeldesc.Service{{SkelName: "demo.ApiService", Api: true, AuthMode: skeldesc.AuthModeRequired}, {SkelName: "demo.BackendService", Pub: true, AuthMode: skeldesc.AuthModeRequired}, {SkelName: "demo.LegacyService", AuthMode: skeldesc.AuthModeRequired}}, Generated: &skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}}},
@@ -407,9 +408,9 @@ type concurrentLeaseRepo struct {
 }
 
 func (r *concurrentLeaseRepo) ListExpiredAppLeases() []AppHeartbeat {
-	return []AppHeartbeat{{Name: "demo", InstanceId: "old"}}
+	return []AppHeartbeat{{Name: "demo", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")}}
 }
-func (r *concurrentLeaseRepo) GetAppStatus(name string, instanceId string) (*AppStatus, bool) {
+func (r *concurrentLeaseRepo) GetAppStatus(name string, instanceId uuid.UUID) (*AppStatus, bool) {
 	// Pause the sweeper after it has read an expired status. A heartbeat must
 	// not renew between this decision and the resulting unregister.
 	snapshot := *r.appStatus
@@ -417,16 +418,16 @@ func (r *concurrentLeaseRepo) GetAppStatus(name string, instanceId string) (*App
 	r.once.Do(func() { close(r.read); <-r.resume })
 	return &snapshot, ok
 }
-func (r *concurrentLeaseRepo) KeepAppStatus(string, string) bool {
+func (r *concurrentLeaseRepo) KeepAppStatus(string, uuid.UUID) bool {
 	r.appStatus.ExpiresAt = time.Now().Add(time.Minute)
 	return true
 }
-func (r *concurrentLeaseRepo) RemoveAppStatus(string, string) { r.appStatusOK = false }
+func (r *concurrentLeaseRepo) RemoveAppStatus(string, uuid.UUID) { r.appStatusOK = false }
 
 func TestRegistrySweepSerializesExpiryWithHeartbeat(t *testing.T) {
 	repo := &concurrentLeaseRepo{
 		registryRepoSpy: registryRepoSpy{
-			appStatus:   &AppStatus{Name: "demo", InstanceId: "old", ExpiresAt: time.Now().Add(-time.Minute)},
+			appStatus:   &AppStatus{Name: "demo", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5"), ExpiresAt: time.Now().Add(-time.Minute)},
 			appStatusOK: true,
 		},
 		read:   make(chan struct{}),
@@ -437,7 +438,9 @@ func TestRegistrySweepSerializesExpiryWithHeartbeat(t *testing.T) {
 	go func() { swept <- target.SweepExpiredLeases() }()
 	<-repo.read
 	heartbeaten := make(chan bool, 1)
-	go func() { heartbeaten <- target.Heartbeat(AppHeartbeat{Name: "demo", InstanceId: "old"}) }()
+	go func() {
+		heartbeaten <- target.Heartbeat(AppHeartbeat{Name: "demo", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")})
+	}()
 	select {
 	case <-heartbeaten:
 		t.Error("heartbeat overtook an in-progress expiry decision")
@@ -457,7 +460,7 @@ func TestRegistrySweepSerializesExpiryWithHeartbeat(t *testing.T) {
 func TestRegistrySweepRechecksRenewedCandidate(t *testing.T) {
 	repo := &concurrentLeaseRepo{
 		registryRepoSpy: registryRepoSpy{
-			appStatus:   &AppStatus{Name: "demo", InstanceId: "old", ExpiresAt: time.Now().Add(time.Minute)},
+			appStatus:   &AppStatus{Name: "demo", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5"), ExpiresAt: time.Now().Add(time.Minute)},
 			appStatusOK: true,
 		},
 		read:   make(chan struct{}),

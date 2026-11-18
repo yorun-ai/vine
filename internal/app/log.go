@@ -22,7 +22,7 @@ func buildLoggerFields(ctx meta.Context, method rpcspec.MethodInfo, info meta.Ap
 		fields = append(fields,
 			slog.String("name", info.Name()),
 			slog.String("version", info.Version()),
-			slog.String("instanceId", info.InstanceId()),
+			slog.String("instanceId", info.InstanceId().String()),
 		)
 	}
 
@@ -44,7 +44,7 @@ func buildContextLogFields(ctx meta.Context) []slog.Attr {
 		if client := rpcContext.Client(); client != nil {
 			fields = append(fields,
 				slog.String("clientVersion", client.Version()),
-				slog.String("clientInstanceId", client.InstanceId()),
+				slog.String("clientInstanceId", client.InstanceId().String()),
 				slog.String("clientName", client.Name()),
 			)
 		}

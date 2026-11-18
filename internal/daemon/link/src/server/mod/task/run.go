@@ -1,11 +1,13 @@
 package task
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"math/rand/v2"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -73,7 +75,7 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 					taskspec.NATSSubject(taskSkelName),
 					taskspec.NATSConsumerName(taskSkelName),
 				),
-				runnerByApp: map[string]*_TaskRunnerState{},
+				runnerByApp: map[uuid.UUID]*_TaskRunnerState{},
 				changed:     make(chan struct{}),
 				done:        make(chan struct{}),
 			})
@@ -94,7 +96,7 @@ func (m *Manager) OnDrain(instance *minder.AppInstance) {
 
 func (*Manager) OnDestroy(*minder.AppInstance) {}
 
-func (m *Manager) removeAppLocked(instanceId string) {
+func (m *Manager) removeAppLocked(instanceId uuid.UUID) {
 	runnerByTaskSkel, exists := m.runnerByAppInstanceID[instanceId]
 	if !exists {
 		return
@@ -164,11 +166,11 @@ func (m *Manager) nextAvailableRunner(state *_TaskSubscription) *_TaskRunnerStat
 			m.mutex.Unlock()
 			return nil
 		}
-		ids := make([]string, 0, len(state.runnerByApp))
+		ids := make([]uuid.UUID, 0, len(state.runnerByApp))
 		for id := range state.runnerByApp {
 			ids = append(ids, id)
 		}
-		ids = vslice.Sort(ids)
+		ids = vslice.SortBy(ids, func(a uuid.UUID, b uuid.UUID) bool { return bytes.Compare(a[:], b[:]) < 0 })
 		for offset := 0; offset < len(ids); offset++ {
 			runner := state.runnerByApp[ids[(state.nextRunner+offset)%len(ids)]]
 			select {

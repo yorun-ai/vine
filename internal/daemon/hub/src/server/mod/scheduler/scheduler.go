@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"uuid"
 
 	"github.com/robfig/cron/v3"
 	skeltype "go.yorun.ai/skel/types"
@@ -226,7 +225,7 @@ func (s *Scheduler) publishSchedule(config _ScheduleConfig) {
 			TraceSpan:     trace.Span(),
 			AppName:       s.CurrentApp.Name(),
 			AppVersion:    s.CurrentApp.Version(),
-			AppInstanceId: uuid.MustParse(s.CurrentApp.InstanceId()),
+			AppInstanceId: s.CurrentApp.InstanceId(),
 			LaunchedAt:    skeltype.NewTimestampNow(),
 		},
 		TaskSkelName:    config.TaskSkelName,

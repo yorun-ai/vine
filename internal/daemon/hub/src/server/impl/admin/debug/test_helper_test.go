@@ -2,6 +2,7 @@ package debug
 
 import (
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ func newMessageDebugServices() (*EventDebugApiServiceServerImpl, *TaskDebugApiSe
 		repo.statuses = append(repo.statuses, &core.AppStatus{EventListeners: []core.EventListenerRegistration{{EventSkelName: name, DescriptorHash: hash}}, TaskRunners: []core.TaskRunnerRegistration{{TaskSkelName: name, DescriptorHash: hash}}})
 	}
 	repo.statuses = append(repo.statuses, repo.statuses[0])
-	currentApp := meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099")
+	currentApp := meta.MustNewApp("vine.hub", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099"))
 	return &EventDebugApiServiceServerImpl{RegistryRepo: repo, DescriptorRepo: repo, CurrentApp: currentApp}, &TaskDebugApiServiceServerImpl{RegistryRepo: repo, DescriptorRepo: repo, CurrentApp: currentApp}
 }
 

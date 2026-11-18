@@ -3,6 +3,7 @@ package webproxy
 import (
 	"context"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
@@ -14,7 +15,7 @@ func TestOnDrainRemovesLocalAppState(t *testing.T) {
 	}
 	proxy.DIInit()
 
-	localApp := mustWebProxyMetaApp(t, "demo.app", "11111111-1111-1111-1111-111111111111")
+	localApp := mustWebProxyMetaApp(t, "demo.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	registerLocalWebApp(proxy, localApp, "http://127.0.0.1:8080"+testPathWebAccess, "http://127.0.0.1:8080", []string{"admin@demo.app"})
 
 	proxy.OnDrain(&minder.AppInstance{AppInfo: localApp})

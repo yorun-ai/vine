@@ -5,6 +5,7 @@ import (
 	"encoding/json/v2"
 	"strings"
 	"time"
+	"uuid"
 
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -42,7 +43,7 @@ func listDebugAppInstances(statuses []*core.AppStatus, include func(*core.AppSta
 		}
 		ret = append(ret, skeled.ServiceDebugAppInstance{
 			AppName:       status.Name,
-			AppInstanceId: status.InstanceId,
+			AppInstanceId: status.InstanceId.String(),
 			AppVersion:    status.Version,
 			Endpoint:      status.Endpoint,
 		})
@@ -173,12 +174,14 @@ func (s *ServiceDebugApiServiceServerImpl) resolveRpcServiceRegistration(request
 	appName := optionalTrimmedString(request.AppName)
 	appInstanceId := optionalTrimmedString(request.AppInstanceId)
 	if appName != "" && appInstanceId != "" {
-		_, statusOK := s.RegistryRepo.GetAppStatus(appName, appInstanceId)
+		id, err := uuid.Parse(appInstanceId)
+		ex.PanicNewIfError(err, ex.InvalidRequest)
+		_, statusOK := s.RegistryRepo.GetAppStatus(appName, id)
 		ex.PanicNewIfNot(statusOK, ex.NotFound, "app instance not found")
 		registration, ok := s.RegistryRepo.GetRpcServiceRegistration(
 			request.ServiceSkelName,
 			appName,
-			appInstanceId,
+			id,
 		)
 		ex.PanicNewIfNot(ok, ex.NotFound, "rpc service registration not found")
 		return registration
@@ -189,15 +192,15 @@ func (s *ServiceDebugApiServiceServerImpl) resolveRpcServiceRegistration(request
 	ex.PanicNewIfNot(len(candidates) == 1, ex.InvalidRequest, "multiple app instances provide this service; please select a specific app instance")
 	registration, ok := s.RegistryRepo.GetRpcServiceRegistration(
 		request.ServiceSkelName,
-		candidates[0].AppName,
-		candidates[0].AppInstanceId,
+		candidates[0].Name,
+		candidates[0].InstanceId,
 	)
 	ex.PanicNewIfNot(ok, ex.NotFound, "rpc service registration not found")
 	return registration
 }
 
-func (s *ServiceDebugApiServiceServerImpl) serviceAppInstances(serviceSkelName string, descriptorHash string) []skeled.ServiceDebugAppInstance {
-	return listDebugAppInstances(s.RegistryRepo.ListAppStatuses(), func(status *core.AppStatus) bool {
+func (s *ServiceDebugApiServiceServerImpl) serviceAppInstances(serviceSkelName string, descriptorHash string) []*core.AppStatus {
+	return vslice.Filter(s.RegistryRepo.ListAppStatuses(), func(status *core.AppStatus) bool {
 		return statusHasServiceHandler(status, serviceSkelName, descriptorHash)
 	})
 }

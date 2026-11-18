@@ -11,6 +11,7 @@ import (
 	"go.yorun.ai/vine/util/vcode"
 	"testing"
 	"time"
+	"uuid"
 )
 
 func TestManagerNextEndpointRoundRobins(t *testing.T) {
@@ -25,8 +26,8 @@ func TestManagerNextEndpointRoundRobins(t *testing.T) {
 			name:   "rpc registration",
 			prefix: watched.FormatRpcServiceRegistrationPrefix("demo.UserService"),
 			valuesByKey: map[string]string{
-				testRpcRegistrationKey("demo.UserService", "instance-1"): testRpcRegistrationValue("demo.UserService", "instance-1", "http://127.0.0.1:23001"),
-				testRpcRegistrationKey("demo.UserService", "instance-2"): testRpcRegistrationValue("demo.UserService", "instance-2", "http://127.0.0.1:23002"),
+				testRpcRegistrationKey("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000001")): testRpcRegistrationValue("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000001"), "http://127.0.0.1:23001"),
+				testRpcRegistrationKey("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000002")): testRpcRegistrationValue("demo.UserService", uuid.MustParse("00000000-0000-0000-0000-000000000002"), "http://127.0.0.1:23002"),
 			},
 			watch: func(manager *Manager) *Watcher {
 				return manager.WatchRpc("demo.UserService")
@@ -39,8 +40,8 @@ func TestManagerNextEndpointRoundRobins(t *testing.T) {
 			name:   "web registration",
 			prefix: watched.FormatWebRegistrationPrefix("admin@demo.app"),
 			valuesByKey: map[string]string{
-				testWebRegistrationKey("admin@demo.app", "instance-1"): testWebRegistrationValue("admin@demo.app", "instance-1", "http://127.0.0.1:23001"),
-				testWebRegistrationKey("admin@demo.app", "instance-2"): testWebRegistrationValue("admin@demo.app", "instance-2", "http://127.0.0.1:23002"),
+				testWebRegistrationKey("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): testWebRegistrationValue("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001"), "http://127.0.0.1:23001"),
+				testWebRegistrationKey("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000002")): testWebRegistrationValue("admin@demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000002"), "http://127.0.0.1:23002"),
 			},
 			watch: func(manager *Manager) *Watcher {
 				return manager.WatchWeb("admin@demo.app")
@@ -100,11 +101,11 @@ func newTestManager(t *testing.T, valuesByKey map[string]string) *Manager {
 	return manager
 }
 
-func testRpcRegistrationKey(serviceName string, instanceId string) string {
+func testRpcRegistrationKey(serviceName string, instanceId uuid.UUID) string {
 	return watched.FormatRpcServiceRegistrationKey(serviceName, "demo.app", instanceId)
 }
 
-func testRpcRegistrationValue(serviceName string, instanceId string, endpoint string) string {
+func testRpcRegistrationValue(serviceName string, instanceId uuid.UUID, endpoint string) string {
 	return vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 		Endpoint:      endpoint,
 		ServiceName:   serviceName,
@@ -113,11 +114,11 @@ func testRpcRegistrationValue(serviceName string, instanceId string, endpoint st
 	})
 }
 
-func testWebRegistrationKey(webName string, instanceId string) string {
+func testWebRegistrationKey(webName string, instanceId uuid.UUID) string {
 	return watched.FormatWebRegistrationKey(webName, "demo.app", instanceId)
 }
 
-func testWebRegistrationValue(webName string, instanceId string, endpoint string) string {
+func testWebRegistrationValue(webName string, instanceId uuid.UUID, endpoint string) string {
 	return vcode.MustMarshalJsonS(watched.WebRegistration{
 		Endpoint:      endpoint,
 		WebSkelName:   webName,
@@ -132,8 +133,8 @@ func TestEndpointDiscoveryThroughHubWatch(t *testing.T) {
 	manager.DIInit()
 	subscription := manager.WatchRpc("demo.Service")
 	t.Cleanup(subscription.Release)
-	key := testRpcRegistrationKey("demo.Service", "instance")
-	server.SetAndNotify(key, testRpcRegistrationValue("demo.Service", "instance", "http://127.0.0.1:7082"))
+	key := testRpcRegistrationKey("demo.Service", uuid.MustParse("00000000-0000-0000-0000-00000000000a"))
+	server.SetAndNotify(key, testRpcRegistrationValue("demo.Service", uuid.MustParse("00000000-0000-0000-0000-00000000000a"), "http://127.0.0.1:7082"))
 	require.Eventually(t, func() bool {
 		endpoint, _, _ := manager.NextRpcEndpoint("demo.Service")
 		return endpoint != nil && endpoint.Endpoint == "http://127.0.0.1:7082"
@@ -166,8 +167,8 @@ func TestPeriodicNetworkHubSnapshotRepairsMissedEndpointDelete(t *testing.T) {
 	clientManager := &watch.ClientManager{Context: t.Context()}
 	clientManager.InitComponent(client)
 	t.Cleanup(clientManager.AfterAppStop)
-	key := testRpcRegistrationKey(testService, "instance")
-	server.SetAndNotify(key, testRpcRegistrationValue(testService, "instance", "http://old-ip"))
+	key := testRpcRegistrationKey(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"))
+	server.SetAndNotify(key, testRpcRegistrationValue(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"), "http://old-ip"))
 	manager := &Manager{Context: t.Context(), Watch: &client.Client}
 	manager.DIInit()
 	subscription := manager.WatchRpc(testService)

@@ -85,7 +85,7 @@ func (c *_TestInfoServiceClient) calls() int {
 const testPortalInstanceId = "11111111-1111-1111-1111-111111111111"
 
 func newTestHeartbeat(client *_TestPortalRegistryClient, infoClient *_TestInfoServiceClient, flags *flag.Flag) *Heartbeat {
-	appInfo, err := meta.NewApp("vine.portal", "1.2.3", testPortalInstanceId)
+	appInfo, err := meta.NewApp("vine.portal", "1.2.3", uuid.MustParse(testPortalInstanceId))
 	if err != nil {
 		panic(err)
 	}

@@ -40,7 +40,7 @@ type Heartbeat struct {
 }
 
 func (h *Heartbeat) AfterAppStart() {
-	h.instanceId = uuid.MustParse(h.CurrentApp.InstanceId())
+	h.instanceId = h.CurrentApp.InstanceId()
 	h.register()
 
 	if h.Flag.HubInprocMode {

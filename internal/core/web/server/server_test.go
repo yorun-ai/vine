@@ -19,6 +19,7 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+	"uuid"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -132,7 +133,7 @@ func TestServerServesEmbeddedAssetsThroughContainer(t *testing.T) {
 func newAssetsWebRequest(t *testing.T, method string, path string) *http.Request {
 	t.Helper()
 	request := httptest.NewRequest(method, path, nil)
-	initiator, err := meta.NewInitiator("portal.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174000", "http", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "http", "127.0.0.1")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/klauspost/compress/zstd"
 	skeldesc "go.yorun.ai/skel/descriptor"
@@ -34,12 +35,12 @@ import (
 
 func TestRpcGatewayRejectsPlaintextRegistrationWithMTLS(t *testing.T) {
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:       "http://link.local/rpc/proxy/in/instance-1",
 			ServerIdentity: daemon.LinkIdentity,
 			ServiceName:    "demo.UserService",
 			AppName:        "demo.app",
-			AppInstanceId:  "instance-1",
+			AppInstanceId:  uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	target.access.Identity = mtlstest.NewCA(t).Identity(t, daemon.PortalIdentity.SPIFFEPath())
@@ -73,11 +74,11 @@ func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T)
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -122,7 +123,7 @@ func TestRpcGatewayForwardsConfiguredServiceToRegistrationEndpoint(t *testing.T)
 	if err != nil {
 		t.Fatalf("DecodeInitiatorFromBase64() error = %v", err)
 	}
-	if initiator.Name() != "demo.client" || initiator.Version() != "0.0.0" || initiator.InstanceId() != "123e4567-e89b-12d3-a456-426614174001" {
+	if initiator.Name() != "demo.client" || initiator.Version() != "0.0.0" || initiator.InstanceId() != uuid.MustParse("123e4567-e89b-12d3-a456-426614174001") {
 		t.Fatalf("unexpected initiator app: %#v", initiator)
 	}
 	if initiator.Dialer() != "curl/8.0" {
@@ -144,11 +145,11 @@ func TestRpcGatewayClearsAcceptEncodingBeforeForward(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -171,11 +172,11 @@ func TestRpcGatewayAddsDefaultRpcOptionsTimeoutBeforeForward(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -199,11 +200,11 @@ func TestRpcGatewayIgnoresClientCancelAfterRequestIsAccepted(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -230,11 +231,11 @@ func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -252,11 +253,11 @@ func TestRpcGatewayForwardsRemainingRpcOptionsTimeout(t *testing.T) {
 
 func TestRpcGatewayRejectsRpcOptionsTimeoutOverMax(t *testing.T) {
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -292,11 +293,11 @@ func TestRpcGatewayGeneratesMissingRpcSpanBeforeForward(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -329,11 +330,11 @@ func TestRpcGatewayMapsForwardedRpcErrorToHTTPStatusCode(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -387,11 +388,11 @@ func TestRpcGatewayCreatesForwardSpan(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -422,14 +423,14 @@ func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
-	expected, err := meta.NewInitiator("other.client", "1.2.3", "123e4567-e89b-12d3-a456-426614174010", "browser", "203.0.113.9")
+	expected, err := meta.NewInitiator("other.client", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174010"), "browser", "203.0.113.9")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}
@@ -452,11 +453,11 @@ func TestRpcGatewayOverwritesExistingRpcInitiator(t *testing.T) {
 
 func TestRpcGatewayRejectsMissingRpcClient(t *testing.T) {
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -471,11 +472,11 @@ func TestRpcGatewayRejectsMissingRpcClient(t *testing.T) {
 
 func TestRpcGatewayRejectsMissingRpcTrace(t *testing.T) {
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -490,11 +491,11 @@ func TestRpcGatewayRejectsMissingRpcTrace(t *testing.T) {
 
 func TestRpcGatewayRejectsInvalidContentType(t *testing.T) {
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -515,11 +516,11 @@ func TestRpcGatewayOverwritesExistingRpcActor(t *testing.T) {
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	actor := meta.NewAuthenticatedActorWithRawInfo("test.realm", "test", "test.ActorInfo", []byte(`{"Id":"test"}`))
@@ -625,11 +626,11 @@ func TestRpcGatewayReturnsUnavailableWhenServiceHasNoEndpoint(t *testing.T) {
 
 func TestRpcGatewayRejectsServiceOutsideConfiguredList(t *testing.T) {
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.OrderService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.OrderService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      "http://127.0.0.1:23001/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.OrderService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 
@@ -777,7 +778,7 @@ func mustDecodeRpcTrace(t *testing.T, value string) meta.Trace {
 }
 
 func testServerApp() meta.App {
-	return meta.MustNewApp("vine.portal", "0.0.0", "123e4567-e89b-12d3-a456-426614174099")
+	return meta.MustNewApp("vine.portal", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099"))
 }
 
 func newTestEpmgr(t *testing.T, valuesByKey map[string]string) *epmgr.Manager {
@@ -839,11 +840,11 @@ func serveTestRpcGatewayCompressedResponse(t *testing.T, body string, acceptEnco
 	}))
 
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 			Endpoint:      ingressEndpoint + "/rpc/proxy/in/instance-1",
 			ServiceName:   "demo.UserService",
 			AppName:       "demo.app",
-			AppInstanceId: "instance-1",
+			AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		}),
 	})
 	recorder := httptest.NewRecorder()
@@ -936,11 +937,11 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 			backend.Start()
 			t.Cleanup(backend.Close)
 			target := newTestRpcGateway(t, map[string]string{
-				watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+				watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 					Endpoint:      backend.URL,
 					ServiceName:   "demo.UserService",
 					AppName:       "demo.app",
-					AppInstanceId: "instance-1",
+					AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 				}),
 			})
 			authEndpoint := "link+inproc://vine/portal-rpcgw-auth-test"
@@ -991,7 +992,7 @@ func TestRpcGatewayRemovesAuthorizationBeforeHTTPForwarding(t *testing.T) {
 					Service:         new(skeldesc.Service{SkelName: "demo.OpsAuthService"}),
 				}),
 			}))
-			watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", "auth-instance"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: "auth-instance"}))
+			watchClient.SetValue(watched.FormatRpcServiceRegistrationKey("demo.AuthService", "demo.auth", uuid.MustParse("00000000-0000-0000-0000-000000000064")), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: authEndpoint, ServiceName: "demo.AuthService", AppName: "demo.auth", AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000064")}))
 			authEpmgr := new(epmgr.Manager{Context: context.Background(), Watch: watchClient})
 			authEpmgr.DIInit()
 			descriptors := new(desc.Manager{Context: t.Context(), Watch: watchClient})

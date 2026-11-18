@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"uuid"
 
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -10,7 +11,7 @@ import (
 func (c *Reader) newInstantConfigState(watchKey string) (*_InstantConfigState, hubwatch.Subscription) {
 	watchCtx, cancel := context.WithCancel(c.Context)
 	state := &_InstantConfigState{
-		refsByAppInstanceID: map[string]struct{}{},
+		refsByAppInstanceID: map[uuid.UUID]struct{}{},
 		cancel:              cancel,
 	}
 	loadedConfigValue, loadedOk, subscription := c.loadAndWatchInstantConfigValue(watchKey, watchCtx)
@@ -81,7 +82,7 @@ func (c *Reader) stopAllInstantConfigWatchers() {
 	}
 }
 
-func (c *Reader) releaseInstantConfigStateByInstance(appInstanceID string) {
+func (c *Reader) releaseInstantConfigStateByInstance(appInstanceID uuid.UUID) {
 	c.mutex.Lock()
 	cancels := make([]context.CancelFunc, 0)
 	for key, state := range c.instantConfigStatesByKey {

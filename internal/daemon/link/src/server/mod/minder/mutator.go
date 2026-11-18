@@ -1,12 +1,14 @@
 package minder
 
+import "uuid"
+
 func (m *AppMinder) AddMutator(mutator Mutator) {
 	m.mutex.Lock()
 	m.mutators = append(m.mutators, mutator)
 	m.mutex.Unlock()
 }
 
-func (m *AppMinder) appInstance(instanceID string) (*AppInstance, bool) {
+func (m *AppMinder) appInstance(instanceID uuid.UUID) (*AppInstance, bool) {
 	m.mutex.Lock()
 	instance := m.instanceByID[instanceID]
 	m.mutex.Unlock()

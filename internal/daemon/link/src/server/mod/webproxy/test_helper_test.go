@@ -50,7 +50,7 @@ func newH2CTestServer(t *testing.T, handler http.Handler) *_H2CTestServer {
 	}
 }
 
-func mustWebProxyMetaApp(t *testing.T, name string, instanceID string) meta.App {
+func mustWebProxyMetaApp(t *testing.T, name string, instanceID uuid.UUID) meta.App {
 	t.Helper()
 	appInfo, err := meta.NewApp(name, "1.0.0", instanceID)
 	if err != nil {
@@ -60,7 +60,7 @@ func mustWebProxyMetaApp(t *testing.T, name string, instanceID string) meta.App 
 }
 
 func newTestAppMinder() *minder.AppMinder {
-	appInfo, err := meta.NewApp("vine.link", "1.0.0", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	appInfo, err := meta.NewApp("vine.link", "1.0.0", uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
 	if err != nil {
 		panic(err)
 	}
