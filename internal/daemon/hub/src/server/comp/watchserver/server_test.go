@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json/v2"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -762,4 +764,62 @@ func requireSubscription(t *testing.T, value any, kind string, channel string, c
 func isPubSubTimeout(err error) bool {
 	var netErr net.Error
 	return errors.Is(err, redis.Nil) || errors.Is(err, context.DeadlineExceeded) || errors.As(err, &netErr) && netErr.Timeout()
+}
+
+func TestWatchConcurrentMutationsPublishInRevisionOrder(t *testing.T) {
+	for _, network := range []bool{false, true} {
+		name := "inproc"
+		if network {
+			name = "network"
+		}
+		t.Run(name, func(t *testing.T) {
+			var server *Server
+			var client *redis.Client
+			if network {
+				server, client = newNetworkTestServer(t)
+			} else {
+				server, client = newInprocTestServer(t)
+			}
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+			sub := client.PSubscribe(ctx, "config:*")
+			defer sub.Close()
+			_, err := sub.Receive(ctx)
+			require.NoError(t, err)
+			const writers = 128
+			var wg sync.WaitGroup
+			start := make(chan struct{})
+			for i := range writers {
+				wg.Go(func() {
+					<-start
+					key := fmt.Sprintf("config:instance-%d", i)
+					server.SetAndNotify(key, "old")
+					batch := server.NotifyBatch()
+					batch.Delete(key)
+					batch.Set(key+"-new", "new")
+					batch.Notify()
+					server.DeleteAndNotify(key + "-new")
+				})
+			}
+			close(start)
+			var last uint64
+			cache := map[string]string{}
+			for range writers * 4 {
+				message, err := sub.ReceiveMessage(ctx)
+				require.NoError(t, err)
+				var event hubwatch.Event
+				require.NoError(t, json.Unmarshal([]byte(message.Payload), &event))
+				require.GreaterOrEqual(t, event.Revision, last, "a later event must not cause an earlier delete to be discarded")
+				last = event.Revision
+				if event.Kind == hubwatch.EventKindDelete {
+					delete(cache, event.Key)
+				} else {
+					cache[event.Key] = event.Value
+				}
+			}
+			wg.Wait()
+			require.Empty(t, cache)
+			require.Empty(t, server.Scan("config:*"))
+		})
+	}
 }

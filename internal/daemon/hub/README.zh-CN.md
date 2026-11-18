@@ -131,7 +131,7 @@ Hub 的层次职责必须保持清晰：
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
-- 普通模式与 inproc 模式的 TTL、heartbeat、sweeper 语义不同；修改注册逻辑时必须分别验证。
+- 普通模式与 inproc 模式的租约、heartbeat、sweeper 语义不同；修改注册逻辑时必须分别验证。
 
 ## 运行机制
 
@@ -218,34 +218,36 @@ bash script/gen-skel.sh hub
 
 Hub 支持作为单进程内组件运行：
 
-- Hub Control API 注册在 `rpc+inproc://vine/hub`；Admin API 只走自己的监听，
-  因此除非调用方声明了 admin 监听地址，进程内运行的 Hub 不提供 Admin API。
-- `watchserver` 不再启动对外 TCP 端口，只保留进程内 Redis server。
-- `vined` 中会保存这份进程内 Redis server 指针，供 inproc 模式下的 `WatchClient` 直接使用。
+- Hub Control API 注册在 `rpc+inproc://vine/hub`；声明 admin 监听地址后，
+  Admin API 使用独立 listener 提供服务。
+- `watchserver` 在 `redis+inproc://vine/hub/watch` 上通过内存连接提供 Redis 协议服务，
+  并通过 `watch.SetInprocServer` 注册 dialer，供 Link 和 Portal 的 Watch client 使用。
 
-此时 Hub 仍然承担配置中心和注册中心职责，只是底层不再通过网络暴露。
+## 租约与 Heartbeat
 
-## TTL 与 Heartbeat
+应用状态、Rpc/Web 端点和 Portal 实例记录保留在 Watch 中，直到清理完成。
+存活实例列表按注册记录的有效状态筛选。
 
-Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
+网络模式下，Link 和 Portal 通过 heartbeat 续租，租约为 30 秒；Hub sweeper 每 5 秒检查
+过期租约。注册、续租、注销和过期检查共用同一实例锁。应用清理先删除端点、释放
+descriptor 所有权，再删除状态和租约索引。清理失败时保留资料供下一轮重试；
+descriptor 和 Portal 站点发布失败也会重试。
 
-- 普通模式
-  - 应用状态与 Rpc 服务注册写入 Watch 时会带 TTL。
-  - Link 通过 heartbeat 持续续租。
-  - Hub 通过 registry sweeper 扫描过期 app lease，主动 unregister 过期实例并发布 delete 事件。
-  - Watch key TTL 是兜底清理机制，实际的注册失效事件由 Hub sweeper 负责发布。
+Inproc 注册随共享进程的生命周期管理，保持有效直到显式 unregister。
 
-- Inproc 模式
-  - 应用状态与 Rpc 服务注册写入 Watch 时不再设置 TTL。
-  - `KeepAppStatus` 和 `KeepRpcServiceRegistration` 变为 noop。
-  - registry sweeper 不启动。
-  - 状态改为长期有效，依赖显式 unregister 清理。
+## Watch 同步
 
-这使得单进程模式下不再需要 heartbeat 维持注册状态。
+Watch 按序串行分配 revision 并发布单条或批量更新。连接写入在数据锁外执行。
+订阅连接写入失败后关闭连接，由客户端重连并重新读取快照。
 
-`dashboard/dist` 的真实构建产物随源码提交；随源码变更运行 `bash script/build-dashboard-assets.sh` 更新，不放占位文件。
+订阅先用完整快照初始化缓存，再按序交付变更事件。快照读取限时 5 秒，并要求
+前后 revision 一致。成功快照覆盖小于等于其 revision 的事件；后续增量批次中
+共享同一 revision 的各个事件均正常交付。
 
-### 证书表示
+网络订阅还会每隔 25–35 秒在同一消费循环中对账。读取失败时保留缓存，等待下一轮。
+取消订阅会释放连接及对账定时器。
+
+## 证书表示
 
 Hub 领域、Admin API、Dashboard 和 seed 统一使用 PEM `certificate`、`privateKey`
 字段。已有数据库必须已包含 PEM 字段；DAO 删除退休的 Base64 列，不再转换其中内容。

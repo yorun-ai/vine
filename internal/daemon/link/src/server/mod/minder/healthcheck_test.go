@@ -2,15 +2,16 @@ package minder
 
 import (
 	"context"
-	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.yorun.ai/vine/internal/app"
+	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
@@ -160,4 +161,32 @@ func TestStartHealthcheckSkipsWhenInprocModeEnabled(t *testing.T) {
 
 	assert.Nil(t, instance.healthcheckCancel)
 	assert.False(t, called)
+}
+
+func TestHealthcheckUnregisterFailureStopsRenewal(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		previous := newConsoleServiceClient
+		t.Cleanup(func() { newConsoleServiceClient = previous })
+		newConsoleServiceClient = func(context.Context, meta.App, string) appskeled.ConsoleServiceClientER {
+			return &_HealthcheckConsoleClient{ping: func() ex.Error { return ex.New(ex.ServerUnreachable, "application stopped") }}
+		}
+		heartbeats := 0
+		unregistrations := 0
+		minder := newTestHealthcheckMinder(t.Context())
+		minder.RegistryServiceClient = &shutdownRegistryClient{
+			register:   func() {},
+			heartbeat:  func() bool { heartbeats++; return true },
+			unregister: func() { unregistrations++; panic("hub unavailable") },
+		}
+		minder.RegisterInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+		defer minder.AfterAppStop()
+		synctest.Sleep(time.Duration(healthcheckMaxFailedCount)*healthcheckInterval + unregisterPropagationGrace)
+		synctest.Wait()
+		_, ok := minder.appInstance(mustTestMetaApp().InstanceId())
+		require.False(t, ok)
+		require.Equal(t, 1, unregistrations)
+		before := heartbeats
+		synctest.Sleep(3 * heartbeatInterval)
+		require.Equal(t, before, heartbeats)
+	})
 }

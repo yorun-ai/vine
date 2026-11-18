@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 	"go.yorun.ai/vine/util/vcode"
 	"testing"
@@ -75,7 +76,7 @@ func TestManagerNextRpcEndpointReturnsConfiguredWithoutEndpoint(t *testing.T) {
 	watcher := manager.WatchRpc("demo.UserService")
 	t.Cleanup(watcher.Release)
 
-	endpoint, configured := manager.NextRpcEndpoint("demo.UserService")
+	endpoint, _, configured := manager.NextRpcEndpoint("demo.UserService")
 	assert.True(t, configured)
 	assert.Nil(t, endpoint)
 }
@@ -134,14 +135,55 @@ func TestEndpointDiscoveryThroughHubWatch(t *testing.T) {
 	key := testRpcRegistrationKey("demo.Service", "instance")
 	server.SetAndNotify(key, testRpcRegistrationValue("demo.Service", "instance", "http://127.0.0.1:7082"))
 	require.Eventually(t, func() bool {
-		endpoint, _ := manager.NextRpcEndpoint("demo.Service")
+		endpoint, _, _ := manager.NextRpcEndpoint("demo.Service")
 		return endpoint != nil && endpoint.Endpoint == "http://127.0.0.1:7082"
 	}, 2*time.Second, time.Millisecond)
 	server.DeleteAndNotify(key)
-	require.Eventually(t, func() bool { endpoint, _ := manager.NextRpcEndpoint("demo.Service"); return endpoint == nil }, 2*time.Second, time.Millisecond)
-	_, configured := manager.NextRpcEndpoint("demo.Service")
+	require.Eventually(t, func() bool { endpoint, _, _ := manager.NextRpcEndpoint("demo.Service"); return endpoint == nil }, 2*time.Second, time.Millisecond)
+	_, _, configured := manager.NextRpcEndpoint("demo.Service")
 	assert.True(t, configured)
 	subscription.Release()
-	_, configured = manager.NextRpcEndpoint("demo.Service")
+	_, _, configured = manager.NextRpcEndpoint("demo.Service")
 	assert.False(t, configured)
+}
+
+type networkWatchClient struct {
+	watch.Client
+	endpoint string
+}
+
+func (c *networkWatchClient) InitOption(option *watch.Option) {
+	option.Endpoint = c.endpoint
+	option.Username = watch.PortalUsername
+}
+
+func TestPeriodicNetworkHubSnapshotRepairsMissedEndpointDelete(t *testing.T) {
+	server := watchserver.NewServerForTest()
+	server.Option.WatchListen = "127.0.0.1:0"
+	server.DIInit()
+	t.Cleanup(server.AfterAppStop)
+	client := &networkWatchClient{endpoint: watchserver.WatchListenAddrForTest(t, server)}
+	clientManager := &watch.ClientManager{Context: t.Context()}
+	clientManager.InitComponent(client)
+	t.Cleanup(clientManager.AfterAppStop)
+	key := testRpcRegistrationKey(testService, "instance")
+	server.SetAndNotify(key, testRpcRegistrationValue(testService, "instance", "http://old-ip"))
+	manager := &Manager{Context: t.Context(), Watch: &client.Client}
+	manager.DIInit()
+	subscription := manager.WatchRpc(testService)
+	t.Cleanup(subscription.Release)
+	acquireAttempt(t, manager).Finish(nil)
+	// Change the real Hub store without sending a deletion notification or
+	// closing the subscription. The consumer must repair its retained cache.
+	require.True(t, server.Del(key))
+	acquireAttempt(t, manager).Finish(nil)
+	require.Eventually(t, func() bool {
+		registration, attempt, _ := manager.NextRpcEndpoint(testService)
+		if attempt != nil {
+			attempt.Finish(nil)
+		}
+		return registration == nil
+	}, 40*time.Second, 10*time.Millisecond)
+	_, _, configured := manager.NextRpcEndpoint(testService)
+	require.True(t, configured)
 }

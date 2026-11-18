@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -22,7 +23,7 @@ type _SweeperRegistryRepo struct {
 	removedApp []string
 }
 
-func (r *_SweeperRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
+func (r *_SweeperRegistryRepo) ListExpiredAppLeases() []core.AppHeartbeat {
 	leases := r.leases
 	r.leases = nil
 	return leases
@@ -40,6 +41,7 @@ type _SweeperDescriptorRepo struct {
 	core.DescriptorRepo
 	released []string
 	views    []core.DomainDescriptorView
+	failList bool
 }
 
 func (r *_SweeperDescriptorRepo) ReleaseDomainDescriptors(ownerName string, ownerId string) {
@@ -49,15 +51,24 @@ func (r *_SweeperDescriptorRepo) ReleaseDomainDescriptors(ownerName string, owne
 func (*_SweeperDescriptorRepo) SaveDomainDescriptorsJSON(string, string, []skeltype.JSON) {}
 
 func (r *_SweeperDescriptorRepo) ListDomainDescriptorViews() []core.DomainDescriptorView {
+	if r.failList {
+		panic("descriptor snapshot unavailable")
+	}
 	return r.views
 }
 
 type _SweeperPortalSiteRepo struct {
 	core.PortalSiteRepo
-	entries []*core.PortalSite
+	entries   []*core.PortalSite
+	failList  bool
+	listCalls int
 }
 
 func (r *_SweeperPortalSiteRepo) List() []*core.PortalSite {
+	r.listCalls++
+	if r.failList {
+		panic("portal sites unavailable")
+	}
 	return r.entries
 }
 
@@ -179,7 +190,7 @@ type _SweeperPortalInstanceRepo struct {
 	removed []string
 }
 
-func (r *_SweeperPortalInstanceRepo) PopExpiredLeases() []string {
+func (r *_SweeperPortalInstanceRepo) ListExpiredLeases() []string {
 	leases := r.leases
 	r.leases = nil
 	return leases
@@ -202,4 +213,49 @@ func TestSweeperRemovesExpiredPortalInstances(t *testing.T) {
 	target.sweepExpiredLeases()
 
 	assert.Equal(t, []string{"instance-1", "instance-2"}, portalRepo.removed)
+}
+
+func (r *_SweeperPortalInstanceRepo) GetById(instanceId string) (*core.PortalInstance, bool) {
+	return &core.PortalInstance{InstanceId: instanceId, ExpiresAt: time.Now().Add(-time.Minute)}, true
+}
+
+func TestSweeperRetriesPublicationAfterCleanup(t *testing.T) {
+	for _, stage := range []string{"descriptors", "portal sites"} {
+		t.Run(stage, func(t *testing.T) {
+			server := watchserver.NewServerForTest()
+			t.Cleanup(server.AfterAppStop)
+			publisher := &syncer.Syncer{WatchServer: server}
+			publisher.DIInit()
+			publisher.SyncDescriptors([]core.DomainDescriptorView{{DomainVersion: core.DomainDescriptorVersion{
+				Descriptor: &skeldesc.Domain{Name: "demo", Hash: "old"},
+				Main:       true,
+			}}})
+			registryRepo := &_SweeperRegistryRepo{
+				leases:   []core.AppHeartbeat{{Name: "demo.app", InstanceId: "old"}},
+				status:   &core.AppStatus{Name: "demo.app", InstanceId: "old", ExpiresAt: time.Now().Add(-time.Minute)},
+				statusOK: true,
+			}
+			descriptors := &_SweeperDescriptorRepo{failList: stage == "descriptors"}
+			sites := &_SweeperPortalSiteRepo{failList: stage == "portal sites"}
+			target := &Sweeper{
+				PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: &_SweeperPortalInstanceRepo{}},
+				RegistryCore:       &core.RegistryCore{RegistryRepo: registryRepo, DescriptorRepo: descriptors},
+				DescriptorRepo:     descriptors,
+				PortalSiteCore:     &core.PortalSiteCore{PortalSiteRepo: sites, DescriptorRepo: descriptors},
+				Syncer:             publisher,
+			}
+			require.Panics(t, target.sweepExpiredLeases)
+			require.Equal(t, []string{"demo.app:old"}, registryRepo.removedApp)
+			require.True(t, target.syncPending)
+			descriptors.failList = false
+			sites.failList = false
+			target.sweepExpiredLeases()
+			require.False(t, target.syncPending)
+			_, ok := server.Get(watched.FormatDescriptorDomainKey("demo"))
+			require.False(t, ok, "stale descriptor must be withdrawn despite no newly expired leases")
+			calls := sites.listCalls
+			target.sweepExpiredLeases()
+			require.Equal(t, calls, sites.listCalls, "successful publication does not need another retry")
+		})
+	}
 }

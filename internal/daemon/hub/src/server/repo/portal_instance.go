@@ -11,9 +11,7 @@ import (
 )
 
 const hubPortalRegistryLeaseKey = "portal:leases"
-const hubPortalRegistryEphemeralTTL = 180 * time.Second
 const hubPortalRegistryLeaseTTL = 30 * time.Second
-const hubPortalRegistryLeaseSweepLimit = 100
 
 // Structs
 
@@ -49,7 +47,7 @@ func (r *PortalInstanceRepo) Save(instance *core.PortalInstance) {
 	}
 
 	value.ExpiresAt = timeNow().Add(hubPortalRegistryLeaseTTL)
-	r.WatchServer.SetEphemeralAndNotify(key, vcode.MustMarshalJsonS(value), hubPortalRegistryEphemeralTTL)
+	r.WatchServer.SetAndNotify(key, vcode.MustMarshalJsonS(value))
 	r.savePortalLease(instance.InstanceId)
 }
 
@@ -61,7 +59,10 @@ func (r *PortalInstanceRepo) List() []*core.PortalInstance {
 		if !ok {
 			continue
 		}
-		instances = append(instances, toCorePortalInstance(vcode.MustUnmarshalJsonS[*_PortalInstance](value)))
+		instance := toCorePortalInstance(vcode.MustUnmarshalJsonS[*_PortalInstance](value))
+		if instance.ExpiresAt.IsZero() || timeNow().Before(instance.ExpiresAt) {
+			instances = append(instances, instance)
+		}
 	}
 	return instances
 }
@@ -87,30 +88,26 @@ func (r *PortalInstanceRepo) Keep(instanceId string) bool {
 	instance.ExpiresAt = timeNow().Add(hubPortalRegistryLeaseTTL)
 	key := watched.FormatPortalInstanceKey(instanceId)
 	// Refresh in place: a live instance must not publish a change event.
-	r.WatchServer.SetEphemeral(key, vcode.MustMarshalJsonS(instance), hubPortalRegistryEphemeralTTL)
+	r.WatchServer.Set(key, vcode.MustMarshalJsonS(instance))
 	r.savePortalLease(instanceId)
 	return true
 }
 
 func (r *PortalInstanceRepo) Remove(instanceId string) {
 	key := watched.FormatPortalInstanceKey(instanceId)
-	r.removePortalLease(instanceId)
 	r.WatchServer.DeleteAndNotify(key)
+	r.removePortalLease(instanceId)
 }
 
-func (r *PortalInstanceRepo) PopExpiredLeases() []string {
+func (r *PortalInstanceRepo) ListExpiredLeases() []string {
 	if r.InprocFlag.Enabled {
 		return nil
 	}
 
-	members := r.WatchServer.PopExpiredLeases(hubPortalRegistryLeaseKey, hubPortalRegistryLeaseSweepLimit)
+	members := r.WatchServer.ListExpiredLeases(hubPortalRegistryLeaseKey)
 	instanceIds := make([]string, 0, len(members))
 	for _, member := range members {
 		lease := vcode.MustUnmarshalJsonS[*_PortalLease](member)
-		instance, ok := r.getPortalInstance(lease.InstanceId)
-		if !ok || timeNow().Before(instance.ExpiresAt) {
-			continue
-		}
 		instanceIds = append(instanceIds, lease.InstanceId)
 	}
 	return instanceIds

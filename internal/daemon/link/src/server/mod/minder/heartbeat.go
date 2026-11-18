@@ -6,6 +6,7 @@ import (
 	"uuid"
 
 	"go.yorun.ai/vine/internal/core/logger"
+	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/util/goutil"
 )
@@ -20,7 +21,7 @@ func (i *AppInstance) startHeartbeat() {
 	}
 
 	i.mutex.Lock()
-	if i.heartbeatCancel != nil {
+	if i.stopping || i.heartbeatCancel != nil {
 		i.mutex.Unlock()
 		return
 	}
@@ -31,7 +32,7 @@ func (i *AppInstance) startHeartbeat() {
 
 	safeTicker := goutil.NewSafeTicker(heartbeatCtx, heartbeatInterval, nil)
 	safeTicker.Go(func() {
-		if i.hubKnowsInstance() {
+		if i.hubKnowsInstance() || i.isStopping() {
 			return
 		}
 		// Hub lost this instance, which is what a Hub restart looks like. A
@@ -51,7 +52,13 @@ func (i *AppInstance) startHeartbeat() {
 
 // hubKnowsInstance reports whether Hub still tracks this instance. An
 // unreachable Hub counts as a miss so the caller repairs and registers again.
+// Stopping instances skip renewal and suppress recovery.
 func (i *AppInstance) hubKnowsInstance() bool {
+	i.hubMutex.Lock()
+	defer i.hubMutex.Unlock()
+	if i.isStopping() {
+		return true
+	}
 	registered := false
 	goutil.RunWithRecover(func(recovered any) {
 		heartbeatLogger.Warn("minder hub heartbeat failed", "error", recovered)
@@ -59,7 +66,7 @@ func (i *AppInstance) hubKnowsInstance() bool {
 		registered = i.minder.RegistryServiceClient.Heartbeat(hubskeled.AppStatus{
 			Name:       i.AppInfo.Name(),
 			InstanceId: uuid.MustParse(i.AppInfo.InstanceId()),
-		})
+		}, rpcclient.WithTimeout(hubRegistryTimeout))
 	})
 	return registered
 }

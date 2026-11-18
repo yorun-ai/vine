@@ -137,6 +137,9 @@ func (m *Manager) handleRegistrationEvent(prefix string, event hubwatch.Event) {
 		if !ok {
 			return
 		}
+		if reflect.DeepEqual(route.registrationsByKey[event.Key], registration) {
+			return
+		}
 		route.registrationsByKey[event.Key] = registration
 	}
 	route.rebuildEndpoints()
@@ -144,10 +147,17 @@ func (m *Manager) handleRegistrationEvent(prefix string, event hubwatch.Event) {
 
 func (r *_Route) rebuildEndpoints() {
 	endpoints := make([]any, 0, len(r.registrationsByKey))
+	states := make(map[any]*_EndpointState, len(r.registrationsByKey))
 	for _, registration := range r.registrationsByKey {
 		endpoints = append(endpoints, registration)
+		state := r.endpointStates[registration]
+		if state == nil {
+			state = new(_EndpointState)
+		}
+		states[registration] = state
 	}
 	r.endpoints = endpoints
+	r.endpointStates = states
 	if len(endpoints) == 0 || r.nextIndex >= len(endpoints) {
 		r.nextIndex = 0
 	}

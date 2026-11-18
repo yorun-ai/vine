@@ -15,6 +15,9 @@ type AppInstance struct {
 	minder *AppMinder
 	mutex  sync.Mutex
 
+	// Serializes local setup and Hub mutations with the final unregister.
+	hubMutex sync.Mutex
+
 	AppInfo            meta.App
 	ConsoleEndpoint    string
 	ServiceEndpoint    string
@@ -32,9 +35,38 @@ type AppInstance struct {
 
 	heartbeatCancel   context.CancelFunc
 	healthcheckCancel context.CancelFunc
+	stopping          bool
+	stopDone          chan struct{}
 	draining          bool
 	inflight          int
 	idleCh            chan struct{}
+}
+
+func (i *AppInstance) isStopping() bool {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	return i.stopping
+}
+
+// beginUnregister elects one caller to unregister and drain. Other callers wait
+// for the same cleanup, so App stop cannot overtake health-check cleanup.
+func (i *AppInstance) beginUnregister() (chan struct{}, bool) {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	if i.stopDone != nil {
+		return i.stopDone, false
+	}
+	i.stopping = true
+	i.stopDone = make(chan struct{})
+	return i.stopDone, true
+}
+
+func (i *AppInstance) stopRegistration() {
+	i.mutex.Lock()
+	i.stopping = true
+	i.mutex.Unlock()
+	i.stopHealthcheck()
+	i.stopHeartbeat()
 }
 
 func (m *AppMinder) newAppInstance(registration AppRegistration) *AppInstance {

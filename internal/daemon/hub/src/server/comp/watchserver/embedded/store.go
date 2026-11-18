@@ -23,17 +23,19 @@ import (
 var embeddedWatchServerLogger = logger.New("daemon:hub:watchserver:embedded")
 
 type Store struct {
-	listen   string
-	inproc   bool
-	items    map[string]_Item
-	zsets    map[string]map[string]float64
-	mutex    sync.Mutex
-	scans    map[uint64]_ScanCursor
-	nextScan uint64
-	pubsub   redcon.PubSub
-	server   *redcon.Server
-	listener net.Listener
-	endpoint string
+	listen string
+	inproc bool
+	items  map[string]_Item
+	zsets  map[string]map[string]float64
+	mutex  sync.Mutex
+	// Serialize revision allocation through publication, without holding the data lock during writes.
+	notifyMutex sync.Mutex
+	scans       map[uint64]_ScanCursor
+	nextScan    uint64
+	pubsub      redcon.PubSub
+	server      *redcon.Server
+	listener    net.Listener
+	endpoint    string
 
 	hubPassword string
 	identity    *mtls.Identity
@@ -216,11 +218,15 @@ func (s *Store) Publish(channel string, message string) int {
 }
 
 func (s *Store) Subscribe(conn redcon.Conn, channel string, pattern bool) {
+	state := connContext(conn)
+	if state.subscriber == nil {
+		state.subscriber = new(_SubscriberConn{Conn: conn})
+	}
 	if pattern {
-		s.pubsub.Psubscribe(conn, channel)
+		s.pubsub.Psubscribe(state.subscriber, channel)
 		return
 	}
-	s.pubsub.Subscribe(conn, channel)
+	s.pubsub.Subscribe(state.subscriber, channel)
 }
 
 func (s *Store) SetWithTTL(key string, value string, ttl time.Duration) {
@@ -247,6 +253,8 @@ func (s *Store) SetWithTTLAndNotify(key string, value string, ttl time.Duration)
 }
 
 func (s *Store) setAndNotify(key string, value string, expireAt time.Time) {
+	s.notifyMutex.Lock()
+	defer s.notifyMutex.Unlock()
 	s.mutex.Lock()
 	oldValue, ok := s.getLocked(key, timeNow())
 	if ok && oldValue == value {
@@ -269,6 +277,8 @@ func (s *Store) setAndNotify(key string, value string, expireAt time.Time) {
 }
 
 func (s *Store) DeleteAndNotify(key string) {
+	s.notifyMutex.Lock()
+	defer s.notifyMutex.Unlock()
 	s.mutex.Lock()
 	_, ok := s.getItemLocked(key, timeNow())
 	if !ok {
@@ -287,6 +297,8 @@ func (s *Store) DeleteAndNotify(key string) {
 }
 
 func (s *Store) ApplyAndNotify(operations []hubwatch.NotifyOperation) {
+	s.notifyMutex.Lock()
+	defer s.notifyMutex.Unlock()
 	now := timeNow()
 	events := make([]hubwatch.Event, 0, len(operations))
 
@@ -341,6 +353,17 @@ func (s *Store) ZAdd(key string, score float64, member string) {
 		s.zsets[key] = zset
 	}
 	zset[member] = score
+}
+
+func (s *Store) ZRangeByScore(key string, min float64, max float64, limit int) []string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	items := s.zRangeByScoreLocked(key, min, max, limit)
+	members := make([]string, 0, len(items))
+	for _, item := range items {
+		members = append(members, item.member)
+	}
+	return members
 }
 
 func (s *Store) ZPopRangeByScore(key string, min float64, max float64, limit int) []string {

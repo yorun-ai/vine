@@ -46,8 +46,9 @@ func (m *AppMinder) DIInit() {
 
 func (m *AppMinder) AfterAppStop() {
 	for _, instance := range m.appInstances() {
-		instance.stopHealthcheck()
-		instance.stopHeartbeat()
+		instance.stopRegistration()
+		instance.hubMutex.Lock()
+		instance.hubMutex.Unlock()
 	}
 }
 
@@ -68,6 +69,8 @@ type AppRegistration struct {
 
 func (m *AppMinder) RegisterInstance(registration AppRegistration) {
 	instance := m.newAppInstance(registration)
+	instance.hubMutex.Lock()
+	defer instance.hubMutex.Unlock()
 	if !m.addInstance(instance) {
 		return
 	}
@@ -78,7 +81,7 @@ func (m *AppMinder) RegisterInstance(registration AppRegistration) {
 	})
 
 	m.beforeRegistration(instance)
-	instance.registerHubInstance()
+	instance.registerHubInstanceLocked()
 }
 
 func (m *AppMinder) UnregisterInstance(instanceID string) {
@@ -88,9 +91,21 @@ func (m *AppMinder) UnregisterInstance(instanceID string) {
 }
 
 func (m *AppMinder) unregisterInstance(instance *AppInstance) {
+	done, first := instance.beginUnregister()
+	if !first {
+		<-done
+		return
+	}
+	defer close(done)
+	instance.stopRegistration()
+	// Hub failure must still stop local delivery and release instance ownership.
+	// Preserve the failure for the caller after cleanup has completed.
+	defer m.drainInstance(instance)
 	instance.unregisterHubInstance()
-	instance.stopHealthcheck()
-	instance.stopHeartbeat()
+}
+
+func (m *AppMinder) drainInstance(instance *AppInstance) {
+	defer m.removeInstance(instance)
 	time.Sleep(unregisterPropagationGrace)
 
 	instance.BeginDrain()
@@ -101,5 +116,4 @@ func (m *AppMinder) unregisterInstance(instance *AppInstance) {
 	instance.WaitDrain(drainCtx)
 
 	m.onDestroy(instance)
-	m.removeInstance(instance)
 }

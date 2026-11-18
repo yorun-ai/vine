@@ -39,7 +39,7 @@ func (i *AppInstance) startHealthcheck(onFailure func()) {
 	}
 
 	i.mutex.Lock()
-	if i.healthcheckCancel != nil {
+	if i.stopping || i.healthcheckCancel != nil {
 		i.mutex.Unlock()
 		return
 	}

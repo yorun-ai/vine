@@ -44,7 +44,7 @@ func (r *_PortalInstanceRepoSpy) Remove(instanceId string) {
 	r.removed = append(r.removed, instanceId)
 }
 
-func (r *_PortalInstanceRepoSpy) PopExpiredLeases() []string {
+func (r *_PortalInstanceRepoSpy) ListExpiredLeases() []string {
 	return nil
 }
 

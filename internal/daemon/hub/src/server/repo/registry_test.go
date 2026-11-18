@@ -16,6 +16,7 @@ import (
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 	"go.yorun.ai/vine/util/vcode"
 )
 
@@ -80,8 +81,7 @@ func TestRegistryRepoSaveAndGetAppStatus(t *testing.T) {
 	assert.Equal(t, status, got)
 
 	ttl := watchServer.TTL(key)
-	assert.True(t, ttl > 0)
-	assert.True(t, ttl <= int(hubRegistryEphemeralTTL/time.Second))
+	assert.Equal(t, -1, ttl)
 }
 
 func TestRegistryRepoGetAppStatusReturnsFalseWhenMissing(t *testing.T) {
@@ -122,7 +122,6 @@ func TestRegistryRepoKeepAndRemoveAppStatus(t *testing.T) {
 	repo.SaveAppStatus(status)
 
 	key := watched.FormatAppStatusKey(status.Name, status.InstanceId)
-	assert.True(t, watchServer.Expire(key, 1))
 	repo.KeepAppStatus(status.Name, status.InstanceId)
 
 	got, ok := repo.GetAppStatus(status.Name, status.InstanceId)
@@ -130,7 +129,7 @@ func TestRegistryRepoKeepAndRemoveAppStatus(t *testing.T) {
 	assert.Equal(t, status.InstanceId, got.InstanceId)
 
 	ttlAfter := watchServer.TTL(key)
-	assert.True(t, ttlAfter > 1)
+	assert.Equal(t, -1, ttlAfter)
 
 	repo.RemoveAppStatus(status.Name, status.InstanceId)
 
@@ -139,7 +138,7 @@ func TestRegistryRepoKeepAndRemoveAppStatus(t *testing.T) {
 	assert.Nil(t, got)
 }
 
-func TestRegistryRepoPopExpiredAppLeases(t *testing.T) {
+func TestRegistryRepoListExpiredAppLeases(t *testing.T) {
 	repo, _ := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
@@ -147,13 +146,15 @@ func TestRegistryRepoPopExpiredAppLeases(t *testing.T) {
 	repo.SaveAppStatus(status)
 
 	now = now.Add(hubRegistryLeaseTTL - time.Second)
-	assert.Empty(t, repo.PopExpiredAppLeases())
+	assert.Empty(t, repo.ListExpiredAppLeases())
 
 	now = now.Add(2 * time.Second)
-	leases := repo.PopExpiredAppLeases()
+	leases := repo.ListExpiredAppLeases()
 
 	assert.Equal(t, []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}}, leases)
-	assert.Empty(t, repo.PopExpiredAppLeases())
+	assert.Equal(t, leases, repo.ListExpiredAppLeases())
+	repo.RemoveAppStatus(status.Name, status.InstanceId)
+	assert.Empty(t, repo.ListExpiredAppLeases())
 }
 
 func TestRegistryRepoKeepAppStatusRefreshesAppLease(t *testing.T) {
@@ -167,10 +168,10 @@ func TestRegistryRepoKeepAppStatusRefreshesAppLease(t *testing.T) {
 	repo.KeepAppStatus(status.Name, status.InstanceId)
 
 	now = now.Add(hubRegistryLeaseTTL - time.Second)
-	assert.Empty(t, repo.PopExpiredAppLeases())
+	assert.Empty(t, repo.ListExpiredAppLeases())
 }
 
-func TestRegistryRepoPopExpiredAppLeasesSkipsRenewedStatus(t *testing.T) {
+func TestRegistryRepoListExpiredAppLeasesLeavesRenewalCheckToCore(t *testing.T) {
 	repo, watchServer := newTestRegistryRepo(t, false)
 	now := time.Now().Round(0)
 	setTimeNowForTest(t, func() time.Time { return now })
@@ -181,11 +182,11 @@ func TestRegistryRepoPopExpiredAppLeasesSkipsRenewedStatus(t *testing.T) {
 	raw, ok := repo.getAppStatus(status.Name, status.InstanceId)
 	assert.True(t, ok)
 	raw.ExpiresAt = now.Add(2 * hubRegistryLeaseTTL)
-	watchServer.SetEphemeral(key, vcode.MustMarshalJsonS(raw), hubRegistryEphemeralTTL)
+	watchServer.Set(key, vcode.MustMarshalJsonS(raw))
 
 	now = now.Add(hubRegistryLeaseTTL + time.Second)
 
-	assert.Empty(t, repo.PopExpiredAppLeases())
+	assert.Equal(t, []core.AppHeartbeat{{Name: status.Name, InstanceId: status.InstanceId}}, repo.ListExpiredAppLeases())
 }
 
 func TestRegistryRepoInprocDoesNotSaveAppLease(t *testing.T) {
@@ -193,7 +194,7 @@ func TestRegistryRepoInprocDoesNotSaveAppLease(t *testing.T) {
 
 	repo.SaveAppStatus(&core.AppStatus{InstanceId: "instance-1", Name: "demo.app"})
 
-	assert.Empty(t, repo.PopExpiredAppLeases())
+	assert.Empty(t, repo.ListExpiredAppLeases())
 }
 
 func TestRegistryRepoSaveAndGetRpcServiceRegistration(t *testing.T) {
@@ -221,8 +222,7 @@ func TestRegistryRepoSaveAndGetRpcServiceRegistration(t *testing.T) {
 	assert.Equal(t, registration, got)
 
 	ttl := watchServer.TTL(key)
-	assert.True(t, ttl > 0)
-	assert.True(t, ttl <= int(hubRegistryEphemeralTTL/time.Second))
+	assert.Equal(t, -1, ttl)
 }
 
 func TestRegistryRepoSaveAndGetWebRegistration(t *testing.T) {
@@ -249,8 +249,7 @@ func TestRegistryRepoSaveAndGetWebRegistration(t *testing.T) {
 	assert.Equal(t, registration, got)
 
 	ttl := watchServer.TTL(key)
-	assert.True(t, ttl > 0)
-	assert.True(t, ttl <= int(hubRegistryEphemeralTTL/time.Second))
+	assert.Equal(t, -1, ttl)
 }
 
 func TestRegistryRepoGetRpcServiceRegistrationReturnsFalseWhenMissing(t *testing.T) {
@@ -283,7 +282,6 @@ func TestRegistryRepoKeepAndRemoveRpcServiceRegistration(t *testing.T) {
 
 	key := watched.FormatRpcServiceRegistrationKey(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 
-	assert.True(t, watchServer.Expire(key, 1))
 	repo.KeepRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 
 	got, ok := repo.GetRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
@@ -291,7 +289,7 @@ func TestRegistryRepoKeepAndRemoveRpcServiceRegistration(t *testing.T) {
 	assert.Equal(t, registration, got)
 
 	ttlAfter := watchServer.TTL(key)
-	assert.True(t, ttlAfter > 1)
+	assert.Equal(t, -1, ttlAfter)
 
 	repo.RemoveRpcServiceRegistration(registration.ServiceName, registration.AppName, registration.AppInstanceId)
 
@@ -314,7 +312,6 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 
 	key := watched.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 
-	assert.True(t, watchServer.Expire(key, 1))
 	repo.KeepWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 
 	got, ok := repo.GetWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
@@ -322,7 +319,7 @@ func TestRegistryRepoKeepAndRemoveWebRegistration(t *testing.T) {
 	assert.Equal(t, registration, got)
 
 	ttlAfter := watchServer.TTL(key)
-	assert.True(t, ttlAfter > 1)
+	assert.Equal(t, -1, ttlAfter)
 
 	repo.RemoveWebRegistration(registration.WebSkelName, registration.AppName, registration.AppInstanceId)
 
@@ -410,4 +407,140 @@ func TestRegistryRepoInprocSaveWebRegistrationNotifiesSubscribers(t *testing.T) 
 	assert.Equal(t, hubwatch.EventKindUpsert, event.Kind)
 	assert.Equal(t, watched.FormatWebRegistrationKey(registration.WebSkelName, registration.AppName, registration.AppInstanceId), event.Key)
 	assert.Equal(t, vcode.MustMarshalJsonS(toWebRegistration(registration)), event.Value)
+}
+
+type cleanupDescriptorRepo struct {
+	core.DescriptorRepo
+	failOwner string
+	released  []string
+}
+
+func (r *cleanupDescriptorRepo) ReleaseDomainDescriptors(owner string, instanceId string) {
+	if owner == r.failOwner {
+		panic("descriptor store unavailable")
+	}
+	r.released = append(r.released, owner+":"+instanceId)
+}
+
+func TestRegistryRetainsExpiredStateUntilCompleteCleanup(t *testing.T) {
+	repo, server := newTestRegistryRepo(t, false)
+	now := time.Now().Add(-4 * time.Minute)
+	setTimeNowForTest(t, func() time.Time { return now })
+	status := &core.AppStatus{
+		Name:            "demo.app",
+		InstanceId:      "old",
+		ServiceHandlers: []core.ServiceHandlerRegistration{{ServiceSkelName: "demo.Service"}},
+		WebHandlers:     []core.WebHandlerRegistration{{WebSkelName: "demo.Web"}},
+	}
+	repo.SaveAppStatus(status)
+	repo.SaveRpcServiceRegistration(&core.RpcServiceRegistration{ServiceName: "demo.Service", AppName: status.Name, AppInstanceId: status.InstanceId, Endpoint: "old-ip"})
+	repo.SaveWebRegistration(&core.WebRegistration{WebSkelName: "demo.Web", AppName: status.Name, AppInstanceId: status.InstanceId, Endpoint: "old-ip"})
+	now = time.Now()
+	_, ok := repo.GetAppStatus(status.Name, status.InstanceId)
+	require.True(t, ok, "cleanup metadata must survive a sweep delayed beyond 180 seconds")
+	require.Empty(t, repo.ListAppStatuses(), "expired instances must not be scheduled as live")
+	require.Equal(t, -1, server.TTL(watched.FormatAppStatusKey(status.Name, status.InstanceId)))
+
+	client := redis.NewClient(&redis.Options{
+		Addr: hubwatch.WatchInprocEndpoint,
+		Dialer: func(ctx context.Context, network string, addr string) (net.Conn, error) {
+			return server.DialInproc(ctx)
+		},
+		OnConnect: func(ctx context.Context, conn *redis.Conn) error {
+			return conn.AuthACL(ctx, hubwatch.PortalUsername, hubwatch.PortalPassword).Err()
+		},
+		Protocol:        2,
+		DisableIdentity: true,
+	})
+	defer client.Close()
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	subscription := client.PSubscribe(ctx, "rpc:*", "web:*")
+	defer subscription.Close()
+	for range 2 {
+		_, err := subscription.Receive(ctx)
+		require.NoError(t, err)
+	}
+	descriptors := new(cleanupDescriptorRepo)
+	registry := &core.RegistryCore{RegistryRepo: repo, DescriptorRepo: descriptors}
+	require.True(t, registry.SweepExpiredLeases())
+	for range 2 {
+		message, err := subscription.ReceiveMessage(ctx)
+		require.NoError(t, err)
+		event := vcode.MustUnmarshalJsonS[hubwatch.Event](message.Payload)
+		require.Equal(t, hubwatch.EventKindDelete, event.Kind)
+	}
+	_, ok = repo.GetAppStatus(status.Name, status.InstanceId)
+	require.False(t, ok)
+	require.Empty(t, repo.ListExpiredAppLeases())
+	require.Equal(t, []string{"demo.app:old"}, descriptors.released)
+	require.False(t, registry.SweepExpiredLeases())
+}
+
+func TestRegistryRetriesFailedCleanupWithoutBlockingOtherInstances(t *testing.T) {
+	repo, _ := newTestRegistryRepo(t, false)
+	now := time.Now().Add(-time.Minute)
+	setTimeNowForTest(t, func() time.Time { return now })
+	for _, name := range []string{"failed", "healthy"} {
+		repo.SaveAppStatus(&core.AppStatus{
+			Name:            name,
+			InstanceId:      "old",
+			ServiceHandlers: []core.ServiceHandlerRegistration{{ServiceSkelName: "demo.Service"}},
+			WebHandlers:     []core.WebHandlerRegistration{{WebSkelName: "demo.Web"}},
+		})
+		repo.SaveRpcServiceRegistration(&core.RpcServiceRegistration{ServiceName: "demo.Service", AppName: name, AppInstanceId: "old"})
+		repo.SaveWebRegistration(&core.WebRegistration{WebSkelName: "demo.Web", AppName: name, AppInstanceId: "old"})
+	}
+	now = time.Now()
+	descriptors := &cleanupDescriptorRepo{failOwner: "failed"}
+	registry := &core.RegistryCore{RegistryRepo: repo, DescriptorRepo: descriptors}
+	require.True(t, registry.SweepExpiredLeases())
+	require.Equal(t, []core.AppHeartbeat{{Name: "failed", InstanceId: "old"}}, repo.ListExpiredAppLeases())
+	_, ok := repo.GetAppStatus("failed", "old")
+	require.True(t, ok)
+	_, ok = repo.GetAppStatus("healthy", "old")
+	require.False(t, ok)
+	_, ok = repo.GetRpcServiceRegistration("demo.Service", "failed", "old")
+	require.False(t, ok, "endpoint removal already completed before descriptor cleanup failed")
+	_, ok = repo.GetWebRegistration("demo.Web", "failed", "old")
+	require.False(t, ok)
+	descriptors.failOwner = ""
+	require.True(t, registry.SweepExpiredLeases())
+	require.Empty(t, repo.ListExpiredAppLeases())
+	require.Equal(t, []string{"healthy:old", "failed:old"}, descriptors.released)
+}
+
+func TestRegistryReregisterRemovesWithdrawnEndpoints(t *testing.T) {
+	repo, server := newTestRegistryRepo(t, false)
+	registry := &core.RegistryCore{RegistryRepo: repo, DescriptorRepo: new(descriptor.DescriptorRepo)}
+	reg := core.AppRegistration{
+		Name:       "demo.app",
+		InstanceId: "instance-1",
+		ServiceHandlers: []core.ServiceHandlerRegistration{
+			{ServiceSkelName: "demo.RemovedService", Endpoint: "old-ip"},
+			{ServiceSkelName: "demo.KeptService", Endpoint: "old-ip"},
+		},
+		WebHandlers: []core.WebHandlerRegistration{
+			{WebSkelName: "demo.RemovedWeb", Endpoint: "old-ip"},
+			{WebSkelName: "demo.KeptWeb", Endpoint: "old-ip"},
+		},
+	}
+	registry.Register(reg)
+	reg.ServiceHandlers = []core.ServiceHandlerRegistration{{ServiceSkelName: "demo.KeptService", Endpoint: "new-ip"}}
+	reg.WebHandlers = []core.WebHandlerRegistration{{WebSkelName: "demo.KeptWeb", Endpoint: "new-ip"}}
+	registry.Register(reg)
+
+	_, ok := repo.GetRpcServiceRegistration("demo.RemovedService", reg.Name, reg.InstanceId)
+	require.False(t, ok)
+	_, ok = repo.GetWebRegistration("demo.RemovedWeb", reg.Name, reg.InstanceId)
+	require.False(t, ok)
+	rpc, ok := repo.GetRpcServiceRegistration("demo.KeptService", reg.Name, reg.InstanceId)
+	require.True(t, ok)
+	require.Equal(t, "new-ip", rpc.Endpoint)
+	web, ok := repo.GetWebRegistration("demo.KeptWeb", reg.Name, reg.InstanceId)
+	require.True(t, ok)
+	require.Equal(t, "new-ip", web.Endpoint)
+	registry.Unregister(reg.Name, reg.InstanceId)
+	require.Empty(t, server.Scan("rpc:*"))
+	require.Empty(t, server.Scan("web:*"))
 }

@@ -125,6 +125,11 @@ func (s *Server) KeepLease(key string, member string, ttl time.Duration) {
 	s.store.ZAdd(key, score, member)
 }
 
+// ListExpiredLeases keeps candidates indexed until cleanup acknowledges removal.
+func (s *Server) ListExpiredLeases(key string) []string {
+	return s.store.ZRangeByScore(key, math.Inf(-1), float64(timeNow().UnixMilli()), 0)
+}
+
 func (s *Server) PopExpiredLeases(key string, limit int) []string {
 	return s.store.ZPopRangeByScore(key, math.Inf(-1), float64(timeNow().UnixMilli()), limit)
 }

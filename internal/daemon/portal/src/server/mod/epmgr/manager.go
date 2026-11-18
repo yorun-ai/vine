@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"sync"
+	"time"
 
 	"go.yorun.ai/vine/internal/app"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
@@ -33,6 +34,7 @@ type _Route struct {
 	registrationsByKey map[string]any
 	endpoints          []any
 	nextIndex          int
+	endpointStates     map[any]*_EndpointState
 }
 
 func (m *Manager) DIInit() {
@@ -47,12 +49,30 @@ func (m *Manager) WatchWeb(webName string) *Watcher {
 	return m.watch(watched.FormatWebRegistrationPrefix(webName), webRegistrationType)
 }
 
-func (m *Manager) NextRpcEndpoint(serviceName string) (*watched.RpcServiceRegistration, bool) {
-	endpoint, configured := m.nextEndpoint(watched.FormatRpcServiceRegistrationPrefix(serviceName))
-	if endpoint == nil {
-		return nil, configured
+// NextRpcEndpoint reserves an available endpoint. The caller must finish the
+// attempt, including when forwarding is abandoned before sending a request.
+func (m *Manager) NextRpcEndpoint(serviceName string) (*watched.RpcServiceRegistration, *Attempt, bool) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	prefix := watched.FormatRpcServiceRegistrationPrefix(serviceName)
+	route := m.routesByPrefix[prefix]
+	if route == nil {
+		return nil, nil, false
 	}
-	return endpoint.(*watched.RpcServiceRegistration), configured
+	now := time.Now()
+	for range len(route.endpoints) {
+		registration := route.endpoints[route.nextIndex]
+		route.nextIndex = (route.nextIndex + 1) % len(route.endpoints)
+		state := route.endpointStates[registration]
+		if state.probing || now.Before(state.retryAt) {
+			continue
+		}
+		probe := !state.retryAt.IsZero()
+		state.probing = probe
+		attempt := new(Attempt{manager: m, route: route, registration: registration, state: state, epoch: state.epoch, probe: probe})
+		return registration.(*watched.RpcServiceRegistration), attempt, true
+	}
+	return nil, nil, true
 }
 
 func (m *Manager) NextWebEndpoint(webName string) (*watched.WebRegistration, bool) {

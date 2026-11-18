@@ -68,16 +68,16 @@ func TestPortalInstanceRepoSweepsExpiredInstances(t *testing.T) {
 	repo.Save(&core.PortalInstance{InstanceId: "instance-1", Version: "1.2.3"})
 
 	now = now.Add(hubPortalRegistryLeaseTTL - time.Second)
-	assert.Empty(t, repo.PopExpiredLeases())
+	assert.Empty(t, repo.ListExpiredLeases())
 
 	now = now.Add(2 * time.Second)
-	assert.Equal(t, []string{"instance-1"}, repo.PopExpiredLeases())
+	assert.Equal(t, []string{"instance-1"}, repo.ListExpiredLeases())
 
 	repo.Remove("instance-1")
 	_, ok := repo.GetById("instance-1")
 	assert.False(t, ok)
 	assert.Empty(t, repo.List())
-	assert.Empty(t, repo.PopExpiredLeases())
+	assert.Empty(t, repo.ListExpiredLeases())
 }
 
 func TestPortalInstanceRepoRemovalDropsLease(t *testing.T) {
@@ -91,7 +91,7 @@ func TestPortalInstanceRepoRemovalDropsLease(t *testing.T) {
 	// sweeper would try to remove it twice.
 	now := time.Now().UTC().Round(0).Add(2 * hubPortalRegistryLeaseTTL)
 	setTimeNowForTest(t, func() time.Time { return now })
-	assert.Empty(t, repo.PopExpiredLeases())
+	assert.Empty(t, repo.ListExpiredLeases())
 	assert.Empty(t, testServer.Scan(watched.FormatPortalInstancePattern()))
 }
 
@@ -106,7 +106,7 @@ func TestPortalInstanceRepoInprocModeSkipsLeases(t *testing.T) {
 	// the sweeper has nothing to collect.
 	assert.True(t, instance.ExpiresAt.IsZero())
 	assert.True(t, repo.Keep("instance-1"))
-	assert.Empty(t, repo.PopExpiredLeases())
+	assert.Empty(t, repo.ListExpiredLeases())
 }
 
 func TestPortalInstanceRepoRecordsJSONShape(t *testing.T) {
@@ -122,4 +122,21 @@ func TestPortalInstanceRepoRecordsJSONShape(t *testing.T) {
 	assert.Equal(t, "instance-1", record["instanceId"])
 	assert.Equal(t, "1.2.3", record["version"])
 	assert.NotEmpty(t, record["expiresAt"])
+}
+
+func TestPortalInstanceSurvivesStorageTTLAndCleansByLease(t *testing.T) {
+	repo, server := newTestPortalInstanceRepo(t, false)
+	now := time.Now().Add(-4 * time.Minute)
+	setTimeNowForTest(t, func() time.Time { return now })
+	repo.Save(&core.PortalInstance{InstanceId: "old"})
+	now = time.Now()
+	_, ok := repo.GetById("old")
+	require.True(t, ok)
+	require.Equal(t, -1, server.TTL(watched.FormatPortalInstanceKey("old")))
+	require.Empty(t, repo.List())
+	require.Equal(t, []string{"old"}, repo.ListExpiredLeases())
+	require.Equal(t, []string{"old"}, repo.ListExpiredLeases())
+	target := &core.PortalInstanceCore{PortalInstanceRepo: repo}
+	require.Equal(t, 1, target.SweepExpired())
+	require.Empty(t, repo.ListExpiredLeases())
 }

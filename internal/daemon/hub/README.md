@@ -145,7 +145,7 @@ Additional constraints for Hub changes:
 - Database schema changes must update both `src/server/repo/db/model/sql/sqlite` and `src/server/repo/db/model/sql/pgsql`.
 - Redis keys, Redis value JSON, and event formats are protocols shared by Hub, Link, and Portal. Update every producer, consumer, and test together.
 - `watchserver` is a runtime distribution layer. Do not turn it into a second source of business state that bypasses Repo/Core.
-- Registration semantics differ between normal and inproc modes for TTL, heartbeat, and sweeper behavior. Validate both modes separately.
+- Registration semantics differ between normal and inproc modes for leases, heartbeat, and sweeper behavior. Validate both modes separately.
 
 ## Runtime Model
 
@@ -296,33 +296,43 @@ with the script, and verify that all callers remain consistent.
 
 Hub can run as a component in a single-process runtime:
 
-- The Hub Control API registers at `rpc+inproc://vine/hub`. The Admin API keeps
-  its own listener instead, so an in-process Hub serves no Admin API unless its
-  caller declares an admin address.
-- `watchserver` does not open an external TCP port and retains only the in-process Watch server.
-- `vined` keeps a pointer to that in-process Watch server so an inproc `WatchClient` can access it directly.
+- The Hub Control API registers at `rpc+inproc://vine/hub`. Declaring an admin
+  address enables the Admin API on its own listener.
+- `watchserver` serves the Redis protocol over an in-memory connection at
+  `redis+inproc://vine/hub/watch`. It registers the dialer through
+  `watch.SetInprocServer`, which Link and Portal use for their Watch clients.
 
-Hub retains its configuration-center and registry responsibilities; only the underlying exposure changes from network access to in-process access.
+## Leases and Heartbeat
 
-## TTL and Heartbeat
+Application status, Rpc/Web endpoints, and Portal instance records remain in
+Watch until cleanup completes. Live-instance listings select active registrations.
 
-Hub handles registrations differently in normal and inproc modes:
+In network mode, Link and Portal renew 30-second leases through heartbeat, and
+Hub's sweeper checks expired leases every 5 seconds. Registration, renewal,
+unregister, and expiration checks share a per-instance lock. Application cleanup
+removes endpoints and releases descriptor ownership before removing status and
+the lease index entry. Failed cleanup retains its metadata for the next sweep;
+descriptor and Portal site publication failures are also retried.
 
-- Normal mode
-  - Application state and Rpc service registrations are written to Watch with a TTL.
-  - Link continuously renews leases through heartbeat.
-  - Hub's registry sweeper scans expired application leases, unregisters expired instances, and publishes delete events.
-  - Watch key TTL is a fallback cleanup mechanism; the Hub sweeper publishes the actual registration-expiration events.
+Inproc registrations follow the shared process lifecycle and remain valid until
+explicit unregister removes them.
 
-- Inproc mode
-  - Application state and Rpc service registrations do not use a TTL.
-  - `KeepAppStatus` and `KeepRpcServiceRegistration` become no-ops.
-  - The registry sweeper does not start.
-  - State remains valid until explicit unregister removes it.
+## Watch Synchronization
 
-This removes the need for heartbeat-based lease maintenance in single-process mode.
+Watch serializes revision allocation and publication for single and batch updates.
+Writes run outside the data lock. A failed subscriber connection is closed so
+the client can reconnect and reload its snapshot.
 
-### Certificate representation
+Subscriptions initialize caches from complete snapshots and then deliver ordered
+change events. Snapshot reads have a 5-second deadline and require a stable
+revision. A successful snapshot supersedes events through that revision; later
+incremental batches deliver every event sharing a revision.
+
+Network subscriptions additionally reconcile every 25–35 seconds in the same
+consumer loop. Failed reads retain the cached state for the next attempt.
+Canceling a subscription releases its connection and reconciliation timer.
+
+## Certificate representation
 
 Hub's domain, Admin API, Dashboard and seed use PEM `certificate` and `privateKey`
 fields. Stored databases must already contain PEM fields. The DAO removes the

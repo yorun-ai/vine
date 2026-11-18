@@ -23,7 +23,8 @@ type Sweeper struct {
 	DescriptorRepo     core.DescriptorRepo      `inject:""`
 	Syncer             *syncer.Syncer           `inject:""`
 
-	stop context.CancelFunc
+	stop        context.CancelFunc
+	syncPending bool
 }
 
 func (s *Sweeper) AfterAppStart() {
@@ -46,11 +47,13 @@ func (s *Sweeper) AfterAppStop() {
 
 func (s *Sweeper) sweepExpiredLeases() {
 	s.sweepExpiredPortalInstances()
-	if !s.RegistryCore.SweepExpiredLeases() {
+	s.syncPending = s.RegistryCore.SweepExpiredLeases() || s.syncPending
+	if !s.syncPending {
 		return
 	}
 	s.refreshDescriptors()
 	s.refreshPortalSiteRpcgwServices()
+	s.syncPending = false
 }
 
 // sweepExpiredPortalInstances drops Portal instances that stopped heartbeating,

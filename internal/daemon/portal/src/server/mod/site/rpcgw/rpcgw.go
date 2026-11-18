@@ -106,11 +106,11 @@ func (g *RpcGateway) watchService(serviceName string) {
 	g.watchers[serviceName] = g.epmgr.WatchRpc(serviceName)
 }
 
-func (g *RpcGateway) routeService(serviceName string) (*watched.RpcServiceRegistration, bool) {
+func (g *RpcGateway) routeService(serviceName string) (*watched.RpcServiceRegistration, *epmgr.Attempt, bool) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 	if _, configured := g.watchers[serviceName]; !configured {
-		return nil, false
+		return nil, nil, false
 	}
 	return g.epmgr.NextRpcEndpoint(serviceName)
 }

@@ -31,25 +31,24 @@ Link 的 skel 生成代码统一放在 `internal/core/link/skeled`，由 runtime
 bash script/gen-skel.sh link
 ```
 
-不要直接修改 `internal/core/link/skeled`。应修改 `skel/` 中的契约，再通过上述脚本生成代码并检查所有协议使用方。
+修改 `skel/` 中的契约后，通过上述脚本生成代码并检查所有协议使用方。
 
 ## 运行机制
 
 Link 的职责可以拆成四条主线：
 
 1. 本地应用注册
-   app 启动后调用 `RegistryService`，`minder` 会写入本地实例真源，向 Hub 发布应用注册信息，并启动 heartbeat 与健康检查。
+   app 启动后调用 `RegistryService`，`minder` 保存本地实例、向 Hub 发布注册，并按部署模式管理续租与健康检查。注销先停止续租和恢复注册，将 Hub 注销与在途注册操作串行执行，再排空并移除本地实例。Hub 注销成功或失败后都会完成本地清理。
 
 2. 配置与发现
-   `config.Reader` 会从 Hub Watch 拉取配置并持续监听变更；`rpcproxy` 和 `webproxy` 分别维护 Rpc 与 Web 的发现状态。
+   `config.Reader` 从 Hub Watch 读取配置并监听变更；`rpcproxy` 维护远端 Rpc 发现状态，`webproxy` 根据 `minder` 注册生成本地 Web 路由。
 
    Hub Watch client 使用 `vine.link` 用户，其 ACL 仅允许读取配置、Rpc endpoint、共享 revision key 以及所需的订阅。Redis 密码为空，用于进程内模式和分离部署调试。启用后端 mTLS 时，Link 证书会认证客户端，并把其 SPIFFE 身份绑定到 `vine.link` 用户。未启用 mTLS 时，用户名只能选择 ACL 角色，因此 Redis endpoint 仍需进行网络隔离。
 
 3. 异步事件与任务
    `event` 和 `task` 订阅 `minder` 中本地应用声明的监听能力与运行能力，负责把 NATS 中的消息投递到对应本地应用。
 
-   Link 不创建 JetStream stream，也不选择 stream 或 consumer 的存储类型。
-   内嵌 Hub NATS 会预创建所需 stream；外部 NATS 部署必须在 Link 启动前创建它们，
+   内嵌 Hub NATS 会预创建所需 JetStream stream；外部 NATS 部署必须在 Link 启动前创建它们，
    并负责决定存储策略。
 
 4. Rpc 转发
@@ -75,9 +74,7 @@ Link 的职责可以拆成四条主线：
 
 修改这些模块时必须保持以下边界：
 
-- 不要在 `rpcproxy`、`webproxy`、`event`、`task` 或 `config` 中建立第二份本地 app instance 真源。
 - 新增 app 能力或注册字段时，先扩展 `minder` 保存的基础事实和 mutator，再让下游 module 维护派生状态。
-- module 不应绕过 `minder` 直接承担 register、unregister、heartbeat 或 healthcheck 生命周期。
 - Rpc/Web endpoint、事件和任务协议发生变化时，必须同步 Hub Watch 结构、App 侧注册代码和相关转发/投递测试。
 
 ## 依赖关系
@@ -100,26 +97,16 @@ module 之间的依赖关系是：
 
 ## Inproc 模式
 
-Link 支持作为单进程内组件运行：
+Link 在两个边界支持进程内运行：
 
-- `LinkApp` 本身可以 inproc 启动，此时 Link 的 Rpc 服务不再暴露为 HTTP，而是注册到 `inproc` transport。
-- `HubInprocMode` 为真时，Link 会把 Hub 视为进程内组件：
-  - `HubEndpoint` 固定为 Hub 的 inproc endpoint。
-  - `config.Reader`、`rpcproxy`、`webproxy` 都通过进程内 Redis 连接访问 Hub，而不是外部 TCP Redis 端口。
-  - `minder` 不再启动 heartbeat。
-  - `minder` 中的本地应用健康检查直接 noop。
+- Inproc `LinkApp` 将 Rpc 服务注册到 `inproc` transport，本地应用的存活状态随注册和
+  退出管理。独立运行的 Link 通过应用的 console endpoint 执行健康检查。
+- `HubInprocMode` 选择 Hub 的 inproc endpoint，并为 `config.Reader` 和 `rpcproxy`
+  使用内存 Redis 连接。这些模块先初始化快照，再订阅变化。Inproc Hub 的注册保持有效
+  直到显式 unregister；连接外部 Hub 时通过 heartbeat 续租。
 
-在这种模式下，Link 仍然保留配置与服务监听机制，只是底层从网络 Redis 连接切换为进程内 Redis 连接。
+`rpcproxy` 和 `webproxy` 按选定的 transport 转发请求，支持 `rpc+inproc://`、
+`web+inproc://` 和 `link+inproc://` endpoint。
 
-### 故障语义差异
-
-Inproc/standalone 模式主要用于单进程运行、集成测试和本地调试，它保留的是注册、发现、转发、订阅等运行时语义，不完整模拟分布式部署中的进程存活判断：
-
-- Hub 侧注册信息不依赖 TTL 过期清理，而是依赖应用停止时显式 unregister。
-- Link 不启动 heartbeat，因此不会通过续租失败来发现 Hub 或网络异常。
-- Link 不启动本地 app console healthcheck，因此不会模拟“业务 app 进程仍在但 HTTP/Rpc handler 不健康”这类故障。
-- Rpc/Web 转发仍会经过 `rpcproxy` 和 `webproxy` 的路由和发现逻辑，但底层 endpoint 可能是 `rpc+inproc://`、`web+inproc://` 或 `link+inproc://`。
-
-如果要验证 heartbeat、TTL 过期、网络断连、独立进程崩溃等分布式故障语义，应使用普通 Hub、Link、Portal 独立进程模式。
-
-修改 Link 的连接、注册、发现或转发逻辑时，应同时覆盖普通网络模式和 inproc 模式。不要因为 inproc 测试通过就假定 heartbeat、TTL、healthcheck 或跨进程 endpoint 行为正确。
+Inproc 测试覆盖注册、订阅和转发；独立进程测试覆盖 heartbeat、租约过期、console
+健康检查、网络断连和独立进程退出。
