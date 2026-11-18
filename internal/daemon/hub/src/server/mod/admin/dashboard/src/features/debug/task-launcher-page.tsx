@@ -24,10 +24,11 @@ import {
   type TaskDebugTaskItem,
   type TaskDebugTriggerItem,
 } from '@/skeled/admin'
+import { useDebugDefaultRequest } from './use-debug-default-request'
 
 const taskDebugService = createTaskDebugApiService(vrpcClient)
 const jsonExtensions = [json()]
-const defaultArgumentsJson = '{\n  \n}'
+const emptyTriggers: Array<TaskDebugTriggerItem> = []
 const storageArgumentsPrefix = 'vine.hub.debug.taskLauncher.arguments.'
 const storageTaskSkelNameKey = 'vine.hub.debug.taskLauncher.taskSkelName'
 const storageTriggerSkelNameKey =
@@ -47,6 +48,21 @@ function argumentsStorageKey(
   triggerSkelName: string,
 ) {
   return `${storageArgumentsPrefix}${taskSkelName}:${descriptorHash}:${triggerSkelName}`
+}
+
+type TaskDefaultSelection = Parameters<typeof taskDebugService.buildDefaultLaunchRequest>[0]
+
+async function loadTaskDefaults(selection: TaskDefaultSelection, signal: AbortSignal) {
+  const { traceId, spanId, argumentsJson } = await taskDebugService.buildDefaultLaunchRequest(
+    selection,
+    { requestInit: { signal }, suppressGlobalToast: true },
+  )
+  const { taskSkelName, descriptorHash, triggerSkelName } = selection
+  return {
+    traceId,
+    spanId,
+    json: readStorage(argumentsStorageKey(taskSkelName, descriptorHash, triggerSkelName)) ?? argumentsJson,
+  }
 }
 
 function readStorage(key: string) {
@@ -174,24 +190,20 @@ export function TaskLauncherPage() {
   const [taskQuery, setTaskQuery] = React.useState('')
   const [taskSelectOpen, setTaskSelectOpen] = React.useState(false)
   const taskSearchInputRef = React.useRef<HTMLInputElement>(null)
-  const [triggers, setTriggers] = React.useState<Array<TaskDebugTriggerItem>>(
-    [],
-  )
+  const [triggerList, setTriggerList] = React.useState<{
+    task: TaskDebugTaskItem
+    triggers: Array<TaskDebugTriggerItem>
+  } | null>(null)
   const [selectedTask, setSelectedTask] =
     React.useState<TaskDebugTaskItem | null>(null)
   const [selectedTrigger, setSelectedTrigger] =
     React.useState<TaskDebugTriggerItem | null>(null)
-  const [argumentsJson, setArgumentsJson] =
-    React.useState(defaultArgumentsJson)
-  const [traceId, setTraceId] = React.useState('')
-  const [spanId, setSpanId] = React.useState('')
   const [loadingTasks, setLoadingTasks] = React.useState(true)
   const [loadingTriggers, setLoadingTriggers] = React.useState(false)
-  const [loadingDefaultRequest, setLoadingDefaultRequest] =
-    React.useState(false)
   const [launching, setLaunching] = React.useState(false)
   const [result, setResult] = React.useState('No task launched yet.')
 
+  const triggers = triggerList && triggerList.task === selectedTask ? triggerList.triggers : emptyTriggers
   const selectedTaskKey = selectedTask ? taskKey(selectedTask) : null
   const selectedTriggerKey = selectedTrigger?.skelName ?? null
   const filteredTasks = React.useMemo(() => {
@@ -227,38 +239,22 @@ export function TaskLauncherPage() {
     focusTaskSearchInput()
   }, [focusTaskSearchInput, taskQuery, taskSelectOpen])
 
-  const loadDefaultLaunchRequest = React.useCallback(async () => {
-    if (selectedTask === null || !selectedTriggerBelongsToTask) {
-      setTraceId('')
-      setSpanId('')
-      setArgumentsJson(defaultArgumentsJson)
-      return
-    }
-
-    setLoadingDefaultRequest(true)
-    try {
-      const nextRequest = await taskDebugService.buildDefaultLaunchRequest({
-        taskSkelName: selectedTask.taskSkelName,
-        descriptorHash: selectedTask.descriptorHash,
-        triggerSkelName: selectedTrigger.skelName,
-      })
-      const savedArgumentsJson = readStorage(
-        argumentsStorageKey(
-          selectedTask.taskSkelName,
-          selectedTask.descriptorHash,
-          selectedTrigger.skelName,
-        ),
-      )
-      setTraceId(nextRequest.traceId)
-      setSpanId(nextRequest.spanId)
-      setArgumentsJson(savedArgumentsJson ?? nextRequest.argumentsJson)
-      setResult('No task launched yet.')
-    } catch (error) {
-      toast.error(getErrorMessage(error))
-    } finally {
-      setLoadingDefaultRequest(false)
+  const defaultSelection = React.useMemo(() => {
+    if (!selectedTask || !selectedTriggerBelongsToTask) return null
+    return {
+      taskSkelName: selectedTask.taskSkelName,
+      descriptorHash: selectedTask.descriptorHash,
+      triggerSkelName: selectedTrigger.skelName,
     }
   }, [selectedTask, selectedTrigger, selectedTriggerBelongsToTask])
+  const {
+    json: argumentsJson,
+    setJson: setArgumentsJson,
+    traceId,
+    spanId,
+    loading: loadingDefaultRequest,
+    reset: resetDefaults,
+  } = useDebugDefaultRequest(defaultSelection, loadTaskDefaults, () => setResult('No task launched yet.'))
 
   React.useEffect(() => {
     let ignore = false
@@ -307,14 +303,14 @@ export function TaskLauncherPage() {
 
   React.useEffect(() => {
     if (selectedTask === null) {
-      setTriggers([])
+      setTriggerList(null)
       setSelectedTrigger(null)
       return
     }
 
     let ignore = false
     setLoadingTriggers(true)
-    setTriggers([])
+    setTriggerList(null)
     setSelectedTrigger(null)
     void taskDebugService
       .listTriggers({
@@ -323,7 +319,7 @@ export function TaskLauncherPage() {
       })
       .then((nextTriggers) => {
         if (!ignore) {
-          setTriggers(nextTriggers)
+          setTriggerList({ task: selectedTask, triggers: nextTriggers })
         }
       })
       .catch((error: unknown) => {
@@ -388,10 +384,6 @@ export function TaskLauncherPage() {
     selectedTriggerBelongsToTask,
   ])
 
-  React.useEffect(() => {
-    void loadDefaultLaunchRequest()
-  }, [loadDefaultLaunchRequest])
-
   const launchTask = React.useCallback(async () => {
     if (selectedTask === null || selectedTrigger === null) {
       return
@@ -451,7 +443,7 @@ export function TaskLauncherPage() {
                 const nextTask = tasks.find((item) => taskKey(item) === value)
                 if (nextTask) {
                   setSelectedTask(nextTask)
-                  setTriggers([])
+                  setTriggerList(null)
                   setSelectedTrigger(null)
                   setTaskSelectOpen(false)
                   navigateToSelection(nextTask.taskSkelName)
@@ -590,7 +582,7 @@ export function TaskLauncherPage() {
               variant="outline"
               className="h-10 min-w-28"
               disabled={loadingDefaultRequest}
-              onClick={() => void loadDefaultLaunchRequest()}
+              onClick={resetDefaults}
             >
               {loadingDefaultRequest ? (
                 <Loader2 className="animate-spin" />
@@ -604,7 +596,7 @@ export function TaskLauncherPage() {
               className="h-10 min-w-28"
               disabled={
                 selectedTask === null ||
-                selectedTrigger === null ||
+                !selectedTriggerBelongsToTask ||
                 launching ||
                 loadingDefaultRequest
               }
