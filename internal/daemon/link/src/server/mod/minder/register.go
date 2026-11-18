@@ -1,14 +1,29 @@
 package minder
 
 import (
+	"time"
 	"uuid"
 
 	"go.yorun.ai/vine/internal/core/link/skeled"
+	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/util/vslice"
 )
 
+// Bound in-flight Hub calls so they leave time for unregister and local drain
+// within the application's shutdown timeout.
+const hubRegistryTimeout = 5 * time.Second
+
 func (i *AppInstance) registerHubInstance() {
+	i.hubMutex.Lock()
+	defer i.hubMutex.Unlock()
+	i.registerHubInstanceLocked()
+}
+
+func (i *AppInstance) registerHubInstanceLocked() {
+	if i.isStopping() {
+		return
+	}
 	i.minder.RegistryServiceClient.Register(hubskeled.AppRegistration{
 		Name:              i.AppInfo.Name(),
 		InstanceId:        uuid.MustParse(i.AppInfo.InstanceId()),
@@ -19,11 +34,13 @@ func (i *AppInstance) registerHubInstance() {
 		EventListeners:    toHubEventListenerRegistrations(i.EventListeners),
 		TaskRunners:       toHubTaskRunnerRegistrations(i.TaskRunners),
 		DomainDescriptors: vslice.Clone(i.DomainDescriptors),
-	})
+	}, rpcclient.WithTimeout(hubRegistryTimeout))
 }
 
 func (i *AppInstance) unregisterHubInstance() {
-	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), uuid.MustParse(i.AppInfo.InstanceId()))
+	i.hubMutex.Lock()
+	defer i.hubMutex.Unlock()
+	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), uuid.MustParse(i.AppInfo.InstanceId()), rpcclient.WithTimeout(hubRegistryTimeout))
 }
 
 func toHubEventListenerRegistrations(registrations []skeled.EventListenerRegistration) []hubskeled.EventListenerRegistration {

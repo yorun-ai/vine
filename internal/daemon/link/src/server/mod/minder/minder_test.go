@@ -2,6 +2,8 @@ package minder
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"testing/synctest"
@@ -9,8 +11,10 @@ import (
 	"uuid"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/link/skeled"
+	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	"go.yorun.ai/vine/internal/core/rpc/client"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
@@ -254,4 +258,132 @@ func TestAfterAppStopStopsInstanceLifecycles(t *testing.T) {
 
 	assert.Nil(t, instance.heartbeatCancel)
 	assert.Nil(t, instance.healthcheckCancel)
+}
+
+func TestUnregisterFailureStillDrainsAndRemovesInstance(t *testing.T) {
+	for _, inproc := range []bool{false, true} {
+		name := "network"
+		if inproc {
+			name = "inproc"
+		}
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				minder := newTestMinder(&flag.Flag{HubInprocMode: inproc}, &app.InternalInprocFlag{Enabled: true}, nil)
+				minder.Context = t.Context()
+				minder.RegistryServiceClient = &shutdownRegistryClient{unregister: func() { panic("hub unavailable") }}
+				observer := new(_Mutator)
+				minder.AddMutator(observer)
+				instance := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+				minder.addInstance(instance)
+				instance.startHeartbeat()
+				require.PanicsWithValue(t, "hub unavailable", func() { minder.UnregisterInstance(instance.AppInfo.InstanceId()) })
+				require.True(t, instance.isStopping())
+				require.Nil(t, instance.heartbeatCancel)
+				require.False(t, instance.TryStartWork())
+				_, ok := minder.appInstance(instance.AppInfo.InstanceId())
+				require.False(t, ok)
+				require.Len(t, observer.drainedIDs, 1)
+				require.Len(t, observer.destroyedIDs, 1)
+			})
+		})
+	}
+}
+
+func TestConcurrentUnregisterWaitsForSameDrain(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		client := new(_RegistryServiceClient)
+		minder := newTestMinder(&flag.Flag{HubInprocMode: true}, &app.InternalInprocFlag{Enabled: true}, client)
+		minder.Context = t.Context()
+		observer := new(_Mutator)
+		minder.AddMutator(observer)
+		instance := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+		minder.addInstance(instance)
+		require.True(t, instance.TryStartWork())
+		first := make(chan struct{})
+		second := make(chan struct{})
+		go func() { defer close(first); minder.UnregisterInstance(instance.AppInfo.InstanceId()) }()
+		synctest.Wait()
+		require.True(t, instance.isStopping())
+		// Propagation grace still admits traffic before drain starts.
+		require.True(t, instance.TryStartWork())
+		instance.FinishWork()
+		go func() { defer close(second); minder.UnregisterInstance(instance.AppInfo.InstanceId()) }()
+		synctest.Sleep(unregisterPropagationGrace)
+		require.False(t, instance.TryStartWork())
+		select {
+		case <-first:
+			t.Fatal("unregister returned before drain")
+		default:
+		}
+		select {
+		case <-second:
+			t.Fatal("concurrent unregister returned before drain")
+		default:
+		}
+		instance.FinishWork()
+		<-first
+		<-second
+		require.Len(t, client.unregistered, 1)
+		require.Len(t, observer.drainedIDs, 1)
+		require.Len(t, observer.destroyedIDs, 1)
+	})
+}
+
+func TestUnregisterHTTPFailureRemovesLocalInstance(t *testing.T) {
+	requests := make(chan struct{}, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests <- struct{}{}
+		http.Error(w, "hub unavailable", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	minder := newTestMinder(nil, &app.InternalInprocFlag{Enabled: true}, nil)
+	minder.Context = t.Context()
+	minder.RegistryServiceClient = hubskeled.NewRegistryServiceClient(hubskeled.NewRegistryServiceClientER(client.New(client.Option{
+		Context:        meta.NewContext(t.Context(), meta.InitialTrace(), nil, meta.NewAbsentActor()),
+		ClientApp:      mustTestMetaApp(),
+		Logger:         logger.New("test:minder:shutdown"),
+		ServerEndpoint: server.URL,
+		Transport:      http.DefaultTransport,
+	})))
+	instance := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+	minder.addInstance(instance)
+	instance.startHeartbeat()
+	defer instance.stopHeartbeat()
+	require.Panics(t, func() { minder.UnregisterInstance(instance.AppInfo.InstanceId()) })
+	select {
+	case <-requests:
+	default:
+		t.Fatal("Hub did not receive HTTP unregister")
+	}
+	require.Nil(t, instance.heartbeatCancel)
+	_, ok := minder.appInstance(instance.AppInfo.InstanceId())
+	require.False(t, ok)
+}
+
+type shutdownTimeoutTransport struct{}
+
+func (shutdownTimeoutTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	<-request.Context().Done()
+	return nil, request.Context().Err()
+}
+
+func TestUnregisterTimeoutStillCompletesCleanup(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		minder := newTestMinder(nil, &app.InternalInprocFlag{Enabled: true}, nil)
+		minder.Context = t.Context()
+		minder.RegistryServiceClient = hubskeled.NewRegistryServiceClient(hubskeled.NewRegistryServiceClientER(client.New(client.Option{
+			Context:        meta.NewContext(t.Context(), meta.InitialTrace(), nil, meta.NewAbsentActor()),
+			ClientApp:      mustTestMetaApp(),
+			Logger:         logger.New("test:minder:shutdown"),
+			ServerEndpoint: "http://hub.invalid",
+			Transport:      shutdownTimeoutTransport{},
+		})))
+		instance := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+		minder.addInstance(instance)
+		start := time.Now()
+		require.Panics(t, func() { minder.UnregisterInstance(instance.AppInfo.InstanceId()) })
+		require.Equal(t, hubRegistryTimeout+unregisterPropagationGrace, time.Since(start))
+		_, ok := minder.appInstance(instance.AppInfo.InstanceId())
+		require.False(t, ok)
+	})
 }
