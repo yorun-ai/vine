@@ -296,43 +296,43 @@ with the script, and verify that all callers remain consistent.
 
 Hub can run as a component in a single-process runtime:
 
-- The Hub Control API registers at `rpc+inproc://vine/hub`. The Admin API keeps
-  its own listener instead, so an in-process Hub serves no Admin API unless its
-  caller declares an admin address.
-- `watchserver` does not open an external TCP port and retains only the in-process Watch server.
-- `vined` keeps a pointer to that in-process Watch server so an inproc `WatchClient` can access it directly.
-
-Hub retains its configuration-center and registry responsibilities; only the underlying exposure changes from network access to in-process access.
+- The Hub Control API registers at `rpc+inproc://vine/hub`. Declaring an admin
+  address enables the Admin API on its own listener.
+- `watchserver` serves the Redis protocol over an in-memory connection at
+  `redis+inproc://vine/hub/watch`. It registers the dialer through
+  `watch.SetInprocServer`, which Link and Portal use for their Watch clients.
 
 ## Leases and Heartbeat
 
-Hub handles registrations differently in normal and inproc modes:
+Application status, Rpc/Web endpoints, and Portal instance records remain in
+Watch until cleanup completes. Live-instance listings select active registrations.
 
-- Normal mode
-  - Application status, Rpc/Web endpoints, and Portal instance records have no storage TTL. Expired statuses remain available for cleanup but are excluded from live-instance listings.
-  - Link and Portal renew 30-second leases through heartbeat. Hub's sweeper checks expired leases every 5 seconds.
-  - Sweeper rechecks expiration under the same per-instance lock used by registration, heartbeat, and unregister. It removes endpoints, releases descriptor ownership, then removes status and the lease index entry.
-  - Failed cleanup retains its metadata and lease candidate for the next sweep; other instances continue to be cleaned. Descriptor and Portal site publication is retried if it fails after cleanup.
-  - Watch serializes revision allocation and publication, including batches. Network writes run outside the data lock; a subscriber with a failed or stalled write is disconnected so it can reconnect and reload its snapshot.
+In network mode, Link and Portal renew 30-second leases through heartbeat, and
+Hub's sweeper checks expired leases every 5 seconds. Registration, renewal,
+unregister, and expiration checks share a per-instance lock. Application cleanup
+removes endpoints and releases descriptor ownership before removing status and
+the lease index entry. Failed cleanup retains its metadata for the next sweep;
+descriptor and Portal site publication failures are also retried.
 
-- Inproc mode
-  - Registration records have neither a storage TTL nor an expiring lease.
-  - Heartbeat renewal is a no-op.
-  - The registry sweeper does not start.
-  - State remains valid until explicit unregister removes it.
+Inproc registrations follow the shared process lifecycle and remain valid until
+explicit unregister removes them.
 
-This removes the need for heartbeat-based lease maintenance in single-process mode.
+## Watch Synchronization
 
-In network mode, the shared Watch client reconciles each active subscription
-every 25–35 seconds. Inproc subscriptions do not start a reconciliation timer.
-Snapshot reads have a 5-second deadline and must complete with an unchanged
-revision before updating the cache. Failed reads retain the cache.
-Reconciliation and incremental delivery share the consumer
-loop: a successful snapshot covers all events at or below its revision, while
-equal revisions in later incremental batches remain valid. Canceling the
-subscription stops its reconciliation timer.
+Watch serializes revision allocation and publication for single and batch updates.
+Writes run outside the data lock. A failed subscriber connection is closed so
+the client can reconnect and reload its snapshot.
 
-### Certificate representation
+Subscriptions initialize caches from complete snapshots and then deliver ordered
+change events. Snapshot reads have a 5-second deadline and require a stable
+revision. A successful snapshot supersedes events through that revision; later
+incremental batches deliver every event sharing a revision.
+
+Network subscriptions additionally reconcile every 25–35 seconds in the same
+consumer loop. Failed reads retain the cached state for the next attempt.
+Canceling a subscription releases its connection and reconciliation timer.
+
+## Certificate representation
 
 Hub's domain, Admin API, Dashboard and seed use PEM `certificate` and `privateKey`
 fields. Stored databases must already contain PEM fields. The DAO removes the

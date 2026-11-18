@@ -17,7 +17,7 @@ internal/daemon/portal/
         │   ├── access/     Rpc/Web 认证授权与 auth/permission endpoint 订阅
         │   ├── desc/       descriptor 订阅、缓存与 API 类型依赖
         │   ├── entry/      HTTP/HTTPS 监听入口与 portal rule 分发
-        │   ├── epmgr/      Rpc/Web endpoint 订阅与轮询选择
+        │   ├── epmgr/      Rpc/Web endpoint 订阅、选择与 Rpc 隔离
         │   ├── site/       Portal site 管理与 RpcGW/WebGW 创建
         │   └── vault/      TLS 证书加载、监听与匹配
         └── util/           Portal 内部工具包，如 gateway 转发工具
@@ -36,7 +36,7 @@ Portal 的职责可以拆成四条主线：
 3. Endpoint 发现
    `epmgr` 统一订阅 Rpc/Web endpoint key，内部维护 watcher 引用计数，并为 gateway 提供 `NextRpcEndpoint` 和 `NextWebEndpoint`。
 
-   Rpc 选址还返回 `Attempt`，由 RpcGW 和认证/权限转发在传输失败或响应体读取完成后上报结果。连接建立失败立即隔离对应注册；其他网络错误连续三次后隔离。业务错误、取消及 Rpc 整体期限到期不计为端点失败。隔离仅影响本地选址，不删除 Hub 注册。冷却从 5 秒开始，探测失败后翻倍，最多 30 秒；每个端点同时只允许一个新请求试探恢复。当前请求不会换端点重放。注册被替换、删除，或隔离状态已切换后，旧请求的迟到结果会被忽略。Web 端点仍采用轮询选择。
+   Rpc 选址返回 `Attempt`，供 RpcGW 和认证/权限转发上报传输结果。连接建立失败立即隔离对应注册；其他网络错误连续三次后也会隔离。完整响应（包括业务错误响应）会重置失败计数。隔离状态由 `epmgr` 在本地维护，冷却从 5 秒开始，探测失败后翻倍，最多 30 秒；冷却结束后放行一个新请求探测恢复。每个请求转发一次，其结果作用于选址时对应的注册与隔离状态。
 
 4. Auth、Permission 与证书
    `desc` 从 `descriptor:actor:*`、`descriptor:service:*`、`descriptor:web:*`、`descriptor:resource:*` 读取并监听准入相关 descriptor。`access` 查询这份缓存，并通过 Actor/Resource 变更通知维护认证、权限检查所需的 endpoint 订阅。RpcGW 在转发前调用 `access`，由它按需调用后端 auth service、actor permission service 和 resource check service。`vault` 从 Watch 读取并监听证书，用于 HTTPS SNI 匹配。
@@ -52,36 +52,35 @@ Portal 的职责可以拆成四条主线：
 Portal 内部主要依赖关系是：
 
 - `entry -> site, vault`
-- `site -> access, epmgr`
+- `site -> access, desc, epmgr`
 - `access -> desc, epmgr`
 - `desc -> hubwatch`
 - `vault -> hubwatch`
 - `epmgr -> hubwatch`
 
-外部调用方只应装配 `src/server/app` 和 `src/server/flag`，不要直接依赖内部 module。
+外部调用方通过 `src/server/app` 和 `src/server/flag` 装配 Portal。
 
 修改 Portal 时必须保持以下 owner 和依赖边界：
 
-- `epmgr` 是 Rpc/Web endpoint 订阅、watcher 引用计数、端点选择和 Rpc 隔离状态的唯一 owner；site 和 access 通过它获取 endpoint 并上报 Rpc 传输结果，不另行维护隔离状态。
-- `desc` 是所有 descriptor 订阅、缓存及 API 类型依赖的 owner；`access` 负责 Rpc/Web 准入及认证、权限检查所需的 endpoint 订阅。Gateway 和 access 不应维护第二份 descriptor 缓存。
-- `entry` 只管理监听入口和 rule 分发，`site` 只管理 RpcGW/WebGW，`vault` 只管理证书加载与匹配。
-- RpcGW/WebGW 必须继续传播当前 trace、initiator、actor、deadline 和剩余 timeout，不能用新的后台 context 覆盖请求上下文。
+- `epmgr` 负责 Rpc/Web endpoint 订阅、watcher 引用计数、端点选择和 Rpc 隔离状态；site 和 access 通过它获取 endpoint 并上报 Rpc 传输结果。
+- `desc` 负责 descriptor 订阅、缓存及 API 类型依赖；`access` 使用这份缓存完成 Rpc/Web 准入，并管理认证和权限检查所需的 endpoint 订阅。
+- `entry` 管理监听入口和 rule 分发，`site` 管理 RpcGW/WebGW，`vault` 管理证书加载与匹配。
+- RpcGW/WebGW 传播当前请求的 context、trace、initiator、actor、deadline 和剩余 timeout。
 - 修改 header、转发路径、descriptor 或 endpoint 格式时，必须同步 Link、Hub Watch 结构、调用方以及 gateway 测试。
 
 ## Inproc 模式
 
-Portal 支持作为 standalone 运行时的一部分在进程内启动。此时 Portal 仍然从 Hub Watch 读取并监听 portal rule、portal site、证书、descriptor 和 endpoint 注册信息，只是底层 Hub Watch client 会走进程内连接，而不是外部 TCP Redis。
+Standalone Portal 通过进程内 Redis 连接从 Hub Watch 读取快照并订阅变化。
+RpcGW/WebGW 通过发现的 endpoint 转发请求，包括 `link+inproc://`。
+`entry` 模块按配置创建 HTTP/HTTPS listener。
 
-Inproc/standalone 模式下需要注意：
+`heartbeat` 模块在 Portal 启动时向 Hub 注册，停止时注销。Inproc 注册随共享进程的
+生命周期管理，网络部署通过 heartbeat 续租。应用注销事件通过 Watch 更新 Portal 的端点缓存。
 
-- `entry`、`site`、`desc`、`access`、`epmgr`、`vault` 的模块边界和数据订阅语义保持不变。
-- RpcGW/WebGW 仍然通过 endpoint 发现结果转发请求，但目标 endpoint 可能是 `link+inproc://`，不会经过外部 Link ingress TCP 端口。
-- Portal 本身不负责 heartbeat 或 TTL 续租；注册信息在 inproc Hub 中通常长期有效，依赖应用显式 unregister 和 Hub Watch 事件驱动清理。
-- 这种模式适合验证路由、准入、descriptor 监听和 gateway 转发逻辑，但不模拟外部网络断连、独立 Link/Portal 进程崩溃、TLS listener 端口不可达等分布式故障。
+Standalone 测试覆盖路由、准入、订阅和转发；独立进程测试覆盖跨进程可达性、
+连接故障、租约过期和独立进程退出。
 
-如果要验证真实网络入口、TLS 监听、跨进程 endpoint 可达性或注册租约过期，应使用普通进程模式启动 Portal。
-
-修改入口、发现、认证或转发逻辑时，应分别验证 standalone/inproc 和普通网络部署。inproc 模式只保证路由与订阅语义，不代表真实监听、TLS、断连和租约行为已经覆盖。
+## 认证策略
 
 RPC service/method 的认证模式支持 `required`、`optional`、`anonymous`；method 声明还支持
 `inherit`。Web 另支持 `off`，service 和 Web 不允许使用 `inherit`。本地注册和 Hub 接收入口

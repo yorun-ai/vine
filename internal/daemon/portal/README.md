@@ -17,7 +17,7 @@ internal/daemon/portal/
         │   ├── access/     Rpc/Web authorization and auth/permission endpoint watches
         │   ├── desc/       Descriptor subscriptions, caches, and API type dependencies
         │   ├── entry/      HTTP/HTTPS listeners and portal-rule dispatch
-        │   ├── epmgr/      Rpc/Web endpoint subscriptions and round-robin selection
+        │   ├── epmgr/      Rpc/Web endpoint subscriptions, selection, and Rpc isolation
         │   ├── site/       Portal site management and RpcGW/WebGW creation
         │   └── vault/      TLS certificate loading, watching, and matching
         └── util/           Portal utilities such as gateway forwarding
@@ -36,7 +36,7 @@ Portal has four primary responsibilities:
 3. Endpoint discovery
    `epmgr` subscribes to Rpc/Web endpoint keys, manages watcher reference counts, and provides `NextRpcEndpoint` and `NextWebEndpoint` to gateways.
 
-   Rpc selection also returns an `Attempt`, which RpcGW and auth/permission forwarding complete after a transport failure or response-body completion. Dial failures immediately isolate that registration; other network failures require three consecutive failures. Business errors, cancellation, and overall Rpc deadlines do not count as endpoint failures. Isolation skips the endpoint without deleting its Hub registration. Cooldowns start at 5 seconds and double up to 30 seconds after failed probes; only one new request may probe an endpoint at a time. The current request is never replayed against another endpoint. Replaced/removed registrations and older circuit states ignore late results. Web endpoint selection remains round-robin.
+   Rpc selection returns an `Attempt` for RpcGW and auth/permission forwarding to report transport completion. Dial failures immediately isolate a registration; three consecutive other network failures also trigger isolation. A complete response, including a business error, resets the failure count. Isolation is local to `epmgr`, with a cooldown starting at 5 seconds and doubling to at most 30 seconds after failed probes. One new request probes recovery after cooldown. Each request is forwarded once, and its result applies to the registration and isolation state that selected it.
 
 4. Authentication, permission, and certificates
    `desc` reads and watches `descriptor:actor:*`, `descriptor:service:*`, `descriptor:web:*`, and `descriptor:resource:*` state. `access` queries this cache and observes actor/resource changes to maintain auth and permission endpoint watches. Before forwarding, RpcGW asks `access` to perform authentication and permission admission, which may invoke backend auth services, actor permission services, and resource check services. `vault` reads and watches certificates from Watch for HTTPS SNI matching.
@@ -58,28 +58,32 @@ The primary Portal module dependencies are:
 - `vault -> hubwatch`
 - `epmgr -> hubwatch`
 
-External callers should assemble only `src/server/app` and `src/server/flag`; they must not depend directly on internal modules.
+External callers assemble Portal through `src/server/app` and `src/server/flag`.
 
 Preserve these ownership and dependency boundaries when modifying Portal:
 
-- `epmgr` is the single owner of Rpc/Web endpoint subscriptions, watcher reference counts, endpoint selection, and Rpc isolation state. Sites and access logic obtain endpoints through it and report Rpc transport results; they must not maintain separate isolation state.
-- `desc` owns all descriptor subscriptions and caches, including API type dependencies. `access` owns Rpc/Web admission and its auth/permission endpoint watches. Gateways and access must not maintain a second descriptor cache.
-- `entry` owns listener entries and rule dispatch only; `site` owns RpcGW/WebGW instances only; `vault` owns certificate loading and matching only.
-- RpcGW and WebGW must continue propagating the active trace, initiator, actor, deadline, and remaining timeout. Do not replace the request context with a new background context.
+- `epmgr` owns Rpc/Web endpoint subscriptions, watcher reference counts, endpoint selection, and Rpc isolation state. Sites and access logic obtain endpoints through it and report Rpc transport results.
+- `desc` owns descriptor subscriptions, caches, and API type dependencies. `access` uses this cache for Rpc/Web admission and manages auth/permission endpoint watches.
+- `entry` owns listener entries and rule dispatch; `site` owns RpcGW/WebGW instances; `vault` owns certificate loading and matching.
+- RpcGW and WebGW propagate the active request context, trace, initiator, actor, deadline, and remaining timeout.
 - When headers, forwarding paths, descriptors, or endpoint formats change, update Link, Hub Watch structures, callers, and gateway tests together.
 
 ## Inproc Mode
 
-Portal can run in process as part of a standalone runtime. It still reads and watches portal rules, portal sites, certificates, descriptors, and endpoint registrations from Hub Watch, but its Hub Watch client uses an in-process connection instead of external TCP.
+Standalone Portal reads snapshots and subscribes to Hub Watch over an in-process
+Redis connection. RpcGW and WebGW route through discovered endpoints, including
+`link+inproc://`. The `entry` module creates the configured HTTP/HTTPS listeners.
 
-In inproc and standalone modes:
+The `heartbeat` module registers Portal with Hub at startup and unregisters it
+at shutdown. Inproc registrations follow the shared process lifecycle; network
+deployments renew their leases through heartbeat. Application unregister events
+update Portal's endpoint caches through Watch.
 
-- The module boundaries and subscription semantics of `entry`, `site`, `desc`, `access`, `epmgr`, and `vault` remain unchanged.
-- RpcGW and WebGW still forward through discovered endpoints, but targets may use `link+inproc://` and avoid an external Link ingress TCP port.
-- Portal does not own heartbeat or TTL renewal. Registrations in an inproc Hub are normally long-lived and depend on explicit application unregister plus Hub Watch events for cleanup.
-- This mode is suitable for testing routing, admission, descriptor watching, and gateway forwarding, but it does not model external network disconnection, independent Link/Portal process crashes, unreachable TLS listeners, or distributed lease expiry.
+Cover routing, admission, subscriptions, and forwarding in standalone tests.
+Use separate processes for cross-process reachability, connection failures,
+lease expiration, and independent process shutdown.
 
-Use normal process mode to validate real network entries, TLS listeners, cross-process endpoint reachability, or registration lease expiry.
+## Authentication Policies
 
 Rpc service/method authentication modes are `required`, `optional`, and
 `anonymous`; method declarations also support `inherit`. Web additionally supports

@@ -31,25 +31,24 @@ Generated Link code lives in `internal/core/link/skeled`, outside the runtime pa
 bash script/gen-skel.sh link
 ```
 
-Do not edit `internal/core/link/skeled` directly. Modify contracts under `skel/`, regenerate them with the script, and verify every protocol consumer.
+Modify contracts under `skel/`, regenerate them with the script, and verify every protocol consumer.
 
 ## Runtime Model
 
 Link has four primary responsibilities:
 
 1. Local application registration
-   After an application starts, it calls `RegistryService`. `minder` records the local instance as source state, publishes application registrations to Hub, and starts heartbeat and health checks.
+   After an application starts, it calls `RegistryService`. `minder` records the local instance, publishes its registration to Hub, and manages lease renewal and health checks according to the deployment mode. Unregister stops renewal and recovery, serializes the Hub operation with in-flight registration work, then drains and removes the local instance. Local cleanup completes after either a successful or failed Hub unregister.
 
 2. Configuration and discovery
-   `config.Reader` loads configuration from Hub Watch and continuously watches for changes. `rpcproxy` and `webproxy` maintain Rpc and Web discovery state respectively.
+   `config.Reader` loads configuration from Hub Watch and watches for changes. `rpcproxy` maintains remote Rpc discovery state; `webproxy` derives local Web routes from `minder` registrations.
 
    The Hub Watch client uses the `vine.link` user. Its ACL is limited to configuration, Rpc endpoint discovery, the shared revision key, and their required subscriptions. The Redis password is empty for in-process mode and separated-deployment debugging. With backend mTLS enabled, the Link certificate authenticates the client and binds its SPIFFE identity to the `vine.link` user. Without mTLS, the username only selects an ACL role, so the Redis endpoint still requires network isolation.
 
 3. Asynchronous events and tasks
    `event` and `task` subscribe to the listener and runner capabilities declared by local instances in `minder`, then deliver messages received through NATS.
 
-   Link does not create JetStream streams or select stream/consumer storage.
-   Embedded Hub NATS provisions the required streams; external NATS deployments
+   Embedded Hub NATS provisions the required JetStream streams; external NATS deployments
    must provision them before Link starts and own their storage policy.
 
 4. Rpc forwarding
@@ -75,9 +74,7 @@ Module responsibilities are:
 
 Preserve these boundaries when modifying modules:
 
-- Do not create a second source of local application instance state in `rpcproxy`, `webproxy`, `event`, `task`, or `config`.
 - When adding an application capability or registration field, first extend the source facts and mutators owned by `minder`, then update derived state in downstream modules.
-- Modules must not bypass `minder` to own register, unregister, heartbeat, or health-check lifecycles.
 - When Rpc/Web endpoint, event, or task protocols change, update Hub Watch structures, application registration code, and forwarding/delivery tests together.
 
 ## Dependencies
@@ -100,26 +97,19 @@ External services map to modules as follows:
 
 ## Inproc Mode
 
-Link can run as a component in a single-process runtime:
+Link supports in-process operation at two boundaries:
 
-- `LinkApp` can start inproc, registering its Rpc services with the `inproc` transport instead of exposing them over HTTP.
-- When `HubInprocMode` is enabled, Link treats Hub as an in-process component:
-  - `HubEndpoint` is fixed to the Hub inproc endpoint.
-  - `config.Reader`, `rpcproxy`, and `webproxy` access Hub through an in-process Redis connection instead of an external TCP port.
-  - `minder` does not start heartbeat.
-  - Local application health checks in `minder` become no-ops.
+- An inproc `LinkApp` registers its Rpc services with the `inproc` transport.
+  Local application liveness follows registration and shutdown. A separately
+  running Link checks applications through their console endpoints.
+- `HubInprocMode` selects Hub's inproc endpoint and an in-memory Redis connection
+  for `config.Reader` and `rpcproxy`. These modules initialize snapshots and
+  subscribe to changes. Registrations with the inproc Hub remain valid until
+  explicit unregister; connections to an external Hub renew leases through heartbeat.
 
-Link retains configuration and service subscriptions in this mode; only the underlying Redis transport changes from network to in-process access.
+`rpcproxy` and `webproxy` route requests through the selected transport, including
+`rpc+inproc://`, `web+inproc://`, and `link+inproc://` endpoints.
 
-### Failure-Semantics Differences
-
-Inproc and standalone modes are intended for single-process execution, integration tests, and local debugging. They retain registration, discovery, forwarding, and subscription semantics, but they do not fully model distributed process liveness:
-
-- Hub registration state does not expire through TTL and instead depends on explicit unregister during application shutdown.
-- Link does not start heartbeat, so renewal failures cannot reveal Hub or network failures.
-- Link does not run local application console health checks, so it cannot model a live process with an unhealthy HTTP/Rpc handler.
-- Rpc/Web forwarding still passes through `rpcproxy` and `webproxy`, but endpoints may use `rpc+inproc://`, `web+inproc://`, or `link+inproc://`.
-
-Use separate Hub, Link, and Portal processes to validate heartbeat, TTL expiry, network disconnection, or independent process crashes.
-
-When changing Link connection, registration, discovery, or forwarding behavior, cover both normal network and inproc modes. Passing inproc tests does not establish correct heartbeat, TTL, health-check, or cross-process endpoint behavior.
+Cover registration, subscriptions, and forwarding in inproc tests. Use separate
+processes to validate heartbeat, lease expiration, console health checks,
+network disconnection, and independent process shutdown.
