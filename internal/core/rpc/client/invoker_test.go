@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -48,7 +49,7 @@ func newInvokerTestMethodInfo(name string, skelName string, argumentsType reflec
 
 func testClientApp(t *testing.T) meta.App {
 	t.Helper()
-	app, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	app, err := meta.NewApp("demo", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}

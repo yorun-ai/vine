@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"uuid"
 
 	"golang.org/x/net/http2"
 
@@ -37,7 +38,7 @@ type RpcProxy struct {
 	transport http.RoundTripper
 
 	appStateMutex        sync.RWMutex
-	appStateByInstanceID map[string]*_AppState
+	appStateByInstanceID map[uuid.UUID]*_AppState
 
 	serviceStateMutex   sync.RWMutex
 	serviceStatesByName map[string]*_ServiceState
@@ -53,7 +54,7 @@ type _AppState struct {
 }
 
 type _ServiceState struct {
-	refsByAppInstanceID    map[string]struct{}
+	refsByAppInstanceID    map[uuid.UUID]struct{}
 	registrationsByKey     map[string]watched.RpcServiceRegistration
 	endpoints              []watched.RpcServiceRegistration
 	nextIndex              int
@@ -75,7 +76,7 @@ func (p *RpcProxy) DIInit() {
 			return dialer.DialContext(ctx, network, addr)
 		},
 	}
-	p.appStateByInstanceID = map[string]*_AppState{}
+	p.appStateByInstanceID = map[uuid.UUID]*_AppState{}
 	p.serviceStatesByName = map[string]*_ServiceState{}
 	p.AppMinder.AddMutator(p)
 }
@@ -83,7 +84,7 @@ func (p *RpcProxy) DIInit() {
 func (p *RpcProxy) OnSetup(instance *minder.AppInstance) {
 	appInstanceID := instance.AppInfo.InstanceId()
 	for idx := range instance.HubServiceHandlers {
-		instance.HubServiceHandlers[idx].Endpoint = instance.IngressEndpoint + PathIn + "/" + appInstanceID
+		instance.HubServiceHandlers[idx].Endpoint = instance.IngressEndpoint + PathIn + "/" + appInstanceID.String()
 	}
 	serviceNames := map[string]struct{}{}
 	for _, serviceHandler := range instance.ServiceHandlers {
@@ -117,7 +118,7 @@ func (p *RpcProxy) OnDestroy(instance *minder.AppInstance) {
 	p.releaseInstanceState(instance.AppInfo.InstanceId())
 }
 
-func (p *RpcProxy) getAppStateByInstanceID(appInstanceID string) (*_AppState, bool) {
+func (p *RpcProxy) getAppStateByInstanceID(appInstanceID uuid.UUID) (*_AppState, bool) {
 	p.appStateMutex.RLock()
 	state := p.appStateByInstanceID[appInstanceID]
 	p.appStateMutex.RUnlock()

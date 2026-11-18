@@ -2,7 +2,6 @@ package minder
 
 import (
 	"time"
-	"uuid"
 
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
@@ -26,7 +25,7 @@ func (i *AppInstance) registerHubInstanceLocked() {
 	}
 	i.minder.RegistryServiceClient.Register(hubskeled.AppRegistration{
 		Name:              i.AppInfo.Name(),
-		InstanceId:        uuid.MustParse(i.AppInfo.InstanceId()),
+		InstanceId:        i.AppInfo.InstanceId(),
 		Version:           i.AppInfo.Version(),
 		Endpoint:          i.IngressEndpoint,
 		ServiceHandlers:   vslice.Clone(i.HubServiceHandlers),
@@ -40,7 +39,7 @@ func (i *AppInstance) registerHubInstanceLocked() {
 func (i *AppInstance) unregisterHubInstance() {
 	i.hubMutex.Lock()
 	defer i.hubMutex.Unlock()
-	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), uuid.MustParse(i.AppInfo.InstanceId()), rpcclient.WithTimeout(hubRegistryTimeout))
+	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), i.AppInfo.InstanceId(), rpcclient.WithTimeout(hubRegistryTimeout))
 }
 
 func toHubEventListenerRegistrations(registrations []skeled.EventListenerRegistration) []hubskeled.EventListenerRegistration {

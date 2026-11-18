@@ -2,6 +2,7 @@ package watched
 
 import (
 	"fmt"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/daemon"
 )
@@ -18,10 +19,10 @@ type RpcServiceRegistration struct {
 	Api            bool            `json:"api,omitzero"`
 	AppName        string          `json:"appName"`
 	AppVersion     string          `json:"appVersion"`
-	AppInstanceId  string          `json:"appInstanceId"`
+	AppInstanceId  uuid.UUID       `json:"appInstanceId"`
 }
 
-func FormatRpcServiceRegistrationKey(serviceName string, appName string, instanceId string) string {
+func FormatRpcServiceRegistrationKey(serviceName string, appName string, instanceId uuid.UUID) string {
 	return fmt.Sprintf(rpcServiceRegistrationKeyFormat, serviceName, appName, instanceId)
 }
 
@@ -35,7 +36,7 @@ const (
 	appStatusPattern      = "app:*:status:*"
 )
 
-func FormatAppStatusKey(appName string, instanceId string) string {
+func FormatAppStatusKey(appName string, instanceId uuid.UUID) string {
 	return fmt.Sprintf(appStatusKeyFormat, appName, instanceId)
 }
 

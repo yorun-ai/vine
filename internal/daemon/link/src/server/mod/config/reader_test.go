@@ -5,6 +5,7 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +18,7 @@ func TestAfterAppStopCancelsAllWatchesAndClearsSnapshots(t *testing.T) {
 	reader := newTestReader(t, nil)
 	client := &watchContextRecorder{ClientOps: reader.Client}
 	reader.Client = client
-	instance := registerTestAppInstance(reader, "22222222-2222-2222-2222-222222222222")
+	instance := registerTestAppInstance(reader, uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	for _, name := range []string{"demo.FeatureConfig", "demo.OtherConfig"} {
 		reader.GetInstant(instance.AppInfo.InstanceId(), name)
 	}
@@ -42,8 +43,8 @@ func TestOnDestroyCancelsWatchAfterLastInstance(t *testing.T) {
 	})
 	client := &watchContextRecorder{ClientOps: reader.Client}
 	reader.Client = client
-	first := registerTestAppInstance(reader, "11111111-1111-1111-1111-111111111111")
-	second := registerTestAppInstance(reader, "22222222-2222-2222-2222-222222222222")
+	first := registerTestAppInstance(reader, uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	second := registerTestAppInstance(reader, uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	reader.GetInstant(first.AppInfo.InstanceId(), "demo.FeatureConfig")
 	reader.GetInstant(second.AppInfo.InstanceId(), "demo.FeatureConfig")
 	require.Len(t, client.contexts, 1)
@@ -66,7 +67,7 @@ func TestOnDestroyCancelsWatchAfterLastInstance(t *testing.T) {
 func TestInstantConfigReceivesSubscribedEvents(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		reader := newTestReader(t, nil)
-		instance := registerTestAppInstance(reader, "11111111-1111-1111-1111-111111111111")
+		instance := registerTestAppInstance(reader, uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 		name := "demo.FeatureConfig"
 		assert.Empty(t, reader.GetInstant(instance.AppInfo.InstanceId(), name))
 		client := reader.Client.(*watchtest.Client)
@@ -98,7 +99,7 @@ func TestInstantConfigThroughHubWatch(t *testing.T) {
 	reader := &Reader{Context: t.Context(), Client: client, AppMinder: newTestMinder()}
 	reader.DIInit()
 	t.Cleanup(reader.AfterAppStop)
-	instance := registerTestAppInstance(reader, "11111111-1111-1111-1111-111111111111")
+	instance := registerTestAppInstance(reader, uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	name := "demo.FeatureConfig"
 	key := watched.FormatConfigKey(name)
 	server.Set(key, marshalTestConfigValue(name, `{"enabled":false}`))

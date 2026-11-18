@@ -8,7 +8,7 @@ import (
 
 func TestNewAppRejectsInvalidName(t *testing.T) {
 	for _, name := range []string{"DemoService", "demo.worker@demo.runtime", "2worker", "user-service", ".worker", "demo..worker"} {
-		if _, err := NewApp(name, "1.2.3", "123e4567-e89b-12d3-a456-426614174000"); err == nil {
+		if _, err := NewApp(name, "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")); err == nil {
 			t.Fatalf("expected invalid name error for %q", name)
 		}
 	}
@@ -18,7 +18,7 @@ func TestNewAppRejectsInvalidName(t *testing.T) {
 // application names accept the digits a domain name allows.
 func TestNewAppAcceptsDigitsInNameSegments(t *testing.T) {
 	for _, name := range []string{"worker2", "shop.orders", "team1.app2", "order2.items"} {
-		app, err := NewApp(name, "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
+		app, err := NewApp(name, "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 		if err != nil {
 			t.Fatalf("unexpected error for %q: %v", name, err)
 		}
@@ -29,7 +29,7 @@ func TestNewAppAcceptsDigitsInNameSegments(t *testing.T) {
 }
 
 func TestNewAppRejectsInvalidVersion(t *testing.T) {
-	if _, err := NewApp("demo.service", "latest", "123e4567-e89b-12d3-a456-426614174000"); err == nil {
+	if _, err := NewApp("demo.service", "latest", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")); err == nil {
 		t.Fatalf("expected invalid version error")
 	}
 }
@@ -69,14 +69,14 @@ func TestIsValidVersionRejectsIncompleteVersions(t *testing.T) {
 	}
 }
 
-func TestNewAppRejectsInvalidInstanceID(t *testing.T) {
-	if _, err := NewApp("demo.service", "1.2.3", "not-a-uuid"); err == nil {
+func TestDecodeAppRejectsInvalidInstanceID(t *testing.T) {
+	if _, err := DecodeAppFromDelimited("name=demo.service,version=1.2.3,instanceId=not-a-uuid"); err == nil {
 		t.Fatalf("expected invalid instance id error")
 	}
 }
 
-func TestNewAppRejectsEmptyInstanceID(t *testing.T) {
-	if _, err := NewApp("demo.service", "1.2.3", ""); err == nil {
+func TestDecodeAppRejectsEmptyInstanceID(t *testing.T) {
+	if _, err := DecodeAppFromDelimited("name=demo.service,version=1.2.3,instanceId="); err == nil {
 		t.Fatalf("expected empty instance id to be rejected")
 	}
 }
@@ -88,7 +88,7 @@ func TestMustNewAppPanicsOnInvalidInput(t *testing.T) {
 		}
 	}()
 
-	_ = MustNewApp("DemoService", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
+	_ = MustNewApp("DemoService", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 }
 
 func TestMustNewAppWithRandomIdGeneratesValidInstanceID(t *testing.T) {
@@ -97,25 +97,22 @@ func TestMustNewAppWithRandomIdGeneratesValidInstanceID(t *testing.T) {
 	if app.Name() != "demo.service" || app.Version() != "1.2.3" {
 		t.Fatalf("unexpected app content: %#v", app)
 	}
-	parsed, err := uuid.Parse(app.InstanceId())
-	if err != nil {
-		t.Fatalf("unexpected instance id: %v", err)
-	}
+	parsed := app.InstanceId()
 	if version := parsed[6] >> 4; version != 7 {
 		t.Fatalf("expected v7 uuid, got v%d", version)
 	}
 }
 
 func TestIsSame(t *testing.T) {
-	left, err := NewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
+	left, err := NewApp("demo.service", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	right, err := NewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
+	right, err := NewApp("demo.service", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	other, err := NewApp("demo.service", "1.2.4", "123e4567-e89b-12d3-a456-426614174000")
+	other, err := NewApp("demo.service", "1.2.4", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -132,7 +129,7 @@ func TestIsSame(t *testing.T) {
 }
 
 func TestAppDelimitedRoundTrip(t *testing.T) {
-	app, err := NewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")
+	app, err := NewApp("demo.service", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
@@ -156,5 +153,32 @@ func TestDecodeAppFromDelimitedRejectsInvalidValue(t *testing.T) {
 	}
 	if _, err := DecodeAppFromDelimited("name=demo.service,version=1.2.3"); err == nil {
 		t.Fatalf("expected missing instance id to be rejected")
+	}
+}
+
+func TestDecodeAppPreservesLegacyUUIDForms(t *testing.T) {
+	canonical := "123e4567-e89b-12d3-a456-426614174000"
+	want := uuid.MustParse(canonical)
+	for _, text := range []string{canonical, "123E4567-E89B-12D3-A456-426614174000", "{123e4567-e89b-12d3-a456-426614174000}", "urn:uuid:" + canonical, "123e4567e89b12d3a456426614174000"} {
+		t.Run(text, func(t *testing.T) {
+			app, err := DecodeAppFromDelimited("name=demo.service,version=v1.2.3,instanceId=" + text)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if app.InstanceId() != want || app.Version() != "v1.2.3" {
+				t.Fatalf("legacy identity changed: %v", app)
+			}
+			if got := EncodeAppToDelimited(app); got != "name=demo.service,version=v1.2.3,instanceId="+canonical {
+				t.Fatalf("UUID must remain text on the wire: %s", got)
+			}
+		})
+	}
+}
+
+func TestAppAcceptsZeroUUID(t *testing.T) {
+	// The previous string constructor accepted the all-zero UUID as well.
+	app, err := NewApp("demo.service", "1.2.3", uuid.UUID{})
+	if err != nil || app.InstanceId() != (uuid.UUID{}) {
+		t.Fatalf("zero UUID compatibility: %v, %v", app, err)
 	}
 }

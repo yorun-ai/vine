@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -30,11 +31,11 @@ func TestTraceHeaderRoundTrip(t *testing.T) {
 }
 
 func TestClientAndServerHeaderRoundTrip(t *testing.T) {
-	client, err := meta.NewApp("client", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("client", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp(client) error = %v", err)
 	}
-	server, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	server, err := meta.NewApp("server", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp(server) error = %v", err)
 	}
@@ -66,7 +67,7 @@ func TestClientAndServerHeaderRoundTrip(t *testing.T) {
 }
 
 func TestEncodeClientToHeaderNormalizesGoVersionPrefix(t *testing.T) {
-	client, err := meta.NewApp("vine.hub", "v0.17.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("vine.hub", "v0.17.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
@@ -127,7 +128,7 @@ func TestInitiatorHeaderRoundTrip(t *testing.T) {
 	initiator, err := meta.NewInitiator(
 		"demo.service",
 		"1.2.3",
-		"123e4567-e89b-12d3-a456-426614174000",
+		uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 		"http",
 		"127.0.0.1",
 	)

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -213,11 +214,11 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 					ActorSkelName: "demo.Actor",
 					WebgwConfig:   &watched.PortalWebgwConfig{WebName: "demo.Web"},
 				}),
-				watched.FormatWebRegistrationKey("demo.Web", "demo", "instance"): vcode.MustMarshalJsonS(watched.WebRegistration{
+				watched.FormatWebRegistrationKey("demo.Web", "demo", uuid.MustParse("00000000-0000-0000-0000-00000000000a")): vcode.MustMarshalJsonS(watched.WebRegistration{
 					Endpoint:      endpoint + "/web/proxy/in/instance/demo.Web",
 					WebSkelName:   "demo.Web",
 					AppName:       "demo",
-					AppInstanceId: "instance",
+					AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-00000000000a"),
 				}),
 			}
 			endpoints := &epmgr.Manager{Context: ctx, Watch: watchtest.New(t, values)}
@@ -228,7 +229,7 @@ func TestEntryTargetPathForwardingAndUpdate(t *testing.T) {
 			accessManager := &access.Access{Context: ctx, Desc: descriptors, Epmgr: endpoints}
 			accessManager.DIInit()
 			t.Cleanup(accessManager.AfterAppStop)
-			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: accessManager}
+			sites := &site.Manager{Context: ctx, CurrentApp: meta.MustNewApp("vine.portal", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099")), Watch: watchtest.New(t, values), Epmgr: endpoints, Access: accessManager}
 			sites.DIInit()
 			entry := newEntry(spec.SchemeHTTP, 80, nil)
 			public := httptest.NewServer(entry)

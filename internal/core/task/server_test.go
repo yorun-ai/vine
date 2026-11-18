@@ -28,7 +28,7 @@ type testRunnerArguments struct {
 }
 
 func testTaskServerApp() meta.App {
-	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174011")
+	return meta.MustNewApp("test.app", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174011"))
 }
 
 func TestNewServerRequiresApp(t *testing.T) {

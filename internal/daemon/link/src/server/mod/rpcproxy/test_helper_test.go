@@ -68,7 +68,7 @@ func newTestRpcProxy(t *testing.T, watchClient *watchtest.Client) *RpcProxy {
 	minder := &minder.AppMinder{
 		Context:               context.Background(),
 		Flag:                  &flag.Flag{HubInprocMode: true},
-		CurrentApp:            mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+		CurrentApp:            mustMetaApp(t, "proxy.app", uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		InprocFlag:            &internalapp.InternalInprocFlag{Enabled: true},
 		RegistryServiceClient: &_TestRegistryServiceClient{},
 	}
@@ -77,7 +77,7 @@ func newTestRpcProxy(t *testing.T, watchClient *watchtest.Client) *RpcProxy {
 	proxy := &RpcProxy{
 		Context:     context.Background(),
 		WatchClient: watchClient,
-		CurrentApp:  mustMetaApp(t, "proxy.app", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+		CurrentApp:  mustMetaApp(t, "proxy.app", uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
 		Logger:      logger.New("vine:test"),
 		AppMinder:   minder,
 	}
@@ -109,7 +109,7 @@ func newTestHubWatchClient(t *testing.T, serviceEndpointsByName map[string][]wat
 	return watchtest.New(t, valuesByKey)
 }
 
-func mustMetaApp(t *testing.T, name string, instanceID string) meta.App {
+func mustMetaApp(t *testing.T, name string, instanceID uuid.UUID) meta.App {
 	t.Helper()
 	appInfo, err := meta.NewApp(name, "1.0.0", instanceID)
 	if err != nil {

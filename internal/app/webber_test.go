@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"uuid"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -218,7 +219,7 @@ func (*testMultiHandlerWebberAppSpec) WebberInitHandlers(addHandler TypeAdder) {
 
 func newTestWebRequest(path string) *http.Request {
 	trace := meta.InitialTrace()
-	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "https", "127.0.0.1")
 	if err != nil {
 		panic(err)
 	}
@@ -235,7 +236,7 @@ func TestWebberBindContextMapsWebContextToCommonTypes(t *testing.T) {
 
 	recorder := &testWebberContextRecorder{}
 	w := &_Webber{
-		currentApp: meta.CurrentApp(meta.MustNewApp("demo.service", "1.2.3", "123e4567-e89b-12d3-a456-426614174000")),
+		currentApp: meta.CurrentApp(meta.MustNewApp("demo.service", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))),
 		spec:       &testWebberContextSpec{},
 		bindAppDeps: func(b *di.Binder) {
 			b.Bind(di.T[*testWebberContextRecorder]()).ToInstance(recorder)
@@ -244,7 +245,7 @@ func TestWebberBindContextMapsWebContextToCommonTypes(t *testing.T) {
 	w.init()
 
 	trace := meta.InitialTrace()
-	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}

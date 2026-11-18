@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -104,7 +105,7 @@ func setTestWebRequestHeaders(t *testing.T, request *http.Request) {
 	t.Helper()
 
 	webspec.EncodeTraceToHeader(request.Header, meta.InitialTrace())
-	initiator, err := meta.NewInitiator("demo.client", "0.0.0", "123e4567-e89b-12d3-a456-426614174001", "curl/8.0", "192.0.2.1")
+	initiator, err := meta.NewInitiator("demo.client", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"), "curl/8.0", "192.0.2.1")
 	require.NoError(t, err)
 	request.Header.Set(webspec.HeaderWebInitiator, meta.EncodeInitiatorToBase64(initiator))
 }

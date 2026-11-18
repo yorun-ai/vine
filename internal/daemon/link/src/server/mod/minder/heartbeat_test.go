@@ -57,7 +57,7 @@ func TestStartHeartbeatReRegistersWhenHubLosesRegistration(t *testing.T) {
 		defer client.mutex.Unlock()
 		assert.NotEmpty(t, client.heartbeats)
 		require.NotEmpty(t, client.registrations)
-		assert.Equal(t, uuid.MustParse(appInfo.InstanceId()), client.registrations[0].InstanceId)
+		assert.Equal(t, appInfo.InstanceId(), client.registrations[0].InstanceId)
 	})
 }
 

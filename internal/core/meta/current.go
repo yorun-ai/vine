@@ -1,5 +1,7 @@
 package meta
 
+import "uuid"
+
 // CurrentApp is the identity of the application instance that owns the
 // component graph it is injected into. It carries the same fields as App but is
 // a distinct type, so the binding for the current application cannot collide
@@ -13,5 +15,5 @@ package meta
 type CurrentApp interface {
 	Name() string
 	Version() string
-	InstanceId() string
+	InstanceId() uuid.UUID
 }

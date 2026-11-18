@@ -2,6 +2,7 @@ package repo
 
 import (
 	"time"
+	"uuid"
 
 	internalapp "go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -16,13 +17,13 @@ const hubPortalRegistryLeaseTTL = 30 * time.Second
 // Structs
 
 type _PortalInstance struct {
-	InstanceId string    `json:"instanceId"`
+	InstanceId uuid.UUID `json:"instanceId"`
 	Version    string    `json:"version"`
 	ExpiresAt  time.Time `json:"expiresAt"`
 }
 
 type _PortalLease struct {
-	InstanceId string `json:"instanceId"`
+	InstanceId uuid.UUID `json:"instanceId"`
 }
 
 // Repo
@@ -67,7 +68,7 @@ func (r *PortalInstanceRepo) List() []*core.PortalInstance {
 	return instances
 }
 
-func (r *PortalInstanceRepo) GetById(instanceId string) (*core.PortalInstance, bool) {
+func (r *PortalInstanceRepo) GetById(instanceId uuid.UUID) (*core.PortalInstance, bool) {
 	key := watched.FormatPortalInstanceKey(instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -76,7 +77,7 @@ func (r *PortalInstanceRepo) GetById(instanceId string) (*core.PortalInstance, b
 	return toCorePortalInstance(vcode.MustUnmarshalJsonS[*_PortalInstance](value)), true
 }
 
-func (r *PortalInstanceRepo) Keep(instanceId string) bool {
+func (r *PortalInstanceRepo) Keep(instanceId uuid.UUID) bool {
 	if r.InprocFlag.Enabled {
 		return true
 	}
@@ -93,19 +94,19 @@ func (r *PortalInstanceRepo) Keep(instanceId string) bool {
 	return true
 }
 
-func (r *PortalInstanceRepo) Remove(instanceId string) {
+func (r *PortalInstanceRepo) Remove(instanceId uuid.UUID) {
 	key := watched.FormatPortalInstanceKey(instanceId)
 	r.WatchServer.DeleteAndNotify(key)
 	r.removePortalLease(instanceId)
 }
 
-func (r *PortalInstanceRepo) ListExpiredLeases() []string {
+func (r *PortalInstanceRepo) ListExpiredLeases() []uuid.UUID {
 	if r.InprocFlag.Enabled {
 		return nil
 	}
 
 	members := r.WatchServer.ListExpiredLeases(hubPortalRegistryLeaseKey)
-	instanceIds := make([]string, 0, len(members))
+	instanceIds := make([]uuid.UUID, 0, len(members))
 	for _, member := range members {
 		lease := vcode.MustUnmarshalJsonS[*_PortalLease](member)
 		instanceIds = append(instanceIds, lease.InstanceId)
@@ -113,7 +114,7 @@ func (r *PortalInstanceRepo) ListExpiredLeases() []string {
 	return instanceIds
 }
 
-func (r *PortalInstanceRepo) getPortalInstance(instanceId string) (*_PortalInstance, bool) {
+func (r *PortalInstanceRepo) getPortalInstance(instanceId uuid.UUID) (*_PortalInstance, bool) {
 	key := watched.FormatPortalInstanceKey(instanceId)
 	value, ok := r.WatchServer.Get(key)
 	if !ok {
@@ -122,12 +123,12 @@ func (r *PortalInstanceRepo) getPortalInstance(instanceId string) (*_PortalInsta
 	return vcode.MustUnmarshalJsonS[*_PortalInstance](value), true
 }
 
-func (r *PortalInstanceRepo) savePortalLease(instanceId string) {
+func (r *PortalInstanceRepo) savePortalLease(instanceId uuid.UUID) {
 	member := vcode.MustMarshalJsonS(_PortalLease{InstanceId: instanceId})
 	r.WatchServer.KeepLease(hubPortalRegistryLeaseKey, member, hubPortalRegistryLeaseTTL)
 }
 
-func (r *PortalInstanceRepo) removePortalLease(instanceId string) {
+func (r *PortalInstanceRepo) removePortalLease(instanceId uuid.UUID) {
 	member := vcode.MustMarshalJsonS(_PortalLease{InstanceId: instanceId})
 	r.WatchServer.RemoveLease(hubPortalRegistryLeaseKey, member)
 }

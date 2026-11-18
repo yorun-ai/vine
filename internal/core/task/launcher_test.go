@@ -112,7 +112,7 @@ func TestTaskLauncherBuildRequestInjectsMetaFields(t *testing.T) {
 	launcher := NewLauncher(LauncherOption{
 		Context:    testLauncherContext(),
 		Logger:     testLauncherLogger(),
-		ClientApp:  meta.MustNewApp("test.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000"),
+		ClientApp:  meta.MustNewApp("test.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 		TaskClient: taskClient,
 	})
 
@@ -123,7 +123,7 @@ func TestTaskLauncherBuildRequestInjectsMetaFields(t *testing.T) {
 	if launch.Metadata.AppName != launcher.clientApp.Name() {
 		t.Fatalf("unexpected client app: got %s want %s", launch.Metadata.AppName, launcher.clientApp.Name())
 	}
-	if launch.Metadata.AppInstanceId != uuid.MustParse(launcher.clientApp.InstanceId()) {
+	if launch.Metadata.AppInstanceId != launcher.clientApp.InstanceId() {
 		t.Fatalf("unexpected client app instance id: got %s want %s", launch.Metadata.AppInstanceId, launcher.clientApp.InstanceId())
 	}
 }
@@ -133,7 +133,7 @@ func TestTaskLauncherLaunchUsesTaskClient(t *testing.T) {
 	launcher := NewLauncher(LauncherOption{
 		Context:    testLauncherContext(),
 		Logger:     testLauncherLogger(),
-		ClientApp:  meta.MustNewApp("test.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000"),
+		ClientApp:  meta.MustNewApp("test.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 		TaskClient: taskClient,
 	})
 
@@ -190,7 +190,7 @@ func TestNewTaskLauncherPanicsWhenTaskClientIsNil(t *testing.T) {
 
 func TestTaskLauncherPreservesNullableArguments(t *testing.T) {
 	client := &testLauncherTaskClient{}
-	launcher := NewLauncher(LauncherOption{Context: testLauncherContext(), Logger: testLauncherLogger(), ClientApp: meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174000"), TaskClient: client})
+	launcher := NewLauncher(LauncherOption{Context: testLauncherContext(), Logger: testLauncherLogger(), ClientApp: meta.MustNewApp("test.app", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")), TaskClient: client})
 	emptyItems, emptyLabels := []string{}, map[string]string{}
 	note, items, labels := "note", []string{"item"}, map[string]string{"key": "value"}
 	for _, args := range []*testLauncherTaskArguments{{}, {Items: &emptyItems, Labels: &emptyLabels}, {Note: &note, Items: &items, Labels: &labels}} {

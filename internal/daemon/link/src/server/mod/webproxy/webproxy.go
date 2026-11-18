@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"uuid"
 
 	"golang.org/x/net/http2"
 
@@ -25,7 +26,7 @@ type WebProxy struct {
 	mutex     sync.RWMutex
 	transport http.RoundTripper
 
-	appStateByInstanceID map[string]*_AppState
+	appStateByInstanceID map[uuid.UUID]*_AppState
 }
 
 type _AppState struct {
@@ -38,7 +39,7 @@ type _WebRoute struct {
 }
 
 func (p *WebProxy) DIInit() {
-	p.appStateByInstanceID = map[string]*_AppState{}
+	p.appStateByInstanceID = map[uuid.UUID]*_AppState{}
 	p.transport = &http2.Transport{
 		AllowHTTP: true,
 		DialTLSContext: func(ctx context.Context, network string, addr string, _ *tls.Config) (net.Conn, error) {
@@ -90,7 +91,7 @@ func (p *WebProxy) OnDrain(instance *minder.AppInstance) {
 
 func (*WebProxy) OnDestroy(*minder.AppInstance) {}
 
-func (p *WebProxy) webRouteByInstanceID(appInstanceID string, webSkelName string) (*_WebRoute, bool) {
+func (p *WebProxy) webRouteByInstanceID(appInstanceID uuid.UUID, webSkelName string) (*_WebRoute, bool) {
 	p.mutex.RLock()
 	appState := p.appStateByInstanceID[appInstanceID]
 	p.mutex.RUnlock()
@@ -105,7 +106,7 @@ func (p *WebProxy) webRouteByInstanceID(appInstanceID string, webSkelName string
 	return route, true
 }
 
-func (p *WebProxy) removeAppStateLocked(appInstanceID string) {
+func (p *WebProxy) removeAppStateLocked(appInstanceID uuid.UUID) {
 	if _, ok := p.appStateByInstanceID[appInstanceID]; ok {
 		delete(p.appStateByInstanceID, appInstanceID)
 	}

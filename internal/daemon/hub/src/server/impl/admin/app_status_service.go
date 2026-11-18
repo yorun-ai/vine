@@ -31,7 +31,7 @@ func (s *AppStatusApiServiceServerImpl) List() []skeled.AppStatusView {
 func toAppStatusView(status *core.AppStatus) skeled.AppStatusView {
 	return skeled.AppStatusView{
 		Name:            status.Name,
-		InstanceId:      status.InstanceId,
+		InstanceId:      status.InstanceId.String(),
 		Version:         status.Version,
 		Endpoint:        status.Endpoint,
 		ServiceHandlers: toSkeledServiceHandlerRegistrations(status.ServiceHandlers),

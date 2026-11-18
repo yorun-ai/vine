@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/logger"
-	"go.yorun.ai/vine/internal/core/meta"
 	webinproc "go.yorun.ai/vine/internal/core/web/inproc"
 	"go.yorun.ai/vine/internal/util/httputil"
 )
@@ -31,20 +31,20 @@ func (p *WebProxy) handleIn(w http.ResponseWriter, r *http.Request) {
 	p.forwardInbound(w, r, targetEndpoint+suffix)
 }
 
-func parseInstanceScopedWebProxyPath(path string) (appInstanceID string, webName string, suffix string, err error) {
+func parseInstanceScopedWebProxyPath(path string) (appInstanceID uuid.UUID, webName string, suffix string, err error) {
 	parts := strings.SplitN(strings.TrimPrefix(path, "/"), "/", 3)
 	if len(parts) < 2 || parts[0] == "" {
-		return "", "", "", errors.New("missing app instance id")
+		return uuid.UUID{}, "", "", errors.New("missing app instance id")
 	}
 
-	appInstanceID = parts[0]
-	if !meta.IsValidInstanceId(appInstanceID) {
-		return "", "", "", errors.New("invalid app instance id")
+	appInstanceID, err = uuid.Parse(parts[0])
+	if err != nil {
+		return uuid.UUID{}, "", "", errors.New("invalid app instance id")
 	}
 
 	webName = parts[1]
 	if webName == "" {
-		return "", "", "", errors.New("missing web name")
+		return uuid.UUID{}, "", "", errors.New("missing web name")
 	}
 
 	if len(parts) == 2 {

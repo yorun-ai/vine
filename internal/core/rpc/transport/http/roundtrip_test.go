@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -89,7 +90,7 @@ func testServiceInfo() spec.ServiceInfo {
 
 func testContext() spec.Context {
 	trace := meta.InitialTrace()
-	client, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("demo", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +105,7 @@ func testContext() spec.Context {
 }
 
 func testServerApp() meta.App {
-	app, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
+	app, err := meta.NewApp("server", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"))
 	if err != nil {
 		panic(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
@@ -20,7 +21,7 @@ import (
 )
 
 func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
-	serverApp := meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	serverApp := meta.MustNewApp("perm.test", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	permissionServer := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := &spec.ResponseImpl{
 			ServerValue: serverApp,
@@ -39,7 +40,7 @@ func TestCheckActorPermissionsRejectsMissingCodeResult(t *testing.T) {
 	watcher := access.WatchRpc("app.UserActorPermissionService")
 	t.Cleanup(watcher.Release)
 
-	initiator, err := meta.NewInitiator("demo.client", "0.0.0", "123e4567-e89b-12d3-a456-426614174001", "test", "127.0.0.1")
+	initiator, err := meta.NewInitiator("demo.client", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"), "test", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}
@@ -92,7 +93,7 @@ func TestExtractCheckParamsSupportsCborRequestBody(t *testing.T) {
 	operation := &RpcOperation{
 		Request:  request,
 		Response: httptest.NewRecorder(),
-		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174021"),
+		Server:   meta.MustNewApp("perm.test", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174021")),
 		requestBody: mustMarshalTestCBOR(t, map[string]any{
 			"params": map[string]any{
 				"update": map[string]any{
@@ -136,7 +137,7 @@ func TestExtractCheckParamsSupportsJsonWildcardPath(t *testing.T) {
 	operation := &RpcOperation{
 		Request:  request,
 		Response: httptest.NewRecorder(),
-		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174020"),
+		Server:   meta.MustNewApp("perm.test", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174020")),
 		requestBody: vcode.MustMarshalJson(map[string]any{
 			"params": map[string]any{
 				"items": []any{
@@ -170,7 +171,7 @@ func TestExtractCheckParamsRejectsTrailingWildcardPath(t *testing.T) {
 	operation := &RpcOperation{
 		Request:  request,
 		Response: httptest.NewRecorder(),
-		Server:   meta.MustNewApp("perm.test", "0.0.0", "123e4567-e89b-12d3-a456-426614174022"),
+		Server:   meta.MustNewApp("perm.test", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174022")),
 		requestBody: vcode.MustMarshalJson(map[string]any{
 			"params": map[string]any{
 				"items": []any{
@@ -197,11 +198,11 @@ func newAccessTestEndpointManager(t *testing.T, serviceName string, endpoint str
 	access := &epmgr.Manager{
 		Context: context.Background(),
 		Watch: watchtest.New(t, map[string]string{
-			watched.FormatRpcServiceRegistrationKey(serviceName, "perm.test", "instance-1"): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
+			watched.FormatRpcServiceRegistrationKey(serviceName, "perm.test", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.RpcServiceRegistration{
 				Endpoint:      endpoint,
 				ServiceName:   serviceName,
 				AppName:       "perm.test",
-				AppInstanceId: "instance-1",
+				AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 			}),
 		}),
 	}

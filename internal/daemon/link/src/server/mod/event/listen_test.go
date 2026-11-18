@@ -52,7 +52,7 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 		return client.OnEvent(on)
 	}
 
-	appInfo, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	appInfo, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	require.NoError(t, err)
 	endpoint := testLocalAppEndpoint(8080)
 	manager.AppMinder.RegisterInstance(minder.AppRegistration{
@@ -124,7 +124,7 @@ func TestManagerLimitsDispatchConcurrency(t *testing.T) {
 
 		manager := &Manager{
 			Context:    context.Background(),
-			CurrentApp: meta.MustNewApp("vine.link", "1.0.0", "22222222-2222-2222-2222-222222222222"),
+			CurrentApp: meta.MustNewApp("vine.link", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222")),
 		}
 		listener := &_EventListenerState{
 			eventEndpoint: testLocalAppEndpoint(8080) + testPathEvent,
@@ -203,9 +203,9 @@ func TestManagerFansOutByAppName(t *testing.T) {
 		return client.OnEvent(on)
 	}
 
-	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	require.NoError(t, err)
-	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", "22222222-2222-2222-2222-222222222222")
+	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	require.NoError(t, err)
 
 	firstEndpoint := testLocalAppEndpoint(8080)
@@ -278,9 +278,9 @@ func TestManagerCompetesAcrossSameAppNameInstances(t *testing.T) {
 		return client.OnEvent(on)
 	}
 
-	firstAppInfo, err := meta.NewApp("demo.app", "1.0.0", "11111111-1111-1111-1111-111111111111")
+	firstAppInfo, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	require.NoError(t, err)
-	secondAppInfo, err := meta.NewApp("demo.app", "1.0.0", "22222222-2222-2222-2222-222222222222")
+	secondAppInfo, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	require.NoError(t, err)
 
 	firstEndpoint := testLocalAppEndpoint(8080)

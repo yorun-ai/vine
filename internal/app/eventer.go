@@ -122,7 +122,7 @@ func (e *_Eventer) bindLogger(b *di.Binder) {
 			fields = append(fields,
 				slog.String("name", e.currentApp.Name()),
 				slog.String("version", e.currentApp.Version()),
-				slog.String("instanceId", e.currentApp.InstanceId()),
+				slog.String("instanceId", e.currentApp.InstanceId().String()),
 			)
 		}
 		return newAppLogger(e.currentApp.Name()).With(fields...)

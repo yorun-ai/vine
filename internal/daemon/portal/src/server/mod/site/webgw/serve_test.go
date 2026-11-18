@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/meta"
 	webspec "go.yorun.ai/vine/internal/core/web/spec"
@@ -86,7 +87,7 @@ func TestEnsureWebInitiatorCreatesInitiatorHeader(t *testing.T) {
 	request.Header.Set("User-Agent", "web-test")
 	request.Header.Set(webspec.HeaderWebInitiator, "existing-initiator")
 
-	appInfo := meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099")
+	appInfo := meta.MustNewApp("vine.portal", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099"))
 	got, err := ensureWebInitiator(request, appInfo, "192.0.2.1")
 	if err != nil {
 		t.Fatalf("ensureWebInitiator() error = %v", err)
@@ -127,7 +128,7 @@ func TestEnsureWebTraceRejectsInvalidTrace(t *testing.T) {
 func TestEnsureWebInitiatorRejectsInvalidInitiatorIP(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "http://demo.local/hello", nil)
 
-	appInfo := meta.MustNewApp("vine.portal", "1.2.3", "123e4567-e89b-12d3-a456-426614174099")
+	appInfo := meta.MustNewApp("vine.portal", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099"))
 	if _, err := ensureWebInitiator(request, appInfo, "bad-ip"); err == nil {
 		t.Fatal("expected invalid ip to be rejected")
 	}

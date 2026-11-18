@@ -73,7 +73,7 @@ func (s *Server) OnEvent(ctx context.Context, on appskeled.EventOn) ex.Error {
 		eventlog.ListenerRejected(s.log, startedAt, nil, eventInfo, nil, s.opt.App, rejectedErr)
 		return rejectedErr
 	}
-	client, err := meta.NewApp(on.Metadata.AppName, on.Metadata.AppVersion, on.Metadata.AppInstanceId.String())
+	client, err := meta.NewApp(on.Metadata.AppName, on.Metadata.AppVersion, on.Metadata.AppInstanceId)
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
 		eventlog.ListenerRejected(s.log, startedAt, trace, eventInfo, nil, s.opt.App, rejectedErr)

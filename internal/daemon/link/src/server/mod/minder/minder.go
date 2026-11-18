@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"time"
+	"uuid"
 
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
@@ -36,12 +37,12 @@ type AppMinder struct {
 	RegistryServiceClient hubskeled.RegistryServiceClient `inject:""`
 
 	mutex        sync.Mutex
-	instanceByID map[string]*AppInstance
+	instanceByID map[uuid.UUID]*AppInstance
 	mutators     []Mutator
 }
 
 func (m *AppMinder) DIInit() {
-	m.instanceByID = map[string]*AppInstance{}
+	m.instanceByID = map[uuid.UUID]*AppInstance{}
 }
 
 func (m *AppMinder) AfterAppStop() {
@@ -84,7 +85,7 @@ func (m *AppMinder) RegisterInstance(registration AppRegistration) {
 	instance.registerHubInstanceLocked()
 }
 
-func (m *AppMinder) UnregisterInstance(instanceID string) {
+func (m *AppMinder) UnregisterInstance(instanceID uuid.UUID) {
 	if instance, ok := m.appInstance(instanceID); ok {
 		m.unregisterInstance(instance)
 	}

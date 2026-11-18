@@ -20,7 +20,7 @@ type RegistryServiceServerImpl struct {
 
 func (s *RegistryServiceServerImpl) Register(reg skeled.AppRegistration) {
 	s.RegistryCore.Register(core.AppRegistration{
-		InstanceId:        reg.InstanceId.String(),
+		InstanceId:        reg.InstanceId,
 		Name:              reg.Name,
 		Version:           reg.Version,
 		Endpoint:          reg.Endpoint,
@@ -35,7 +35,7 @@ func (s *RegistryServiceServerImpl) Register(reg skeled.AppRegistration) {
 }
 
 func (s *RegistryServiceServerImpl) Unregister(name string, instanceId uuid.UUID) {
-	s.RegistryCore.Unregister(name, instanceId.String())
+	s.RegistryCore.Unregister(name, instanceId)
 	s.refreshDescriptors()
 	s.refreshPortalSiteRpcgwServices()
 }
@@ -43,7 +43,7 @@ func (s *RegistryServiceServerImpl) Unregister(name string, instanceId uuid.UUID
 func (s *RegistryServiceServerImpl) Heartbeat(status skeled.AppStatus) bool {
 	return s.RegistryCore.Heartbeat(core.AppHeartbeat{
 		Name:       status.Name,
-		InstanceId: status.InstanceId.String(),
+		InstanceId: status.InstanceId,
 	})
 }
 

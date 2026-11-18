@@ -15,6 +15,7 @@ import (
 	"runtime/pprof"
 	"sync"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -35,7 +36,7 @@ func (*defaultTestServerServiceServer) Ping() {}
 func (*defaultTestServerServiceServer) mustBeServerServiceServer() {}
 
 func testServerApp() meta.App {
-	return meta.MustNewApp("test.app", "1.0.0", "123e4567-e89b-12d3-a456-426614174012")
+	return meta.MustNewApp("test.app", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174012"))
 }
 
 func TestNewRequiresApp(t *testing.T) {
@@ -172,7 +173,7 @@ func TestServerHandleWithoutArgumentsReturnsNoErrorResponse(t *testing.T) {
 	ensureServerTestServiceRegistered()
 
 	trace := meta.InitialTrace()
-	client, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("demo", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
@@ -241,11 +242,11 @@ func TestServerHandleAddsProfileLabels(t *testing.T) {
 func TestServerRpcHandlerClonesArguments(t *testing.T) {
 	ensureServerCloneServiceRegistered()
 
-	serverApp, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
+	serverApp, err := meta.NewApp("server", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
-	client, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("demo", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
@@ -296,7 +297,7 @@ func TestServerHandlePreservesExecutorError(t *testing.T) {
 func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T) {
 	ensureServerTestServiceRegistered()
 
-	serverApp, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
+	serverApp, err := meta.NewApp("server", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
@@ -312,7 +313,7 @@ func TestServerHTTPHandlerReturnsStandardVrpcErrorForInvalidRequest(t *testing.T
 	header := req.Header
 	trace := meta.InitialTrace()
 	httptrans.EncodeTraceToHeader(header, trace)
-	client, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("demo", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
@@ -377,11 +378,11 @@ func TestServerHandleConvertsRecoveredPanicToInternalError(t *testing.T) {
 		SkelName: "test.service.handle.panic",
 		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
 	}).Methods()[0]
-	app, err := meta.NewApp("server", "1.0.0", "123e4567-e89b-12d3-a456-426614174001")
+	app, err := meta.NewApp("server", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}
-	client, err := meta.NewApp("demo", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("demo", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
 	}

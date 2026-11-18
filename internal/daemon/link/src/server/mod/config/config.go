@@ -2,19 +2,20 @@ package config
 
 import (
 	"encoding/json/v2"
+	"uuid"
 
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
-func (c *Reader) GetEternal(appInstanceID string, key string) string {
+func (c *Reader) GetEternal(appInstanceID uuid.UUID, key string) string {
 	if value, ok := c.findConfigValueSnapshot(appInstanceID, key); ok {
 		return value
 	}
 	return c.retainEternalConfig(appInstanceID, key)
 }
 
-func (c *Reader) retainEternalConfig(appInstanceID string, key string) string {
+func (c *Reader) retainEternalConfig(appInstanceID uuid.UUID, key string) string {
 	watchKey := watched.FormatConfigKey(key)
 	configValue, ok := c.loadConfigValue(watchKey)
 	if !ok {
@@ -28,14 +29,14 @@ func (c *Reader) retainEternalConfig(appInstanceID string, key string) string {
 	return value
 }
 
-func (c *Reader) GetInstant(appInstanceID string, key string) string {
+func (c *Reader) GetInstant(appInstanceID uuid.UUID, key string) string {
 	if value, ok := c.findConfigValueSnapshot(appInstanceID, key); ok {
 		return value
 	}
 	return c.retainInstantConfig(appInstanceID, key)
 }
 
-func (c *Reader) retainInstantConfig(appInstanceID string, key string) string {
+func (c *Reader) retainInstantConfig(appInstanceID uuid.UUID, key string) string {
 	watchKey := watched.FormatConfigKey(key)
 	c.mutex.Lock()
 	state, exists := c.instantConfigStatesByKey[watchKey]
@@ -72,7 +73,7 @@ func unmarshalConfigValue(value string) (configValue watched.ConfigValue, err er
 	return
 }
 
-func (c *Reader) findConfigValueSnapshot(appInstanceID string, key string) (string, bool) {
+func (c *Reader) findConfigValueSnapshot(appInstanceID uuid.UUID, key string) (string, bool) {
 	watchKey := watched.FormatConfigKey(key)
 
 	c.mutex.RLock()
@@ -87,7 +88,7 @@ func (c *Reader) findConfigValueSnapshot(appInstanceID string, key string) (stri
 	return value, ok
 }
 
-func (c *Reader) setConfigValueSnapshotLocked(appInstanceID string, watchKey string, value string) {
+func (c *Reader) setConfigValueSnapshotLocked(appInstanceID uuid.UUID, watchKey string, value string) {
 	valuesByKey, ok := c.configValuesByAppInstanceID[appInstanceID]
 	if !ok {
 		return

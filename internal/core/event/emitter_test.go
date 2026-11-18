@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"go.yorun.ai/vine/internal/core/event/spec"
@@ -53,7 +54,7 @@ func TestEmitterEmitUsesEventClient(t *testing.T) {
 	trace := meta.InitialTrace()
 	actor := meta.NewAnonymousActor()
 	ctx := meta.NewContext(context.Background(), trace, nil, actor)
-	app, err := meta.NewApp("demo.app", "1.0.0", "00000000-0000-0000-0000-000000000123")
+	app, err := meta.NewApp("demo.app", "1.0.0", uuid.MustParse("00000000-0000-0000-0000-000000000123"))
 	assert.NoError(t, err)
 	client := &testEmitterClient{}
 
@@ -73,5 +74,5 @@ func TestEmitterEmitUsesEventClient(t *testing.T) {
 	assert.Equal(t, `{"groupId":7}`, client.emit.EventJson)
 	assert.Equal(t, "demo.app", client.emit.Metadata.AppName)
 	assert.Equal(t, "1.0.0", client.emit.Metadata.AppVersion)
-	assert.Equal(t, "00000000-0000-0000-0000-000000000123", client.emit.Metadata.AppInstanceId.String())
+	assert.Equal(t, uuid.MustParse("00000000-0000-0000-0000-000000000123"), client.emit.Metadata.AppInstanceId)
 }

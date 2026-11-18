@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
@@ -130,7 +131,7 @@ func TestAdminApiAudienceAndAuthenticationContract(t *testing.T) {
 
 func TestAdminApiRemainsCallableFromDashboardWithoutCredentials(t *testing.T) {
 	backend := rpcserver.New(rpcserver.Option{
-		App:          meta.MustNewApp("vine.hub", "0.0.0", "123e4567-e89b-12d3-a456-426614174001"),
+		App:          meta.MustNewApp("vine.hub", "0.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")),
 		HandlerTypes: []reflect.Type{reflect.TypeFor[*impl.AdminApiServiceServerImpl]()},
 		Executor:     rpcserver.NewDefaultExecutor(rpcserver.With(new(configaccess.Access))),
 	})
@@ -139,7 +140,7 @@ func TestAdminApiRemainsCallableFromDashboardWithoutCredentials(t *testing.T) {
 	request.Header.Set(rpchttp.HeaderContentType, rpchttp.ContentTypeJson)
 	request.Header.Set(rpchttp.HeaderAccept, rpchttp.ContentTypeJson)
 	rpchttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
-	rpchttp.EncodeClientToHeader(request.Header, meta.MustNewApp("vine.hub.dashboard", "0.0.1", "123e4567-e89b-12d3-a456-426614174002"))
+	rpchttp.EncodeClientToHeader(request.Header, meta.MustNewApp("vine.hub.dashboard", "0.0.1", uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")))
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 	require.Equal(t, "OK", response.Header().Get(rpchttp.HeaderRpcStatus), response.Body.String())

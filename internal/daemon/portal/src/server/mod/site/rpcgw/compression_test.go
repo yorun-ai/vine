@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
@@ -125,7 +126,7 @@ func TestRpcgwHeaderContractAcrossTransports(t *testing.T) {
 						registerTestIngress(t, endpoint, handler)
 					}
 					watch := newTestDescriptorWatch(t)
-					watch.SetValue(watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "instance-1"), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: endpoint, ServiceName: "demo.UserService", AppName: "demo.app", AppInstanceId: "instance-1"}))
+					watch.SetValue(watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")), vcode.MustMarshalJsonS(watched.RpcServiceRegistration{Endpoint: endpoint, ServiceName: "demo.UserService", AppName: "demo.app", AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")}))
 					gateway := newInspectGateway(t, watch, mcpConfig("demo.UserService"))
 					var request *http.Request
 					if format == "mcp" {

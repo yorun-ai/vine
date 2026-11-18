@@ -61,7 +61,7 @@ func (*_TestRegistryServiceClient) Heartbeat(hubskeled.AppStatus, ...rpcclient.I
 	return true
 }
 
-func newTestAppInstance(instanceID string) *minder.AppInstance {
+func newTestAppInstance(instanceID uuid.UUID) *minder.AppInstance {
 	appInfo, err := meta.NewApp("demo.app", "1.0.0", instanceID)
 	if err != nil {
 		panic(err)
@@ -69,13 +69,13 @@ func newTestAppInstance(instanceID string) *minder.AppInstance {
 	return &minder.AppInstance{AppInfo: appInfo}
 }
 
-func registerTestAppInstance(reader *Reader, instanceID string) *minder.AppInstance {
+func registerTestAppInstance(reader *Reader, instanceID uuid.UUID) *minder.AppInstance {
 	instance := newTestAppInstance(instanceID)
 	reader.OnSetup(instance)
 	return instance
 }
 
-func configValueSnapshot(reader *Reader, key string, appInstanceID string) string {
+func configValueSnapshot(reader *Reader, key string, appInstanceID uuid.UUID) string {
 	value, _ := reader.findConfigValueSnapshot(appInstanceID, key)
 	return value
 }

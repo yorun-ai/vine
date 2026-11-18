@@ -410,7 +410,7 @@ func TestBuildInvokeRequest(t *testing.T) {
 func testInitiator(t *testing.T) meta.Initiator {
 	t.Helper()
 
-	initiator, err := meta.NewInitiator("demo.client", "1.0.0", "123e4567-e89b-12d3-a456-426614174002", "test", "127.0.0.1")
+	initiator, err := meta.NewInitiator("demo.client", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"), "test", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}

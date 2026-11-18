@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -176,7 +177,7 @@ func decodePortalEntryCreation(t *testing.T, body []byte, contentType string) (s
 	request.Header.Set(vrpchttp.HeaderContentType, contentType)
 	request.Header.Set(vrpchttp.HeaderAccept, vrpchttp.ContentTypeJson)
 	vinehttp.EncodeTraceToHeader(request.Header, meta.InitialTrace())
-	client, err := meta.NewApp("test", "1.0.0", "123e4567-e89b-12d3-a456-426614174000")
+	client, err := meta.NewApp("test", "1.0.0", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"))
 	require.NoError(t, err)
 	vinehttp.EncodeClientToHeader(request.Header, client)
 	decoded, err := vinehttp.DecodeRequest(request)

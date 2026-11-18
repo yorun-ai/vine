@@ -12,6 +12,7 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/require"
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
@@ -23,7 +24,7 @@ const testService = "demo.Service"
 func singleEndpointManager(t *testing.T) *Manager {
 	t.Helper()
 	m := newTestManager(t, map[string]string{
-		testRpcRegistrationKey(testService, "instance"): testRpcRegistrationValue(testService, "instance", "http://old-ip"),
+		testRpcRegistrationKey(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a")): testRpcRegistrationValue(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"), "http://old-ip"),
 	})
 	w := m.WatchRpc(testService)
 	t.Cleanup(w.Release)
@@ -49,8 +50,8 @@ func requireIsolated(t *testing.T, m *Manager) {
 
 func TestIsolationSkipsFailedEndpointWithoutDeletingRegistration(t *testing.T) {
 	m := newTestManager(t, map[string]string{
-		testRpcRegistrationKey(testService, "one"): testRpcRegistrationValue(testService, "one", "http://one"),
-		testRpcRegistrationKey(testService, "two"): testRpcRegistrationValue(testService, "two", "http://two"),
+		testRpcRegistrationKey(testService, uuid.MustParse("00000000-0000-0000-0000-00000000006b")): testRpcRegistrationValue(testService, uuid.MustParse("00000000-0000-0000-0000-00000000006b"), "http://one"),
+		testRpcRegistrationKey(testService, uuid.MustParse("00000000-0000-0000-0000-00000000006d")): testRpcRegistrationValue(testService, uuid.MustParse("00000000-0000-0000-0000-00000000006d"), "http://two"),
 	})
 	w := m.WatchRpc(testService)
 	t.Cleanup(w.Release)
@@ -147,9 +148,9 @@ func TestSuccessfulTransportResetsConsecutiveFailures(t *testing.T) {
 func TestReplacementAndRemovalRetireOldAttempt(t *testing.T) {
 	m := singleEndpointManager(t)
 	prefix := watched.FormatRpcServiceRegistrationPrefix(testService)
-	key := testRpcRegistrationKey(testService, "instance")
+	key := testRpcRegistrationKey(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"))
 	old := acquireAttempt(t, m)
-	replacement := testRpcRegistrationValue(testService, "instance", "http://new-ip")
+	replacement := testRpcRegistrationValue(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"), "http://new-ip")
 	m.handleRegistrationEvent(prefix, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
 	old.Finish(syscall.ECONNREFUSED)
 	registration, next, _ := m.NextRpcEndpoint(testService)

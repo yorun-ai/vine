@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/link/ingressinproc"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -69,11 +70,11 @@ func TestForwardResponseIntegrity(t *testing.T) {
 			}))
 			t.Cleanup(func() { ingressinproc.Unregister(endpoint) })
 			gateway := newTestWebGateway(t, map[string]string{
-				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", "instance-1"): vcode.MustMarshalJsonS(watched.WebRegistration{
+				watched.FormatWebRegistrationKey("admin@demo.app", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000001")): vcode.MustMarshalJsonS(watched.WebRegistration{
 					Endpoint:      endpoint + "/web/proxy/in/instance-1/admin@demo.app",
 					WebSkelName:   "admin@demo.app",
 					AppName:       "demo.app",
-					AppInstanceId: "instance-1",
+					AppInstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 				}),
 			})
 			for _, h2 := range []bool{false, true} {

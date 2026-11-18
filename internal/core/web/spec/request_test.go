@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"uuid"
 
 	"go.yorun.ai/vine/core/meta"
 )
@@ -92,7 +93,7 @@ func TestDecodeActorFromHeaderRejectsMissingHeader(t *testing.T) {
 
 func TestInitiatorHeaderRoundTrip(t *testing.T) {
 	header := http.Header{}
-	initiator, err := meta.NewInitiator("portal.app", "1.2.3", "123e4567-e89b-12d3-a456-426614174000", "https", "127.0.0.1")
+	initiator, err := meta.NewInitiator("portal.app", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), "https", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("NewInitiator() error = %v", err)
 	}

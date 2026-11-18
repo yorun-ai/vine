@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"testing/synctest"
+	"uuid"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -506,7 +507,7 @@ func TestAppImplInitConsoleServerSkipsWhenDisabledByInternalAttrs(t *testing.T) 
 			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
+				instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 			},
 			Linker:         &testLinker{},
 			DisableConsole: true,
@@ -531,7 +532,7 @@ func TestNewAppPanicsWhenApplicationNameIsEmpty(t *testing.T) {
 				CurrentApp: testRuntimeApp{
 					name:       "test.app",
 					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
+					instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 				},
 				Linker: &testLinker{},
 			},
@@ -708,7 +709,7 @@ func TestAppImplStartInprocModeSkipsHTTPServerAndLinkerRegistration(t *testing.T
 			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
+				instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 			},
 			Linker:         linker,
 			InprocHostPath: "app/test-start-inproc",
@@ -743,7 +744,7 @@ func TestAppImplStartWithDisableHTTPServerDoesNotRegisterInternalApp(t *testing.
 			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
+				instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 			},
 			Linker:            linker,
 			DisableHTTPServer: true,
@@ -775,7 +776,7 @@ func TestAppImplStartDoesNotRegisterInternalUniqueWebberApp(t *testing.T) {
 			CurrentApp: testRuntimeApp{
 				name:       "test.app",
 				version:    "1.2.3",
-				instanceID: "00000000-0000-0000-0000-000000000123",
+				instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 			},
 			Linker:            linker,
 			DisableHTTPServer: true,
@@ -806,7 +807,7 @@ func TestAppImplStartRegistersWebberOnlyAppWithNonNilEmptyCapabilities(t *testin
 	app.currentApp = testRuntimeApp{
 		name:       "test.app",
 		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000123",
+		instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 	}
 	app.inprocFlag.HostPath = coreapp.InprocHostPath(app.currentApp.InstanceId())
 
@@ -841,7 +842,7 @@ func TestAppImplStartRegistersEventerAndTasker(t *testing.T) {
 	app.currentApp = testRuntimeApp{
 		name:       "test.app",
 		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000123",
+		instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 	}
 	app.inprocFlag.HostPath = coreapp.InprocHostPath(app.currentApp.InstanceId())
 
@@ -884,7 +885,7 @@ func TestAppImplStartSkipsDomainDescriptorsWhenSkipDomainDescriptorsEnabled(t *t
 	app.currentApp = testRuntimeApp{
 		name:       "test.app",
 		version:    "1.2.3",
-		instanceID: "00000000-0000-0000-0000-000000000123",
+		instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 	}
 
 	app.Start()
@@ -904,7 +905,7 @@ func TestAppImplStopGracefullyStopsInprocMode(t *testing.T) {
 				CurrentApp: testRuntimeApp{
 					name:       "test.app",
 					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
+					instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 				},
 				Linker:         &testLinker{},
 				InprocHostPath: "app/test-wait-inproc",
@@ -939,7 +940,7 @@ func TestAppImplStopUnregistersInprocRoutes(t *testing.T) {
 				CurrentApp: testRuntimeApp{
 					name:       "test.app",
 					version:    "1.2.3",
-					instanceID: "00000000-0000-0000-0000-000000000123",
+					instanceID: uuid.MustParse("00000000-0000-0000-0000-000000000123"),
 				},
 				Linker:         &testLinker{},
 				InprocHostPath: "app/test-stop-inproc",

@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"uuid"
 
 	coreapp "go.yorun.ai/vine/internal/core/app"
 	"go.yorun.ai/vine/internal/core/ex"
@@ -17,13 +18,13 @@ import (
 
 func TestResolveInboundAppStateUsesInstanceID(t *testing.T) {
 	proxy := newTestRpcProxy(t, nil)
-	firstApp := mustMetaApp(t, "first.app", "11111111-1111-1111-1111-111111111111")
-	secondApp := mustMetaApp(t, "second.app", "22222222-2222-2222-2222-222222222222")
+	firstApp := mustMetaApp(t, "first.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	secondApp := mustMetaApp(t, "second.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 
 	registerLocalApp(proxy, firstApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.shared"})
 	registerLocalApp(proxy, secondApp, "http://127.0.0.1:8081"+testPathRpcInvoke, "http://127.0.0.1:8081", []string{"demo.shared"})
 
-	appState, rpcPath, exErr := proxy.resolveInboundAppState("/" + secondApp.InstanceId() + "/demo.shared/Ping")
+	appState, rpcPath, exErr := proxy.resolveInboundAppState("/" + secondApp.InstanceId().String() + "/demo.shared/Ping")
 	if exErr != nil {
 		t.Fatalf("unexpected resolve error: %v", exErr)
 	}
@@ -37,11 +38,11 @@ func TestResolveInboundAppStateUsesInstanceID(t *testing.T) {
 
 func TestResolveInboundAppStateRejectsUnknownService(t *testing.T) {
 	proxy := newTestRpcProxy(t, nil)
-	localApp := mustMetaApp(t, "demo.app", "11111111-1111-1111-1111-111111111111")
+	localApp := mustMetaApp(t, "demo.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 
 	registerLocalApp(proxy, localApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.service.UserService"})
 
-	_, _, exErr := proxy.resolveInboundAppState("/" + localApp.InstanceId() + "/demo.service.OtherService/Ping")
+	_, _, exErr := proxy.resolveInboundAppState("/" + localApp.InstanceId().String() + "/demo.service.OtherService/Ping")
 	if exErr == nil {
 		t.Fatal("expected resolve error")
 	}
@@ -51,8 +52,8 @@ func TestResolveInboundAppStateRejectsUnknownService(t *testing.T) {
 }
 
 func TestHandleInForwardsHTTPToResolvedInstance(t *testing.T) {
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
-	localApp := mustMetaApp(t, "local.app", "22222222-2222-2222-2222-222222222222")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	localApp := mustMetaApp(t, "local.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	called := false
 
 	targetServer := newH2CTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +67,7 @@ func TestHandleInForwardsHTTPToResolvedInstance(t *testing.T) {
 	proxy := newTestRpcProxy(t, nil)
 	registerLocalApp(proxy, localApp, targetServer.URL+testPathRpcInvoke, targetServer.URL, []string{"demo.shared"})
 
-	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId()+"/demo.shared/Ping")
+	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId().String()+"/demo.shared/Ping")
 	recorder := httptest.NewRecorder()
 
 	proxy.handleIn(recorder, req)
@@ -84,7 +85,7 @@ func TestHandleInForwardsHTTPToResolvedInstance(t *testing.T) {
 }
 
 func TestHandleInReturnsServiceUnavailableForUnknownInstance(t *testing.T) {
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
 	proxy := newTestRpcProxy(t, nil)
 
 	req := newInboundProxyRequest(t, clientApp, "/22222222-2222-2222-2222-222222222222/demo.shared/Ping")
@@ -96,13 +97,13 @@ func TestHandleInReturnsServiceUnavailableForUnknownInstance(t *testing.T) {
 }
 
 func TestHandleInReturnsServiceUnavailableForDrainingInstance(t *testing.T) {
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
-	localApp := mustMetaApp(t, "local.app", "22222222-2222-2222-2222-222222222222")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	localApp := mustMetaApp(t, "local.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	proxy := newTestRpcProxy(t, nil)
 	registerLocalApp(proxy, localApp, "http://127.0.0.1:8080"+testPathRpcInvoke, "http://127.0.0.1:8080", []string{"demo.shared"})
 	proxy.OnDrain(&minder.AppInstance{AppInfo: localApp})
 
-	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId()+"/demo.shared/Ping")
+	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId().String()+"/demo.shared/Ping")
 	recorder := httptest.NewRecorder()
 
 	proxy.handleIn(recorder, req)
@@ -111,9 +112,9 @@ func TestHandleInReturnsServiceUnavailableForDrainingInstance(t *testing.T) {
 }
 
 func TestHandleInReturnsServiceUnavailableForResponseServerMismatch(t *testing.T) {
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
-	localApp := mustMetaApp(t, "local.app", "22222222-2222-2222-2222-222222222222")
-	wrongApp := mustMetaApp(t, "wrong.app", "33333333-3333-3333-3333-333333333333")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	localApp := mustMetaApp(t, "local.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+	wrongApp := mustMetaApp(t, "wrong.app", uuid.MustParse("33333333-3333-3333-3333-333333333333"))
 
 	targetServer := newH2CTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(rpchttp.HeaderRpcStatus, string(ex.OK))
@@ -125,7 +126,7 @@ func TestHandleInReturnsServiceUnavailableForResponseServerMismatch(t *testing.T
 	proxy := newTestRpcProxy(t, nil)
 	registerLocalApp(proxy, localApp, targetServer.URL+testPathRpcInvoke, targetServer.URL, []string{"demo.shared"})
 
-	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId()+"/demo.shared/Ping")
+	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId().String()+"/demo.shared/Ping")
 	recorder := httptest.NewRecorder()
 
 	proxy.handleIn(recorder, req)
@@ -135,8 +136,8 @@ func TestHandleInReturnsServiceUnavailableForResponseServerMismatch(t *testing.T
 
 func TestHandleInForwardsInprocToResolvedInstance(t *testing.T) {
 	methodInfo := ensureTestInboundMethodInfo()
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
-	localApp := mustMetaApp(t, "local.app", "22222222-2222-2222-2222-222222222222")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	localApp := mustMetaApp(t, "local.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 
 	proxy := newTestRpcProxy(t, nil)
 	hostPath := coreapp.InprocHostPath(localApp.InstanceId())
@@ -162,7 +163,7 @@ func TestHandleInForwardsInprocToResolvedInstance(t *testing.T) {
 		}
 	}))
 
-	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId()+"/"+methodInfo.Service().SkelName()+"/"+methodInfo.SkelName())
+	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId().String()+"/"+methodInfo.Service().SkelName()+"/"+methodInfo.SkelName())
 	requestDeadline := time.Now().Add(time.Hour)
 	ctx, cancel := context.WithDeadline(req.Context(), requestDeadline)
 	defer cancel()
@@ -188,8 +189,8 @@ func TestHandleInForwardsInprocToResolvedInstance(t *testing.T) {
 
 func TestHandleInMapsCancelledInprocInvocationToServiceUnavailable(t *testing.T) {
 	methodInfo := ensureTestInboundMethodInfo()
-	clientApp := mustMetaApp(t, "client.app", "11111111-1111-1111-1111-111111111111")
-	localApp := mustMetaApp(t, "local.app", "22222222-2222-2222-2222-222222222222")
+	clientApp := mustMetaApp(t, "client.app", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
+	localApp := mustMetaApp(t, "local.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 
 	proxy := newTestRpcProxy(t, nil)
 	hostPath := coreapp.InprocHostPath(localApp.InstanceId())
@@ -210,7 +211,7 @@ func TestHandleInMapsCancelledInprocInvocationToServiceUnavailable(t *testing.T)
 	}))
 	defer close(releaseHandler)
 
-	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId()+"/"+methodInfo.Service().SkelName()+"/"+methodInfo.SkelName())
+	req := newInboundProxyRequest(t, clientApp, "/"+localApp.InstanceId().String()+"/"+methodInfo.Service().SkelName()+"/"+methodInfo.SkelName())
 	reqCtx, cancel := context.WithCancel(req.Context())
 	cancel()
 	req = req.WithContext(reqCtx)

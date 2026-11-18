@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/netip"
 	"testing"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcspec "go.yorun.ai/vine/internal/core/rpc/spec"
@@ -30,11 +31,11 @@ func TestBuildContextLogFieldsIncludesAvailableValues(t *testing.T) {
 		t.Fatalf("unexpected trace error: %v", err)
 	}
 	actor := meta.NewAuthenticatedActorWithRawInfo("test.realm", "test", "test.ActorInfo", []byte(`{"Id":"test"}`))
-	client, err := meta.NewApp("svc", "1.2.3", "00000000-0000-0000-0000-000000000123")
+	client, err := meta.NewApp("svc", "1.2.3", uuid.MustParse("00000000-0000-0000-0000-000000000123"))
 	if err != nil {
 		t.Fatalf("unexpected client error: %v", err)
 	}
-	initiator, err := meta.NewInitiator("init", "1.0.0", "00000000-0000-0000-0000-000000000456", "http", "127.0.0.1")
+	initiator, err := meta.NewInitiator("init", "1.0.0", uuid.MustParse("00000000-0000-0000-0000-000000000456"), "http", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("unexpected initiator error: %v", err)
 	}

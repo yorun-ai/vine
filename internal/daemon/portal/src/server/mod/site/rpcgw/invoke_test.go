@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
@@ -18,7 +19,7 @@ func endpointValue(instance string, endpoint string) string {
 		Endpoint:      endpoint,
 		ServiceName:   "demo.UserService",
 		AppName:       "demo.app",
-		AppInstanceId: instance,
+		AppInstanceId: uuid.MustParse(instance),
 	})
 }
 
@@ -53,8 +54,8 @@ func TestRpcGatewaySkipsRefusedEndpointWithoutRetryingCurrentRequest(t *testing.
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "dead"): endpointValue("dead", deadEndpoint),
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "live"): endpointValue("live", backend.URL),
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000066")): endpointValue("00000000-0000-0000-0000-000000000066", deadEndpoint),
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-00000000006a")): endpointValue("00000000-0000-0000-0000-00000000006a", backend.URL),
 	})
 	t.Cleanup(target.Stop)
 	statuses := map[int]int{}
@@ -74,7 +75,7 @@ func TestRpcGatewayCountsTruncatedResponsesWithoutReexecutingRequests(t *testing
 		_, _ = w.Write([]byte("{"))
 	}))
 	target := newTestRpcGateway(t, map[string]string{
-		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", "broken"): endpointValue("broken", backend.URL),
+		watched.FormatRpcServiceRegistrationKey("demo.UserService", "demo.app", uuid.MustParse("00000000-0000-0000-0000-000000000065")): endpointValue("00000000-0000-0000-0000-000000000065", backend.URL),
 	})
 	t.Cleanup(target.Stop)
 	for range 3 {

@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"sync"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/app"
 	hubapiwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
@@ -10,7 +11,7 @@ import (
 )
 
 type _InstantConfigState struct {
-	refsByAppInstanceID map[string]struct{}
+	refsByAppInstanceID map[uuid.UUID]struct{}
 	value               string
 	cancel              context.CancelFunc
 }
@@ -24,12 +25,12 @@ type Reader struct {
 
 	mutex                       sync.RWMutex
 	instantConfigStatesByKey    map[string]*_InstantConfigState
-	configValuesByAppInstanceID map[string]map[string]string
+	configValuesByAppInstanceID map[uuid.UUID]map[string]string
 }
 
 func (c *Reader) DIInit() {
 	c.instantConfigStatesByKey = map[string]*_InstantConfigState{}
-	c.configValuesByAppInstanceID = map[string]map[string]string{}
+	c.configValuesByAppInstanceID = map[uuid.UUID]map[string]string{}
 	c.AppMinder.AddMutator(c)
 }
 

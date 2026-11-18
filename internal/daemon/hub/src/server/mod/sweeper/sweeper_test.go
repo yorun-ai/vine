@@ -3,6 +3,7 @@ package sweeper
 import (
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,12 +30,12 @@ func (r *_SweeperRegistryRepo) ListExpiredAppLeases() []core.AppHeartbeat {
 	return leases
 }
 
-func (r *_SweeperRegistryRepo) GetAppStatus(string, string) (*core.AppStatus, bool) {
+func (r *_SweeperRegistryRepo) GetAppStatus(string, uuid.UUID) (*core.AppStatus, bool) {
 	return r.status, r.statusOK
 }
 
-func (r *_SweeperRegistryRepo) RemoveAppStatus(appName string, instanceId string) {
-	r.removedApp = append(r.removedApp, appName+":"+instanceId)
+func (r *_SweeperRegistryRepo) RemoveAppStatus(appName string, instanceId uuid.UUID) {
+	r.removedApp = append(r.removedApp, appName+":"+instanceId.String())
 }
 
 type _SweeperDescriptorRepo struct {
@@ -74,10 +75,10 @@ func (r *_SweeperPortalSiteRepo) List() []*core.PortalSite {
 
 func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 	registryRepo := &_SweeperRegistryRepo{
-		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}},
+		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")}},
 		status: &core.AppStatus{
 			Name:       "demo.app",
-			InstanceId: "instance-1",
+			InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 			ExpiresAt:  time.Now().Add(time.Minute),
 		},
 		statusOK: true,
@@ -103,10 +104,10 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 	syncerModule := &syncer.Syncer{WatchServer: watchServer}
 	syncerModule.DIInit()
 	registryRepo := &_SweeperRegistryRepo{
-		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: "instance-1"}},
+		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")}},
 		status: &core.AppStatus{
 			Name:       "demo.app",
-			InstanceId: "instance-1",
+			InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 			ExpiresAt:  time.Now().Add(-time.Minute),
 		},
 		statusOK: true,
@@ -161,8 +162,8 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 
 	target.sweepExpiredLeases()
 
-	assert.Equal(t, []string{"demo.app:instance-1"}, registryRepo.removedApp)
-	assert.Equal(t, []string{"demo.app:instance-1"}, descriptorRepo.released)
+	assert.Equal(t, []string{"demo.app:00000000-0000-0000-0000-000000000001"}, registryRepo.removedApp)
+	assert.Equal(t, []string{"demo.app:00000000-0000-0000-0000-000000000001"}, descriptorRepo.released)
 	value, ok := watchServer.Get(watched.FormatPortalSiteKey("demo-rpc"))
 	assert.True(t, ok)
 	assert.JSONEq(t, `{
@@ -186,22 +187,22 @@ func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 type _SweeperPortalInstanceRepo struct {
 	core.PortalInstanceRepo
 
-	leases  []string
-	removed []string
+	leases  []uuid.UUID
+	removed []uuid.UUID
 }
 
-func (r *_SweeperPortalInstanceRepo) ListExpiredLeases() []string {
+func (r *_SweeperPortalInstanceRepo) ListExpiredLeases() []uuid.UUID {
 	leases := r.leases
 	r.leases = nil
 	return leases
 }
 
-func (r *_SweeperPortalInstanceRepo) Remove(instanceId string) {
+func (r *_SweeperPortalInstanceRepo) Remove(instanceId uuid.UUID) {
 	r.removed = append(r.removed, instanceId)
 }
 
 func TestSweeperRemovesExpiredPortalInstances(t *testing.T) {
-	portalRepo := &_SweeperPortalInstanceRepo{leases: []string{"instance-1", "instance-2"}}
+	portalRepo := &_SweeperPortalInstanceRepo{leases: []uuid.UUID{uuid.MustParse("00000000-0000-0000-0000-000000000001"), uuid.MustParse("00000000-0000-0000-0000-000000000002")}}
 	target := &Sweeper{
 		PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: portalRepo},
 		RegistryCore: &core.RegistryCore{
@@ -212,10 +213,10 @@ func TestSweeperRemovesExpiredPortalInstances(t *testing.T) {
 
 	target.sweepExpiredLeases()
 
-	assert.Equal(t, []string{"instance-1", "instance-2"}, portalRepo.removed)
+	assert.Equal(t, []uuid.UUID{uuid.MustParse("00000000-0000-0000-0000-000000000001"), uuid.MustParse("00000000-0000-0000-0000-000000000002")}, portalRepo.removed)
 }
 
-func (r *_SweeperPortalInstanceRepo) GetById(instanceId string) (*core.PortalInstance, bool) {
+func (r *_SweeperPortalInstanceRepo) GetById(instanceId uuid.UUID) (*core.PortalInstance, bool) {
 	return &core.PortalInstance{InstanceId: instanceId, ExpiresAt: time.Now().Add(-time.Minute)}, true
 }
 
@@ -227,12 +228,12 @@ func TestSweeperRetriesPublicationAfterCleanup(t *testing.T) {
 			publisher := &syncer.Syncer{WatchServer: server}
 			publisher.DIInit()
 			publisher.SyncDescriptors([]core.DomainDescriptorView{{DomainVersion: core.DomainDescriptorVersion{
-				Descriptor: &skeldesc.Domain{Name: "demo", Hash: "old"},
+				Descriptor: &skeldesc.Domain{Name: "demo", Hash: "00000000-0000-0000-0000-0000000000d5"},
 				Main:       true,
 			}}})
 			registryRepo := &_SweeperRegistryRepo{
-				leases:   []core.AppHeartbeat{{Name: "demo.app", InstanceId: "old"}},
-				status:   &core.AppStatus{Name: "demo.app", InstanceId: "old", ExpiresAt: time.Now().Add(-time.Minute)},
+				leases:   []core.AppHeartbeat{{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")}},
+				status:   &core.AppStatus{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5"), ExpiresAt: time.Now().Add(-time.Minute)},
 				statusOK: true,
 			}
 			descriptors := &_SweeperDescriptorRepo{failList: stage == "descriptors"}
@@ -245,7 +246,7 @@ func TestSweeperRetriesPublicationAfterCleanup(t *testing.T) {
 				Syncer:             publisher,
 			}
 			require.Panics(t, target.sweepExpiredLeases)
-			require.Equal(t, []string{"demo.app:old"}, registryRepo.removedApp)
+			require.Equal(t, []string{"demo.app:00000000-0000-0000-0000-0000000000d5"}, registryRepo.removedApp)
 			require.True(t, target.syncPending)
 			descriptors.failList = false
 			sites.failList = false

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -155,7 +156,7 @@ func TestInitializerResolvesFromCommonBindings(t *testing.T) {
 	injector := di.NewInjector(
 		func(b *di.Binder) {
 			b.Bind(di.T[context.Context]()).ToInstance(context.Background())
-			b.BindInstance(logger.New("vine:test"))
+			b.BindInstance(logger.New("vine:00000000-0000-0000-0000-0000000000d6"))
 			manager.Bind(b)
 			b.BindInstance(watchServer)
 			b.Bind(di.T[*initializer.Initializer]()).In(di.SingletonScope)
@@ -254,7 +255,7 @@ func TestHubConfigurationLifecycle(t *testing.T) {
 				})
 			}
 			require.NotPanics(t, func() {
-				module.RegistryCore.Register(core.AppRegistration{Name: "demo", InstanceId: "test", Version: "test"})
+				module.RegistryCore.Register(core.AppRegistration{Name: "demo", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d6"), Version: "00000000-0000-0000-0000-0000000000d6"})
 			})
 			require.NotEmpty(t, module.RegistryCore.RegistryRepo.ListAppStatuses())
 			require.NotEmpty(t, module.DescriptorRepo.ListDomainDescriptorViews())

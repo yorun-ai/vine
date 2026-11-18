@@ -12,8 +12,8 @@ import (
 
 type _PortalInstanceRepoSpy struct {
 	saved      []*core.PortalInstance
-	removed    []string
-	kept       []string
+	removed    []uuid.UUID
+	kept       []uuid.UUID
 	keepResult bool
 	instances  []*core.PortalInstance
 }
@@ -26,7 +26,7 @@ func (r *_PortalInstanceRepoSpy) List() []*core.PortalInstance {
 	return r.instances
 }
 
-func (r *_PortalInstanceRepoSpy) GetById(instanceId string) (*core.PortalInstance, bool) {
+func (r *_PortalInstanceRepoSpy) GetById(instanceId uuid.UUID) (*core.PortalInstance, bool) {
 	for _, instance := range r.instances {
 		if instance.InstanceId == instanceId {
 			return instance, true
@@ -35,16 +35,16 @@ func (r *_PortalInstanceRepoSpy) GetById(instanceId string) (*core.PortalInstanc
 	return nil, false
 }
 
-func (r *_PortalInstanceRepoSpy) Keep(instanceId string) bool {
+func (r *_PortalInstanceRepoSpy) Keep(instanceId uuid.UUID) bool {
 	r.kept = append(r.kept, instanceId)
 	return r.keepResult
 }
 
-func (r *_PortalInstanceRepoSpy) Remove(instanceId string) {
+func (r *_PortalInstanceRepoSpy) Remove(instanceId uuid.UUID) {
 	r.removed = append(r.removed, instanceId)
 }
 
-func (r *_PortalInstanceRepoSpy) ListExpiredLeases() []string {
+func (r *_PortalInstanceRepoSpy) ListExpiredLeases() []uuid.UUID {
 	return nil
 }
 
@@ -56,11 +56,11 @@ func TestPortalRegistryServiceRegistersAndUnregisters(t *testing.T) {
 	service.Register(skeled.PortalRegistration{InstanceId: instanceId, Version: "1.2.3"})
 
 	require.Len(t, repo.saved, 1)
-	assert.Equal(t, "11111111-1111-1111-1111-111111111111", repo.saved[0].InstanceId)
+	assert.Equal(t, instanceId, repo.saved[0].InstanceId)
 	assert.Equal(t, "1.2.3", repo.saved[0].Version)
 
 	service.Unregister(instanceId)
-	assert.Equal(t, []string{"11111111-1111-1111-1111-111111111111"}, repo.removed)
+	assert.Equal(t, []uuid.UUID{instanceId}, repo.removed)
 }
 
 func TestPortalRegistryServiceHeartbeatReportsRegistration(t *testing.T) {
@@ -69,7 +69,7 @@ func TestPortalRegistryServiceHeartbeatReportsRegistration(t *testing.T) {
 	unknownRepo := &_PortalInstanceRepoSpy{}
 	unknownService := &PortalRegistryServiceServerImpl{PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: unknownRepo}}
 	assert.False(t, unknownService.Heartbeat(skeled.PortalStatus{InstanceId: instanceId}))
-	assert.Equal(t, []string{"11111111-1111-1111-1111-111111111111"}, unknownRepo.kept)
+	assert.Equal(t, []uuid.UUID{instanceId}, unknownRepo.kept)
 
 	knownRepo := &_PortalInstanceRepoSpy{keepResult: true}
 	knownService := &PortalRegistryServiceServerImpl{PortalInstanceCore: &core.PortalInstanceCore{PortalInstanceRepo: knownRepo}}

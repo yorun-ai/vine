@@ -108,7 +108,7 @@ func TestIngressUsesMutualTLS(t *testing.T) {
 }
 
 func TestIngressServesRpcProxyIn(t *testing.T) {
-	localApp := mustMetaApp(t, "demo.app", "22222222-2222-2222-2222-222222222222")
+	localApp := mustMetaApp(t, "demo.app", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
 	targetEndpoint := rpcinproc.Endpoint(coreapp.InprocHostPath(localApp.InstanceId()), testPathRpcInvoke)
 	rpcinproc.Register(targetEndpoint, spec.RpcHandlerFunc(func(spec.Request) spec.Response {
 		return &spec.ResponseImpl{
@@ -146,7 +146,7 @@ func TestIngressServesRpcProxyIn(t *testing.T) {
 	}
 	ing.DIInit()
 
-	req := newIngressProxyRequest(t, "http://localhost"+rpcproxy.PathIn+"/"+localApp.InstanceId()+"/vine.app.ConsoleService/ping")
+	req := newIngressProxyRequest(t, "http://localhost"+rpcproxy.PathIn+"/"+localApp.InstanceId().String()+"/vine.app.ConsoleService/ping")
 	recorder := httptest.NewRecorder()
 	ing.httpHandler().ServeHTTP(recorder, req)
 
@@ -203,7 +203,7 @@ func TestIngressRegistersInprocEndpointWhenHubInprocModeEnabled(t *testing.T) {
 	}
 }
 
-func mustMetaApp(t *testing.T, name string, instanceID string) meta.App {
+func mustMetaApp(t *testing.T, name string, instanceID uuid.UUID) meta.App {
 	t.Helper()
 	appInfo, err := meta.NewApp(name, "1.0.0", instanceID)
 	if err != nil {
@@ -219,7 +219,7 @@ func newIngressProxyRequest(t *testing.T, url string) *http.Request {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
 	trace := meta.InitialTrace()
-	clientApp := mustMetaApp(t, "remote.app", "33333333-3333-3333-3333-333333333333")
+	clientApp := mustMetaApp(t, "remote.app", uuid.MustParse("33333333-3333-3333-3333-333333333333"))
 	req.Header.Set("accept", "application/vrpc+json")
 	req.Header.Set("content-type", "application/vrpc+json")
 	rpchttp.EncodeTraceToHeader(req.Header, trace)
@@ -232,7 +232,7 @@ func formatAppHeader(appInfo meta.App) string {
 }
 
 func newTestIngressAppMinder() *minder.AppMinder {
-	appInfo, err := meta.NewApp("vine.link", "1.0.0", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	appInfo, err := meta.NewApp("vine.link", "1.0.0", uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
 	if err != nil {
 		panic(err)
 	}

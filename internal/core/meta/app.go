@@ -13,13 +13,13 @@ import (
 type App interface {
 	Name() string
 	Version() string
-	InstanceId() string
+	InstanceId() uuid.UUID
 }
 
 type _App struct {
 	name       string
 	version    string
-	instanceId string
+	instanceId uuid.UUID
 }
 
 // applicationNamePattern matches an application name: lowercase letters and
@@ -28,15 +28,12 @@ type _App struct {
 // application that serves it.
 var applicationNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`)
 
-func NewApp(name string, version string, instanceId string) (App, error) {
+func NewApp(name string, version string, instanceId uuid.UUID) (App, error) {
 	if !IsValidName(name) {
 		return nil, fmt.Errorf("invalid name, lowercase letters, digits and dots expected")
 	}
 	if !IsValidVersion(version) {
 		return nil, fmt.Errorf("invalid version, semantic expected")
-	}
-	if !IsValidInstanceId(instanceId) {
-		return nil, fmt.Errorf("invalid instanceId, uuid expected")
 	}
 	return &_App{
 		name:       name,
@@ -58,18 +55,22 @@ func DecodeAppFromDelimited(value string) (App, error) {
 		return nil, fmt.Errorf("missing app field")
 	}
 
-	return NewApp(name, version, instanceId)
+	id, err := uuid.Parse(instanceId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid instanceId: %w", err)
+	}
+	return NewApp(name, version, id)
 }
 
 func EncodeAppToDelimited(app App) string {
 	return vstring.EncodeDelimited(
 		"name", app.Name(),
 		"version", app.Version(),
-		"instanceId", app.InstanceId(),
+		"instanceId", app.InstanceId().String(),
 	)
 }
 
-func MustNewApp(name string, version string, instanceId string) App {
+func MustNewApp(name string, version string, instanceId uuid.UUID) App {
 	app, err := NewApp(name, version, instanceId)
 	if err != nil {
 		panic(err)
@@ -78,8 +79,8 @@ func MustNewApp(name string, version string, instanceId string) App {
 }
 
 // MustNewInstanceId creates a process/app instance UUID using V7 for time-ordered IDs.
-func MustNewInstanceId() string {
-	return uuid.NewV7().String()
+func MustNewInstanceId() uuid.UUID {
+	return uuid.NewV7()
 }
 
 func MustNewAppWithRandomId(name string, version string) App {
@@ -94,7 +95,7 @@ func (a _App) Version() string {
 	return a.version
 }
 
-func (a _App) InstanceId() string {
+func (a _App) InstanceId() uuid.UUID {
 	return a.instanceId
 }
 

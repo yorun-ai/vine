@@ -3,7 +3,6 @@ package minder
 import (
 	"context"
 	"time"
-	"uuid"
 
 	"go.yorun.ai/vine/internal/core/logger"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
@@ -65,7 +64,7 @@ func (i *AppInstance) hubKnowsInstance() bool {
 	}, func() {
 		registered = i.minder.RegistryServiceClient.Heartbeat(hubskeled.AppStatus{
 			Name:       i.AppInfo.Name(),
-			InstanceId: uuid.MustParse(i.AppInfo.InstanceId()),
+			InstanceId: i.AppInfo.InstanceId(),
 		}, rpcclient.WithTimeout(hubRegistryTimeout))
 	})
 	return registered

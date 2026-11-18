@@ -3,6 +3,7 @@ package watched
 import (
 	"encoding/json/v2"
 	"testing"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -46,7 +47,7 @@ func TestPortalSiteJSON(t *testing.T) {
 
 func TestPortalInstanceJSON(t *testing.T) {
 	data, err := json.Marshal(PortalInstance{
-		InstanceId: "11111111-1111-1111-1111-111111111111",
+		InstanceId: uuid.MustParse("11111111-1111-1111-1111-111111111111"),
 		Version:    "1.2.3",
 	})
 	assert.NoError(t, err)

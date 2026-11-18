@@ -1,8 +1,6 @@
 package event
 
 import (
-	"uuid"
-
 	"go.yorun.ai/skel/types/codec"
 	eventlog "go.yorun.ai/vine/internal/core/event/log"
 	"go.yorun.ai/vine/internal/core/event/spec"
@@ -71,7 +69,7 @@ func (e *Emitter) buildEmission(eventInfo spec.EventInfo, eventPayload any, opti
 			TraceSpan:     e.context.Trace().Span(),
 			AppName:       e.clientApp.Name(),
 			AppVersion:    e.clientApp.Version(),
-			AppInstanceId: uuid.MustParse(e.clientApp.InstanceId()),
+			AppInstanceId: e.clientApp.InstanceId(),
 		},
 		EventSkelName: eventInfo.SkelName(),
 		EventJson:     codec.MustMarshalJSONString(eventPayload),

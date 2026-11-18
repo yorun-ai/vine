@@ -3,12 +3,13 @@ package rpcproxy
 import (
 	"context"
 	"encoding/json/v2"
+	"uuid"
 
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
-func (p *RpcProxy) retainService(serviceName string, appInstanceID string) {
+func (p *RpcProxy) retainService(serviceName string, appInstanceID uuid.UUID) {
 	p.serviceStateMutex.Lock()
 	if state, ok := p.serviceStatesByName[serviceName]; ok {
 		state.refsByAppInstanceID[appInstanceID] = struct{}{}
@@ -34,7 +35,7 @@ func (p *RpcProxy) retainService(serviceName string, appInstanceID string) {
 	p.serviceStateMutex.Unlock()
 }
 
-func (p *RpcProxy) releaseInstanceState(appInstanceID string) {
+func (p *RpcProxy) releaseInstanceState(appInstanceID uuid.UUID) {
 	p.serviceStateMutex.Lock()
 	cancels := make([]context.CancelFunc, 0)
 	for serviceName, state := range p.serviceStatesByName {
@@ -89,7 +90,7 @@ func (p *RpcProxy) newServiceState(serviceName string) (*_ServiceState, hubwatch
 	watchCtx, cancel := context.WithCancel(p.Context)
 	registrationsByKey, subscription := p.loadAndWatchServiceRegistrations(serviceName, watchCtx)
 	state := &_ServiceState{
-		refsByAppInstanceID: map[string]struct{}{},
+		refsByAppInstanceID: map[uuid.UUID]struct{}{},
 		registrationsByKey:  registrationsByKey,
 		cancel:              cancel,
 	}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -44,7 +45,11 @@ func (p *RpcProxy) resolveInboundAppState(path string) (*_AppState, string, ex.E
 		return nil, "", ex.New(ex.InvalidRequest, "invalid request path")
 	}
 
-	appState, ok := p.getAppStateByInstanceID(pathParts[0])
+	instanceId, err := uuid.Parse(pathParts[0])
+	if err != nil {
+		return nil, "", ex.New(ex.ServiceUnavailable, "rpc proxy inbound target unavailable")
+	}
+	appState, ok := p.getAppStateByInstanceID(instanceId)
 	if !ok {
 		return nil, "", ex.New(ex.ServiceUnavailable, "rpc proxy inbound target unavailable")
 	}

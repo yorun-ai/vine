@@ -4,6 +4,7 @@ import (
 	"slices"
 	"sync"
 	"time"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	"go.yorun.ai/vine/internal/core/di"
@@ -22,10 +23,10 @@ type RegistryCore struct {
 }
 
 func (m *RegistryCore) Register(reg AppRegistration) {
-	unlock := m.locks.lock(reg.Name, reg.InstanceId)
+	unlock := m.locks.lock(reg.Name, reg.InstanceId.String())
 	defer unlock()
 	// Reject invalid descriptors before publishing application status or endpoints.
-	m.DescriptorRepo.SaveDomainDescriptors(reg.Name, reg.InstanceId, reg.DomainDescriptors)
+	m.DescriptorRepo.SaveDomainDescriptors(reg.Name, reg.InstanceId.String(), reg.DomainDescriptors)
 	// Withdraw omitted endpoints before replacing their cleanup metadata. They no
 	// longer expire independently, and a failed removal must remain retryable.
 	if previous, ok := m.RegistryRepo.GetAppStatus(reg.Name, reg.InstanceId); ok {
@@ -85,13 +86,13 @@ func (m *RegistryCore) Register(reg AppRegistration) {
 	}
 }
 
-func (m *RegistryCore) Unregister(appName string, instanceId string) {
-	unlock := m.locks.lock(appName, instanceId)
+func (m *RegistryCore) Unregister(appName string, instanceId uuid.UUID) {
+	unlock := m.locks.lock(appName, instanceId.String())
 	defer unlock()
 	m.unregister(appName, instanceId)
 }
 
-func (m *RegistryCore) unregister(appName string, instanceId string) {
+func (m *RegistryCore) unregister(appName string, instanceId uuid.UUID) {
 	status, ok := m.RegistryRepo.GetAppStatus(appName, instanceId)
 	if !ok {
 		return
@@ -103,12 +104,12 @@ func (m *RegistryCore) unregister(appName string, instanceId string) {
 	for _, webHandler := range status.WebHandlers {
 		m.RegistryRepo.RemoveWebRegistration(webHandler.WebSkelName, status.Name, instanceId)
 	}
-	m.DescriptorRepo.ReleaseDomainDescriptors(appName, instanceId)
+	m.DescriptorRepo.ReleaseDomainDescriptors(appName, instanceId.String())
 	m.RegistryRepo.RemoveAppStatus(appName, instanceId)
 }
 
 func (m *RegistryCore) Heartbeat(heartbeat AppHeartbeat) bool {
-	unlock := m.locks.lock(heartbeat.Name, heartbeat.InstanceId)
+	unlock := m.locks.lock(heartbeat.Name, heartbeat.InstanceId.String())
 	defer unlock()
 	status, ok := m.RegistryRepo.GetAppStatus(heartbeat.Name, heartbeat.InstanceId)
 	if !ok {
@@ -146,7 +147,7 @@ func (m *RegistryCore) SweepExpiredLeases() bool {
 		goutil.RunWithRecover(func(err any) {
 			registryLogger.Error("expired application cleanup failed", "app", lease.Name, "instanceId", lease.InstanceId, "error", err)
 		}, func() {
-			unlock := m.locks.lock(lease.Name, lease.InstanceId)
+			unlock := m.locks.lock(lease.Name, lease.InstanceId.String())
 			defer unlock()
 			status, ok := m.RegistryRepo.GetAppStatus(lease.Name, lease.InstanceId)
 			if !ok {
@@ -176,8 +177,8 @@ type _InstanceLock struct {
 	refs  int
 }
 
-func (l *_InstanceLocks) lock(name string, instanceId string) func() {
-	key := [2]string{name, instanceId}
+func (l *_InstanceLocks) lock(name string, ownerId string) func() {
+	key := [2]string{name, ownerId}
 	l.mutex.Lock()
 	if l.items == nil {
 		l.items = make(map[[2]string]*_InstanceLock)

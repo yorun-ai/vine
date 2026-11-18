@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 	"time"
+	"uuid"
 
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
@@ -21,14 +22,14 @@ type _ServiceDebugRegistryRepo struct {
 	registration *core.RpcServiceRegistration
 }
 
-func (r *_ServiceDebugRegistryRepo) GetAppStatus(appName string, instanceId string) (*core.AppStatus, bool) {
+func (r *_ServiceDebugRegistryRepo) GetAppStatus(appName string, instanceId uuid.UUID) (*core.AppStatus, bool) {
 	if r.status.Name == appName && r.status.InstanceId == instanceId {
 		return r.status, true
 	}
 	return nil, false
 }
 
-func (r *_ServiceDebugRegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
+func (r *_ServiceDebugRegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId uuid.UUID) (*core.RpcServiceRegistration, bool) {
 	if r.registration.ServiceName == serviceName && r.registration.AppName == appName && r.registration.AppInstanceId == instanceId {
 		return r.registration, true
 	}
@@ -46,19 +47,19 @@ func TestInvokeServicePropagatesTimeoutAsRpcOptions(t *testing.T) {
 	t.Cleanup(func() { ingressinproc.Unregister(ingressEndpoint) })
 
 	appName := "demo.app"
-	appInstanceId := "instance-1"
+	appInstanceId := "123e4567-e89b-12d3-a456-426614174001"
 	target := &ServiceDebugApiServiceServerImpl{
-		CurrentApp: meta.MustNewApp("vine.hub", "1.2.3", "123e4567-e89b-12d3-a456-426614174099"),
+		CurrentApp: meta.MustNewApp("vine.hub", "1.2.3", uuid.MustParse("123e4567-e89b-12d3-a456-426614174099")),
 		RegistryRepo: &_ServiceDebugRegistryRepo{
 			status: &core.AppStatus{
 				Name:       appName,
-				InstanceId: appInstanceId,
+				InstanceId: uuid.MustParse(appInstanceId),
 			},
 			registration: &core.RpcServiceRegistration{
 				Endpoint:      ingressEndpoint,
 				ServiceName:   "demo.UserService",
 				AppName:       appName,
-				AppInstanceId: appInstanceId,
+				AppInstanceId: uuid.MustParse(appInstanceId),
 			},
 		},
 	}

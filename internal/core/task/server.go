@@ -73,7 +73,7 @@ func (s *Server) RunTask(ctx context.Context, run appskeled.TaskRun) ex.Error {
 		tasklog.RunnerRejected(s.log, startedAt, nil, triggerInfo, nil, s.opt.App, rejectedErr)
 		return rejectedErr
 	}
-	client, err := meta.NewApp(run.Metadata.AppName, run.Metadata.AppVersion, run.Metadata.AppInstanceId.String())
+	client, err := meta.NewApp(run.Metadata.AppName, run.Metadata.AppVersion, run.Metadata.AppInstanceId)
 	if err != nil {
 		rejectedErr := ex.New(ex.InvalidRequest, err.Error())
 		tasklog.RunnerRejected(s.log, startedAt, trace, triggerInfo, nil, s.opt.App, rejectedErr)

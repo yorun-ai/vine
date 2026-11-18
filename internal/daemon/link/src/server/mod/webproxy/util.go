@@ -3,6 +3,7 @@ package webproxy
 import (
 	"errors"
 	"net/http"
+	"uuid"
 )
 
 var errWebEndpointUnavailable = errors.New("web endpoint unavailable")
@@ -22,6 +23,6 @@ func appendRequestQuery(targetURL string, rawQuery string) string {
 	return targetURL + "?" + rawQuery
 }
 
-func inEndpointOf(endpoint string, appInstanceID string, webName string) string {
-	return endpoint + PathIn + "/" + appInstanceID + "/" + webName
+func inEndpointOf(endpoint string, appInstanceID uuid.UUID, webName string) string {
+	return endpoint + PathIn + "/" + appInstanceID.String() + "/" + webName
 }
