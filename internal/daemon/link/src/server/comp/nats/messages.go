@@ -65,6 +65,9 @@ func (c *_MessagesContext) Next(ctx context.Context) (jetstream.Msg, error) {
 		}
 		msg, err := messages.Next(jetstream.NextContext(ctx))
 		if !errors.Is(err, jetstream.ErrMsgIteratorClosed) {
+			if err != nil && ctx.Err() == nil {
+				natsLogger.Warn("message read failed", "subject", c.subject, "error", err)
+			}
 			return msg, err
 		}
 		// A closed old connection/iterator waits for recovery, rather than spinning

@@ -25,12 +25,13 @@ type Manager struct {
 }
 
 type _EventListenerState struct {
-	instance       *minder.AppInstance
-	appInstanceID  uuid.UUID
-	eventEndpoint  string
-	registration   skeled.EventListenerRegistration
-	semaphore      chan struct{}
-	consumeContext linknats.ConsumeContext
+	instance      *minder.AppInstance
+	appInstanceID uuid.UUID
+	eventEndpoint string
+	registration  skeled.EventListenerRegistration
+	semaphore     chan struct{}
+	cancelRead    context.CancelFunc
+	done          chan struct{}
 }
 
 func (m *Manager) DIInit() {
@@ -40,16 +41,20 @@ func (m *Manager) DIInit() {
 
 func (m *Manager) AfterAppStop() {
 	m.mutex.Lock()
-	consumeContexts := []linknats.ConsumeContext(nil)
-	for _, listeners := range m.listenersByAppInstanceID {
-		for _, listenerState := range listeners {
-			consumeContexts = append(consumeContexts, listenerState.consumeContext)
-		}
-	}
-	m.listenersByAppInstanceID = map[uuid.UUID][]*_EventListenerState{}
+	listeners := m.listenersByAppInstanceID
+	m.listenersByAppInstanceID = nil
 	m.mutex.Unlock()
 
-	for _, consumeContext := range consumeContexts {
-		consumeContext.Stop()
+	for _, group := range listeners {
+		stopEventListeners(group)
+	}
+}
+
+func stopEventListeners(listeners []*_EventListenerState) {
+	for _, listener := range listeners {
+		listener.cancelRead()
+	}
+	for _, listener := range listeners {
+		<-listener.done
 	}
 }

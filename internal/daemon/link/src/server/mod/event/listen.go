@@ -13,6 +13,7 @@ import (
 	"go.yorun.ai/vine/internal/core/logger"
 	"go.yorun.ai/vine/internal/core/meta"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
+	linknats "go.yorun.ai/vine/internal/daemon/link/src/server/comp/nats"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 	"go.yorun.ai/vine/util/vcode"
 )
@@ -41,28 +42,32 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 	if len(instance.EventListeners) == 0 {
 		return
 	}
-
-	listeners := make([]*_EventListenerState, 0, len(instance.EventListeners))
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	if m.listenersByAppInstanceID == nil {
+		return
+	}
+	id := instance.AppInfo.InstanceId()
 	for _, registration := range instance.EventListeners {
-		listenerState := &_EventListenerState{
-			instance:      instance,
-			appInstanceID: instance.AppInfo.InstanceId(),
-			eventEndpoint: instance.EventEndpoint,
-			registration:  registration,
-			semaphore:     make(chan struct{}, registration.Concurrency),
-		}
-		listenerState.consumeContext = m.NATSClient.Consume(
+		messages := m.NATSClient.Messages(
+			m.Context,
 			eventStreamConfig(),
 			eventspec.NATSSubject(registration.EventSkelName),
 			eventspec.NATSConsumerName(registration.EventSkelName, instance.AppInfo.Name()),
-			m.newEventMessageHandler(listenerState),
 		)
-		listeners = append(listeners, listenerState)
+		ctx, cancel := context.WithCancel(m.Context)
+		listener := &_EventListenerState{
+			instance:      instance,
+			appInstanceID: id,
+			eventEndpoint: instance.EventEndpoint,
+			registration:  registration,
+			semaphore:     make(chan struct{}, registration.Concurrency),
+			cancelRead:    cancel,
+			done:          make(chan struct{}),
+		}
+		m.listenersByAppInstanceID[id] = append(m.listenersByAppInstanceID[id], listener)
+		go m.dispatchEvents(ctx, listener, messages)
 	}
-
-	m.mutex.Lock()
-	m.listenersByAppInstanceID[instance.AppInfo.InstanceId()] = listeners
-	m.mutex.Unlock()
 }
 
 func (m *Manager) OnDrain(instance *minder.AppInstance) {
@@ -70,26 +75,39 @@ func (m *Manager) OnDrain(instance *minder.AppInstance) {
 	listeners := m.listenersByAppInstanceID[instance.AppInfo.InstanceId()]
 	delete(m.listenersByAppInstanceID, instance.AppInfo.InstanceId())
 	m.mutex.Unlock()
-	for _, listenerState := range listeners {
-		listenerState.consumeContext.Stop()
-	}
+	stopEventListeners(listeners)
 }
 
 func (*Manager) OnDestroy(*minder.AppInstance) {}
 
-func (m *Manager) newEventMessageHandler(listener *_EventListenerState) func(msg jetstream.Msg) {
-	return func(natsMsg jetstream.Msg) {
-		msg := *vcode.MustUnmarshalJson[*eventspec.NATSMessage](natsMsg.Data())
-		if !listener.instance.TryStartWork() {
-			m.onEventDispatchError(natsMsg, listener.registration.NoRetry)
-			return
-		}
-		go m.onEvent(listener, natsMsg, msg)
+func (m *Manager) dispatchEvents(ctx context.Context, listener *_EventListenerState, messages linknats.MessagesContext) {
+	defer close(listener.done)
+	dispatch := linknats.MessageDispatcher[_EventListenerState]{
+		Reserve: func() (*_EventListenerState, context.Context) {
+			select {
+			case <-ctx.Done():
+				return nil, nil
+			case listener.semaphore <- struct{}{}:
+				return listener, ctx
+			}
+		},
+		Admit: func(target *_EventListenerState, msg jetstream.Msg) bool {
+			if ctx.Err() == nil && target.instance.TryStartWork() {
+				return true
+			}
+			target.cancelRead()
+			m.onEventDispatchError(msg, target.registration.NoRetry)
+			return false
+		},
+		Handle:  m.onEvent,
+		Release: func(target *_EventListenerState) { <-target.semaphore },
 	}
+	dispatch.Run(ctx, messages)
 }
 
-func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg, msg eventspec.NATSMessage) {
+func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg) {
 	defer listener.instance.FinishWork()
+	msg := *vcode.MustUnmarshalJson[*eventspec.NATSMessage](natsMsg.Data())
 	err := m.runEvent(listener, msg)
 	if err != nil {
 		m.onEventDispatchError(natsMsg, listener.registration.NoRetry)
@@ -99,11 +117,6 @@ func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg, 
 }
 
 func (m *Manager) runEvent(listener *_EventListenerState, msg eventspec.NATSMessage) ex.Error {
-	listener.semaphore <- struct{}{}
-	defer func() {
-		<-listener.semaphore
-	}()
-
 	client := newAppEventServiceClient(m.Context, m.CurrentApp, listener.eventEndpoint, msg)
 	on := appskeled.EventOn{
 		Metadata: appskeled.EventOnMeta{

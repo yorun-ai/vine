@@ -50,15 +50,11 @@ func (c *_ManagerAppEventClient) OnEvent(on appskeled.EventOn, _ ...rpcclient.In
 }
 
 type _ManagerDispatchHooks struct {
-	mutex       sync.Mutex
-	events      []appskeled.EventOn
-	timeout     time.Duration
-	callCount   int
-	active      int
-	maxActive   int
-	startedChan chan struct{}
-	completed   chan struct{}
-	releaseChan chan struct{}
+	mutex     sync.Mutex
+	events    []appskeled.EventOn
+	timeout   time.Duration
+	callCount int
+	completed chan struct{}
 }
 
 func newTestManagers(t *testing.T, count int) ([]*Manager, func()) {
@@ -129,6 +125,8 @@ func newTestNATSClient(t *testing.T) (*linknats.Client, *gonats.Conn) {
 	setUnexportedField(t, reflect.ValueOf(client).Elem().FieldByName("_Client").FieldByName("ensuredStream"), map[string]struct{}{})
 	consumersField := reflect.ValueOf(client).Elem().FieldByName("_Client").FieldByName("consumers")
 	setUnexportedFieldValue(t, consumersField, reflect.MakeMap(consumersField.Type()))
+	messagesField := reflect.ValueOf(client).Elem().FieldByName("_Client").FieldByName("messages")
+	setUnexportedFieldValue(t, messagesField, reflect.MakeMap(messagesField.Type()))
 	return client, conn
 }
 

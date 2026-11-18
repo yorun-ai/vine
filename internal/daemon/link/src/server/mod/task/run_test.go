@@ -230,93 +230,63 @@ func TestDispatcherCancellationWhileFull(t *testing.T) {
 }
 
 func TestManagerCompetesGloballyForTaskMessages(t *testing.T) {
-	firstManager, firstCleanup := newTestManager(t)
-	defer firstCleanup()
-	secondManager, secondCleanup := newTestManager(t)
-	defer secondCleanup()
+	const taskName = "demo.user.SyncUserTask"
+	first, cleanupFirst := newTestManager(t)
+	t.Cleanup(cleanupFirst)
+	second, cleanupSecond := newTestManagerOnCurrentNATS(t)
+	t.Cleanup(cleanupSecond)
 
+	type delivery struct {
+		endpoint string
+		args     string
+	}
+	delivered := make(chan delivery, 2)
+	firstEndpoint := testLocalAppEndpoint(8080) + testPathTask
+	secondEndpoint := testLocalAppEndpoint(8081) + testPathTask
 	oldFactory := newAppTaskServiceClient
-	oldRun := runAppTask
-	defer func() {
-		newAppTaskServiceClient = oldFactory
-		runAppTask = oldRun
-	}()
-
-	firstHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
-	secondHooks := &_ManagerDispatchHooks{completed: make(chan struct{}, 1)}
+	t.Cleanup(func() { newAppTaskServiceClient = oldFactory })
 	newAppTaskServiceClient = func(_ context.Context, _ meta.App, endpoint string, _ taskspec.NATSMessage) appskeled.TaskServiceClientER {
-		targetHooks := secondHooks
-		if strings.Contains(endpoint, ":8080") {
-			targetHooks = firstHooks
+		return &_ManagerAppTaskClient{runTask: func(run appskeled.TaskRun) error {
+			delivered <- delivery{endpoint: endpoint, args: run.ArgumentsJson}
+			if endpoint == firstEndpoint {
+				<-t.Context().Done()
+			}
+			return nil
+		}}
+	}
+
+	register := func(manager *Manager, endpoint string) {
+		info := meta.MustNewAppWithRandomId("demo.worker", "1.0.0")
+		manager.AppMinder.RegisterInstance(minder.AppRegistration{
+			AppInfo:      info,
+			TaskEndpoint: endpoint,
+			TaskRunners: []skeled.TaskRunnerRegistration{{
+				TaskSkelName: taskName,
+				TimeoutMs:    3000,
+				Concurrency:  1,
+			}},
+		})
+		t.Cleanup(func() { manager.AppMinder.UnregisterInstance(info.InstanceId()) })
+	}
+	expectDelivery := func(endpoint string, args string) {
+		t.Helper()
+		select {
+		case got := <-delivered:
+			require.Equal(t, delivery{endpoint: endpoint, args: args}, got)
+		case <-time.After(3 * time.Second):
+			t.Fatalf("timed out waiting for task %s at %s", args, endpoint)
 		}
-		return &_ManagerAppTaskClient{
-			runTask: func(run appskeled.TaskRun) error {
-				targetHooks.mutex.Lock()
-				targetHooks.runs = append(targetHooks.runs, run)
-				targetHooks.callCount++
-				targetHooks.mutex.Unlock()
-				targetHooks.completed <- struct{}{}
-				return nil
-			},
-		}
-	}
-	runAppTask = func(client appskeled.TaskServiceClientER, run appskeled.TaskRun, timeout time.Duration) ex.Error {
-		return client.RunTask(run)
 	}
 
-	firstAppInfo, err := meta.NewApp("demo.first", "1.0.0", uuid.MustParse("11111111-1111-1111-1111-111111111111"))
-	require.NoError(t, err)
-	secondAppInfo, err := meta.NewApp("demo.second", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
-	require.NoError(t, err)
+	register(first, firstEndpoint)
+	first.LaunchTask(skeled.TaskLaunch{TaskSkelName: taskName, ArgumentsJson: "1"})
+	expectDelivery(firstEndpoint, "1")
 
-	firstEndpoint := testLocalAppEndpoint(8080)
-	firstManager.AppMinder.RegisterInstance(minder.AppRegistration{
-		AppInfo:      firstAppInfo,
-		TaskEndpoint: firstEndpoint + testPathTask,
-		TaskRunners: []skeled.TaskRunnerRegistration{{
-			TaskSkelName: "demo.user.SyncUserTask",
-			TimeoutMs:    1000,
-			Concurrency:  1,
-		}},
-	})
-	secondEndpoint := testLocalAppEndpoint(8081)
-	secondManager.AppMinder.RegisterInstance(minder.AppRegistration{
-		AppInfo:      secondAppInfo,
-		TaskEndpoint: secondEndpoint + testPathTask,
-		TaskRunners: []skeled.TaskRunnerRegistration{{
-			TaskSkelName: "demo.user.SyncUserTask",
-			TimeoutMs:    1000,
-			Concurrency:  1,
-		}},
-	})
-
-	firstManager.LaunchTask(skeled.TaskLaunch{
-		Metadata: skeled.TaskLaunchMeta{
-			TraceId:       "trace-1",
-			TraceSpan:     "0123456789abcdef",
-			AppName:       "launcher.app",
-			AppVersion:    "2.0.0",
-			AppInstanceId: uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-		},
-		TaskSkelName:    "demo.user.SyncUserTask",
-		TriggerSkelName: "demo.user.SyncUserTaskManualTrigger",
-		ArgumentsJson:   `{"userId":"u1"}`,
-	})
-
-	select {
-	case <-firstHooks.completed:
-	case <-secondHooks.completed:
-	case <-time.After(2 * time.Second):
-		t.Fatal("competing task dispatch timeout")
-	}
-
-	firstHooks.mutex.Lock()
-	firstCount := firstHooks.callCount
-	firstHooks.mutex.Unlock()
-	secondHooks.mutex.Lock()
-	secondCount := secondHooks.callCount
-	secondHooks.mutex.Unlock()
-	assert.Equal(t, 1, firstCount+secondCount)
+	// Publish while the only runner is blocked. The second Link must be able
+	// to claim this message from the same durable consumer when it joins.
+	first.LaunchTask(skeled.TaskLaunch{TaskSkelName: taskName, ArgumentsJson: "2"})
+	register(second, secondEndpoint)
+	expectDelivery(secondEndpoint, "2")
 }
 
 func TestManagerDispatchesTaskToSingleRunner(t *testing.T) {
