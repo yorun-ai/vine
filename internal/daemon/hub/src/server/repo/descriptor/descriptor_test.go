@@ -96,6 +96,10 @@ type registrationWriteSpy struct {
 	writes []string
 }
 
+func (*registrationWriteSpy) GetAppStatus(string, string) (*core.AppStatus, bool) {
+	return nil, false
+}
+
 func (r *registrationWriteSpy) SaveAppStatus(*core.AppStatus) {
 	r.writes = append(r.writes, "app")
 }

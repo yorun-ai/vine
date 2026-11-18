@@ -28,7 +28,7 @@ func (*_AppStatusServiceRegistryRepo) KeepAppStatus(string, string) bool {
 
 func (*_AppStatusServiceRegistryRepo) RemoveAppStatus(string, string) {}
 
-func (*_AppStatusServiceRegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
+func (*_AppStatusServiceRegistryRepo) ListExpiredAppLeases() []core.AppHeartbeat {
 	return nil
 }
 

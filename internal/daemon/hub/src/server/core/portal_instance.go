@@ -1,6 +1,11 @@
 package core
 
-import "time"
+import (
+	"time"
+
+	"go.yorun.ai/vine/internal/core/di"
+	"go.yorun.ai/vine/internal/util/goutil"
+)
 
 // PortalInstance is a Portal daemon instance registered with Hub. Portal has no
 // processing capabilities to advertise, so Hub only tracks its identity and
@@ -19,35 +24,54 @@ type PortalInstanceRepo interface {
 	GetById(instanceId string) (*PortalInstance, bool)
 	Keep(instanceId string) bool
 	Remove(instanceId string)
-	PopExpiredLeases() []string
+	ListExpiredLeases() []string
 }
 
 // PortalInstanceCore tracks the Portal daemons registered with Hub.
 type PortalInstanceCore struct {
+	di.SingletonScoped
+	locks              _InstanceLocks
 	PortalInstanceRepo PortalInstanceRepo `inject:""`
 }
 
 // Register records a Portal instance, replacing the record of the same identity.
 func (m *PortalInstanceCore) Register(instance PortalInstance) {
+	unlock := m.locks.lock("", instance.InstanceId)
+	defer unlock()
 	m.PortalInstanceRepo.Save(&instance)
 }
 
 // Unregister removes a Portal instance.
 func (m *PortalInstanceCore) Unregister(instanceId string) {
+	unlock := m.locks.lock("", instanceId)
+	defer unlock()
 	m.PortalInstanceRepo.Remove(instanceId)
 }
 
 // Heartbeat reports whether Hub still knows the instance.
 func (m *PortalInstanceCore) Heartbeat(instanceId string) bool {
+	unlock := m.locks.lock("", instanceId)
+	defer unlock()
 	return m.PortalInstanceRepo.Keep(instanceId)
 }
 
 // SweepExpired removes the instances whose lease expired and returns how many
 // registrations were dropped.
 func (m *PortalInstanceCore) SweepExpired() int {
-	expired := m.PortalInstanceRepo.PopExpiredLeases()
-	for _, instanceId := range expired {
-		m.PortalInstanceRepo.Remove(instanceId)
+	removed := 0
+	for _, instanceId := range m.PortalInstanceRepo.ListExpiredLeases() {
+		goutil.RunWithRecover(func(err any) {
+			registryLogger.Error("expired portal cleanup failed", "instanceId", instanceId, "error", err)
+		}, func() {
+			unlock := m.locks.lock("", instanceId)
+			defer unlock()
+			instance, ok := m.PortalInstanceRepo.GetById(instanceId)
+			if ok && (instance.ExpiresAt.IsZero() || time.Now().Before(instance.ExpiresAt)) {
+				return
+			}
+			m.PortalInstanceRepo.Remove(instanceId)
+			removed++
+		})
 	}
-	return len(expired)
+	return removed
 }

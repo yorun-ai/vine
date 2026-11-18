@@ -28,6 +28,7 @@ type _WatchStore interface {
 	// Keep refreshes the TTL for an existing key. It returns false when the key is missing.
 	Keep(key string, ttl time.Duration) bool
 
+	ZRangeByScore(key string, min float64, max float64, limit int) []string
 	ZAdd(key string, score float64, member string)
 	// ZPopRangeByScore returns members in score order and removes exactly those members atomically.
 	ZPopRangeByScore(key string, min float64, max float64, limit int) []string

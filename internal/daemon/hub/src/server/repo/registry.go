@@ -13,9 +13,7 @@ import (
 )
 
 const hubRegistryLeaseKey = "app:leases"
-const hubRegistryEphemeralTTL = 180 * time.Second
 const hubRegistryLeaseTTL = 30 * time.Second
-const hubRegistryLeaseSweepLimit = 100
 
 // Structs
 
@@ -56,6 +54,9 @@ func (r *RegistryRepo) ListAppStatuses() []*core.AppStatus {
 			continue
 		}
 		item := toCoreAppStatus(vcode.MustUnmarshalJsonS[*_AppStatus](value))
+		if !item.ExpiresAt.IsZero() && !timeNow().Before(item.ExpiresAt) {
+			continue
+		}
 		items = append(items, item)
 	}
 	return vslice.SortBy(items, func(a *core.AppStatus, b *core.AppStatus) bool {
@@ -84,26 +85,22 @@ func (r *RegistryRepo) KeepAppStatus(appName string, instanceId string) bool {
 	}
 	status.ExpiresAt = timeNow().Add(hubRegistryLeaseTTL)
 	key := watched.FormatAppStatusKey(appName, instanceId)
-	r.WatchServer.SetEphemeral(key, vcode.MustMarshalJsonS(status), hubRegistryEphemeralTTL)
+	r.WatchServer.Set(key, vcode.MustMarshalJsonS(status))
 	r.saveAppLease(appName, instanceId)
 	return true
 }
 
 func (r *RegistryRepo) RemoveAppStatus(appName string, instanceId string) {
 	key := watched.FormatAppStatusKey(appName, instanceId)
-	r.removeAppLease(appName, instanceId)
 	r.WatchServer.DeleteAndNotify(key)
+	r.removeAppLease(appName, instanceId)
 }
 
 func (r *RegistryRepo) SaveRpcServiceRegistration(registration *core.RpcServiceRegistration) {
 	watchRegistration := toRpcServiceRegistration(registration)
 	key := watched.FormatRpcServiceRegistrationKey(watchRegistration.ServiceName, watchRegistration.AppName, watchRegistration.AppInstanceId)
 	value := vcode.MustMarshalJsonS(watchRegistration)
-	if r.InprocFlag.Enabled {
-		r.WatchServer.SetAndNotify(key, value)
-		return
-	}
-	r.WatchServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
+	r.WatchServer.SetAndNotify(key, value)
 }
 
 func (r *RegistryRepo) GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*core.RpcServiceRegistration, bool) {
@@ -120,7 +117,8 @@ func (r *RegistryRepo) KeepRpcServiceRegistration(serviceName string, appName st
 		return true
 	}
 	key := watched.FormatRpcServiceRegistrationKey(serviceName, appName, appInstanceId)
-	return r.WatchServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
+	_, ok := r.WatchServer.Get(key)
+	return ok
 }
 
 func (r *RegistryRepo) RemoveRpcServiceRegistration(serviceName string, appName string, appInstanceId string) {
@@ -132,11 +130,7 @@ func (r *RegistryRepo) SaveWebRegistration(registration *core.WebRegistration) {
 	watchRegistration := toWebRegistration(registration)
 	key := watched.FormatWebRegistrationKey(watchRegistration.WebSkelName, watchRegistration.AppName, watchRegistration.AppInstanceId)
 	value := vcode.MustMarshalJsonS(watchRegistration)
-	if r.InprocFlag.Enabled {
-		r.WatchServer.SetAndNotify(key, value)
-		return
-	}
-	r.WatchServer.SetEphemeralAndNotify(key, value, hubRegistryEphemeralTTL)
+	r.WatchServer.SetAndNotify(key, value)
 }
 
 func (r *RegistryRepo) GetWebRegistration(name string, appName string, instanceId string) (*core.WebRegistration, bool) {
@@ -153,7 +147,8 @@ func (r *RegistryRepo) KeepWebRegistration(name string, appName string, appInsta
 		return true
 	}
 	key := watched.FormatWebRegistrationKey(name, appName, appInstanceId)
-	return r.WatchServer.KeepEphemeral(key, hubRegistryEphemeralTTL)
+	_, ok := r.WatchServer.Get(key)
+	return ok
 }
 
 func (r *RegistryRepo) RemoveWebRegistration(name string, appName string, appInstanceId string) {
@@ -181,23 +176,19 @@ func (r *RegistryRepo) saveStatus(status *core.AppStatus) {
 
 	statusValue.ExpiresAt = timeNow().Add(hubRegistryLeaseTTL)
 	value = vcode.MustMarshalJsonS(statusValue)
-	r.WatchServer.SetEphemeralAndNotify(statusKey, value, hubRegistryEphemeralTTL)
+	r.WatchServer.SetAndNotify(statusKey, value)
 	r.saveAppLease(status.Name, status.InstanceId)
 }
 
-func (r *RegistryRepo) PopExpiredAppLeases() []core.AppHeartbeat {
+func (r *RegistryRepo) ListExpiredAppLeases() []core.AppHeartbeat {
 	if r.InprocFlag.Enabled {
 		return nil
 	}
 
-	members := r.WatchServer.PopExpiredLeases(hubRegistryLeaseKey, hubRegistryLeaseSweepLimit)
+	members := r.WatchServer.ListExpiredLeases(hubRegistryLeaseKey)
 	leases := make([]core.AppHeartbeat, 0, len(members))
 	for _, member := range members {
 		lease := vcode.MustUnmarshalJsonS[*_AppLease](member)
-		status, ok := r.getAppStatus(lease.Name, lease.InstanceId)
-		if !ok || timeNow().Before(status.ExpiresAt) {
-			continue
-		}
 
 		leases = append(leases, core.AppHeartbeat{
 			Name:       lease.Name,

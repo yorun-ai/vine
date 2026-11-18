@@ -145,7 +145,7 @@ Additional constraints for Hub changes:
 - Database schema changes must update both `src/server/repo/db/model/sql/sqlite` and `src/server/repo/db/model/sql/pgsql`.
 - Redis keys, Redis value JSON, and event formats are protocols shared by Hub, Link, and Portal. Update every producer, consumer, and test together.
 - `watchserver` is a runtime distribution layer. Do not turn it into a second source of business state that bypasses Repo/Core.
-- Registration semantics differ between normal and inproc modes for TTL, heartbeat, and sweeper behavior. Validate both modes separately.
+- Registration semantics differ between normal and inproc modes for leases, heartbeat, and sweeper behavior. Validate both modes separately.
 
 ## Runtime Model
 
@@ -304,19 +304,20 @@ Hub can run as a component in a single-process runtime:
 
 Hub retains its configuration-center and registry responsibilities; only the underlying exposure changes from network access to in-process access.
 
-## TTL and Heartbeat
+## Leases and Heartbeat
 
 Hub handles registrations differently in normal and inproc modes:
 
 - Normal mode
-  - Application state and Rpc service registrations are written to Watch with a TTL.
-  - Link continuously renews leases through heartbeat.
-  - Hub's registry sweeper scans expired application leases, unregisters expired instances, and publishes delete events.
-  - Watch key TTL is a fallback cleanup mechanism; the Hub sweeper publishes the actual registration-expiration events.
+  - Application status, Rpc/Web endpoints, and Portal instance records have no storage TTL. Expired statuses remain available for cleanup but are excluded from live-instance listings.
+  - Link and Portal renew 30-second leases through heartbeat. Hub's sweeper checks expired leases every 5 seconds.
+  - Sweeper rechecks expiration under the same per-instance lock used by registration, heartbeat, and unregister. It removes endpoints, releases descriptor ownership, then removes status and the lease index entry.
+  - Failed cleanup retains its metadata and lease candidate for the next sweep; other instances continue to be cleaned. Descriptor and Portal site publication is retried if it fails after cleanup.
+  - Watch serializes revision allocation and publication, including batches. Network writes run outside the data lock; a subscriber with a failed or stalled write is disconnected so it can reconnect and reload its snapshot.
 
 - Inproc mode
-  - Application state and Rpc service registrations do not use a TTL.
-  - `KeepAppStatus` and `KeepRpcServiceRegistration` become no-ops.
+  - Registration records have neither a storage TTL nor an expiring lease.
+  - Heartbeat renewal is a no-op.
   - The registry sweeper does not start.
   - State remains valid until explicit unregister removes it.
 

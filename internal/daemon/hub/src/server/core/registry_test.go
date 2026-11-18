@@ -1,9 +1,12 @@
 package core
 
 import (
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon"
@@ -136,7 +139,7 @@ func (s *registryRepoSpy) RemoveAppStatus(appName string, instanceId string) {
 	s.calls = append(s.calls, "RemoveAppStatus:"+appName+":"+instanceId)
 }
 
-func (*registryRepoSpy) PopExpiredAppLeases() []AppHeartbeat {
+func (*registryRepoSpy) ListExpiredAppLeases() []AppHeartbeat {
 	return nil
 }
 
@@ -211,6 +214,7 @@ func TestRegistryCoreRegister(t *testing.T) {
 	})
 
 	assert.Equal(t, []string{
+		"GetAppStatus:demo.app:instance-1",
 		"SaveAppStatus:instance-1",
 		"SaveRpcServiceRegistration:svc.alpha:demo.app:instance-1",
 		"SaveRpcServiceRegistration:svc.beta:demo.app:instance-1",
@@ -393,4 +397,74 @@ func (r *descriptorRepoSpy) GetWebDescriptor(skelName string) *skeldesc.Web {
 
 func (r *descriptorRepoSpy) ListAppConfigTypeDescriptors() ([]*skeldesc.Config, []*skeldesc.Enum, []*skeldesc.Data) {
 	return r.ListAppConfigDescriptors(), r.ListEnumDescriptors(), nil
+}
+
+type concurrentLeaseRepo struct {
+	registryRepoSpy
+	once   sync.Once
+	read   chan struct{}
+	resume chan struct{}
+}
+
+func (r *concurrentLeaseRepo) ListExpiredAppLeases() []AppHeartbeat {
+	return []AppHeartbeat{{Name: "demo", InstanceId: "old"}}
+}
+func (r *concurrentLeaseRepo) GetAppStatus(name string, instanceId string) (*AppStatus, bool) {
+	// Pause the sweeper after it has read an expired status. A heartbeat must
+	// not renew between this decision and the resulting unregister.
+	snapshot := *r.appStatus
+	ok := r.appStatusOK
+	r.once.Do(func() { close(r.read); <-r.resume })
+	return &snapshot, ok
+}
+func (r *concurrentLeaseRepo) KeepAppStatus(string, string) bool {
+	r.appStatus.ExpiresAt = time.Now().Add(time.Minute)
+	return true
+}
+func (r *concurrentLeaseRepo) RemoveAppStatus(string, string) { r.appStatusOK = false }
+
+func TestRegistrySweepSerializesExpiryWithHeartbeat(t *testing.T) {
+	repo := &concurrentLeaseRepo{
+		registryRepoSpy: registryRepoSpy{
+			appStatus:   &AppStatus{Name: "demo", InstanceId: "old", ExpiresAt: time.Now().Add(-time.Minute)},
+			appStatusOK: true,
+		},
+		read:   make(chan struct{}),
+		resume: make(chan struct{}),
+	}
+	target := newRegistryCoreForTest(repo, new(descriptorRepoSpy))
+	swept := make(chan bool, 1)
+	go func() { swept <- target.SweepExpiredLeases() }()
+	<-repo.read
+	heartbeaten := make(chan bool, 1)
+	go func() { heartbeaten <- target.Heartbeat(AppHeartbeat{Name: "demo", InstanceId: "old"}) }()
+	select {
+	case <-heartbeaten:
+		t.Error("heartbeat overtook an in-progress expiry decision")
+	case <-time.After(20 * time.Millisecond):
+	}
+	close(repo.resume)
+	require.True(t, <-swept)
+	select {
+	case alive := <-heartbeaten:
+		require.False(t, alive)
+	case <-time.After(time.Second):
+		t.Fatal("heartbeat did not finish")
+	}
+	require.Empty(t, target.locks.items, "completed instances must not leak lock entries")
+}
+
+func TestRegistrySweepRechecksRenewedCandidate(t *testing.T) {
+	repo := &concurrentLeaseRepo{
+		registryRepoSpy: registryRepoSpy{
+			appStatus:   &AppStatus{Name: "demo", InstanceId: "old", ExpiresAt: time.Now().Add(time.Minute)},
+			appStatusOK: true,
+		},
+		read:   make(chan struct{}),
+		resume: make(chan struct{}),
+	}
+	close(repo.resume)
+	target := newRegistryCoreForTest(repo, new(descriptorRepoSpy))
+	require.False(t, target.SweepExpiredLeases())
+	require.True(t, repo.appStatusOK)
 }

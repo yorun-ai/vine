@@ -131,7 +131,7 @@ Hub 的层次职责必须保持清晰：
 - 数据库表结构必须同时更新 `src/server/repo/db/model/sql/sqlite` 和 `src/server/repo/db/model/sql/pgsql`。
 - Redis key、Redis value JSON 和事件格式属于 Hub、Link、Portal 之间的协议；修改时必须同步所有生产者、消费者和测试。
 - `watchserver` 是运行时分发层，不应成为绕过 Repo/Core 直接实现业务规则的第二套状态源。
-- 普通模式与 inproc 模式的 TTL、heartbeat、sweeper 语义不同；修改注册逻辑时必须分别验证。
+- 普通模式与 inproc 模式的租约、heartbeat、sweeper 语义不同；修改注册逻辑时必须分别验证。
 
 ## 运行机制
 
@@ -225,19 +225,20 @@ Hub 支持作为单进程内组件运行：
 
 此时 Hub 仍然承担配置中心和注册中心职责，只是底层不再通过网络暴露。
 
-## TTL 与 Heartbeat
+## 租约与 Heartbeat
 
 Hub 在普通模式和 inproc 模式下，对注册信息的处理不同：
 
 - 普通模式
-  - 应用状态与 Rpc 服务注册写入 Watch 时会带 TTL。
-  - Link 通过 heartbeat 持续续租。
-  - Hub 通过 registry sweeper 扫描过期 app lease，主动 unregister 过期实例并发布 delete 事件。
-  - Watch key TTL 是兜底清理机制，实际的注册失效事件由 Hub sweeper 负责发布。
+  - 应用状态、Rpc/Web 端点及 Portal 实例记录不设置存储 TTL。租约过期的状态仍保留供清理使用，但不出现在存活实例列表中。
+  - Link 和 Portal 通过 heartbeat 续租，租约为 30 秒；Hub sweeper 每 5 秒检查过期租约。
+  - Sweeper 与注册、续租、注销共用同一实例锁，在锁内重新确认过期，再依次删除端点、释放 descriptor 所有权、删除状态和租约索引。
+  - 清理失败时保留清理资料与租约候选，下一轮重试，其他实例仍继续清理。清理后的 descriptor 和 Portal 站点发布失败也会重试。
+  - Watch 将 revision 分配与发布按序串行执行，批量通知也遵循同一顺序。网络发送不持有数据锁；订阅连接写入失败或超时会被断开，以触发重连和快照重载。
 
 - Inproc 模式
-  - 应用状态与 Rpc 服务注册写入 Watch 时不再设置 TTL。
-  - `KeepAppStatus` 和 `KeepRpcServiceRegistration` 变为 noop。
+  - 注册记录既无存储 TTL，也无到期租约。
+  - Heartbeat 续租为 noop。
   - registry sweeper 不启动。
   - 状态改为长期有效，依赖显式 unregister 清理。
 

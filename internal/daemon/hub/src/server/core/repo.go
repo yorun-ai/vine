@@ -129,7 +129,7 @@ type RegistryRepo interface {
 	GetAppStatus(appName string, instanceId string) (*AppStatus, bool)
 	KeepAppStatus(appName string, instanceId string) bool
 	RemoveAppStatus(appName string, instanceId string)
-	PopExpiredAppLeases() []AppHeartbeat
+	ListExpiredAppLeases() []AppHeartbeat
 
 	SaveRpcServiceRegistration(registration *RpcServiceRegistration)
 	GetRpcServiceRegistration(serviceName string, appName string, instanceId string) (*RpcServiceRegistration, bool)

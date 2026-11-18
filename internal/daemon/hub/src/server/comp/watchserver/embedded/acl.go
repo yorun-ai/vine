@@ -4,6 +4,8 @@ import (
 	"crypto/subtle"
 	"strings"
 
+	"github.com/tidwall/redcon"
+
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
@@ -18,7 +20,8 @@ const (
 )
 
 type _ConnContext struct {
-	role _UserRole
+	role       _UserRole
+	subscriber redcon.Conn
 }
 
 type _ACLRule struct {
