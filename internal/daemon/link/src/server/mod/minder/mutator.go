@@ -28,56 +28,28 @@ func (m *AppMinder) appInstances() []*AppInstance {
 	return instances
 }
 
-func (m *AppMinder) addInstance(instance *AppInstance) bool {
+func (m *AppMinder) addInstance(instance *AppInstance) *AppInstance {
 	m.mutex.Lock()
-	if m.instanceByID[instance.AppInfo.InstanceId()] != nil {
-		m.mutex.Unlock()
-		return false
+	defer m.mutex.Unlock()
+	id := instance.AppInfo.InstanceId()
+	if existing := m.instanceByID[id]; existing != nil {
+		return existing
 	}
-
-	m.instanceByID[instance.AppInfo.InstanceId()] = instance
-	m.mutex.Unlock()
-
-	return true
+	m.instanceByID[id] = instance
+	return instance
 }
 
 func (m *AppMinder) removeInstance(instance *AppInstance) {
 	m.mutex.Lock()
-	if _, ok := m.instanceByID[instance.AppInfo.InstanceId()]; !ok {
-		m.mutex.Unlock()
-		return
-	}
-
-	delete(m.instanceByID, instance.AppInfo.InstanceId())
-	m.mutex.Unlock()
-}
-
-func (m *AppMinder) beforeRegistration(instance *AppInstance) {
-	m.mutex.Lock()
-	mutators := append([]Mutator(nil), m.mutators...)
-	m.mutex.Unlock()
-
-	for _, mutator := range mutators {
-		mutator.OnSetup(instance)
+	defer m.mutex.Unlock()
+	id := instance.AppInfo.InstanceId()
+	if m.instanceByID[id] == instance {
+		delete(m.instanceByID, id)
 	}
 }
 
-func (m *AppMinder) onDrain(instance *AppInstance) {
+func (m *AppMinder) mutatorSnapshot() []Mutator {
 	m.mutex.Lock()
-	mutators := append([]Mutator(nil), m.mutators...)
-	m.mutex.Unlock()
-
-	for _, mutator := range mutators {
-		mutator.OnDrain(instance)
-	}
-}
-
-func (m *AppMinder) onDestroy(instance *AppInstance) {
-	m.mutex.Lock()
-	mutators := append([]Mutator(nil), m.mutators...)
-	m.mutex.Unlock()
-
-	for _, mutator := range mutators {
-		mutator.OnDestroy(instance)
-	}
+	defer m.mutex.Unlock()
+	return append([]Mutator(nil), m.mutators...)
 }

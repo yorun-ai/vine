@@ -25,6 +25,26 @@ import (
 
 const testPathTask = "/task"
 
+func TestRegisterInstanceRollsBackPartialTaskSubscriptions(t *testing.T) {
+	manager, cleanup := newTestManager(t)
+	t.Cleanup(cleanup)
+	registration := minder.AppRegistration{
+		AppInfo: meta.MustNewAppWithRandomId("demo.app", "1.0.0"),
+		TaskRunners: []skeled.TaskRunnerRegistration{
+			{TaskSkelName: "demo.First", Concurrency: 1},
+			{TaskSkelName: "invalid subject", Concurrency: 1},
+		},
+	}
+	require.Panics(t, func() { manager.AppMinder.RegisterInstance(registration) })
+	require.Empty(t, manager.runnerByAppInstanceID)
+	require.Empty(t, manager.subscriptionByTaskSkelName)
+
+	registration.TaskRunners[1].TaskSkelName = "demo.Second"
+	manager.AppMinder.RegisterInstance(registration)
+	require.Len(t, manager.runnerByAppInstanceID[registration.AppInfo.InstanceId()], 2)
+	require.Len(t, manager.subscriptionByTaskSkelName, 2)
+}
+
 func TestManagerRetriesFailedMessageThroughJetStreamDelay(t *testing.T) {
 	oldFactory, oldRun := newAppTaskServiceClient, runAppTask
 	t.Cleanup(func() { newAppTaskServiceClient, runAppTask = oldFactory, oldRun })

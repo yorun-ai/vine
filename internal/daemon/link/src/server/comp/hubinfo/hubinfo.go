@@ -21,6 +21,11 @@ type HubInfo struct {
 	Flag              *flag.Flag                  `inject:""`
 	InfoServiceClient hubskeled.InfoServiceClient `inject:""`
 
+	// Serialize fetching, listener repairs, and rollback. Listeners can read
+	// the advertised endpoints while repairing their connections.
+	refreshMutex  sync.Mutex
+	repairPending bool
+
 	mutex     sync.RWMutex
 	host      string
 	info      hubskeled.Info
@@ -53,27 +58,20 @@ func (c *HubInfo) Refresh() {
 		return
 	}
 
+	c.refreshMutex.Lock()
+	defer c.refreshMutex.Unlock()
 	info := c.InfoServiceClient.GetInfo()
 
 	c.mutex.Lock()
 	previous := c.info
-	changed := c.info != info
+	if previous == info && !c.repairPending {
+		c.mutex.Unlock()
+		return
+	}
 	c.info = info
 	listeners := vslice.Clone(c.listeners)
 	c.mutex.Unlock()
 
-	if !changed {
-		return
-	}
-	succeeded := false
-	defer func() {
-		if succeeded {
-			return
-		}
-		c.mutex.Lock()
-		c.info = previous
-		c.mutex.Unlock()
-	}()
 	var firstRecovered any
 	failed := false
 	for _, listener := range listeners {
@@ -90,9 +88,13 @@ func (c *HubInfo) Refresh() {
 		}()
 	}
 	if failed {
+		c.mutex.Lock()
+		c.info = previous
+		c.mutex.Unlock()
+		c.repairPending = true
 		panic(firstRecovered)
 	}
-	succeeded = true
+	c.repairPending = false
 }
 
 func (c *HubInfo) WatchEndpoint() string {

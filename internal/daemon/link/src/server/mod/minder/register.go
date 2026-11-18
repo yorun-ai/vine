@@ -39,6 +39,10 @@ func (i *AppInstance) registerHubInstanceLocked() {
 func (i *AppInstance) unregisterHubInstance() {
 	i.hubMutex.Lock()
 	defer i.hubMutex.Unlock()
+	i.unregisterHubInstanceLocked()
+}
+
+func (i *AppInstance) unregisterHubInstanceLocked() {
 	i.minder.RegistryServiceClient.Unregister(i.AppInfo.Name(), i.AppInfo.InstanceId(), rpcclient.WithTimeout(hubRegistryTimeout))
 }
 

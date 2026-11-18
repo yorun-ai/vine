@@ -49,6 +49,7 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 	}
 	id := instance.AppInfo.InstanceId()
 	for _, registration := range instance.EventListeners {
+		semaphore := make(chan struct{}, registration.Concurrency)
 		messages := m.NATSClient.Messages(
 			m.Context,
 			eventStreamConfig(),
@@ -61,7 +62,7 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 			appInstanceID: id,
 			eventEndpoint: instance.EventEndpoint,
 			registration:  registration,
-			semaphore:     make(chan struct{}, registration.Concurrency),
+			semaphore:     semaphore,
 			cancelRead:    cancel,
 			done:          make(chan struct{}),
 		}

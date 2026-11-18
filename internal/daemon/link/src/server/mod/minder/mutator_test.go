@@ -49,14 +49,9 @@ func TestDrainAndDestroyNotifyMutatorsOnce(t *testing.T) {
 	minder.DIInit()
 	mutator := &_Mutator{}
 	minder.AddMutator(mutator)
-	instance := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
-	assert.True(t, minder.addInstance(instance))
-	minder.beforeRegistration(instance)
-
-	minder.removeInstance(instance)
-	minder.onDrain(instance)
-	minder.onDestroy(instance)
-	minder.removeInstance(instance)
+	minder.RegisterInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+	minder.UnregisterInstance(mustTestMetaApp().InstanceId())
+	minder.UnregisterInstance(mustTestMetaApp().InstanceId())
 
 	mutator.mutex.Lock()
 	defer mutator.mutex.Unlock()
@@ -76,6 +71,8 @@ func TestAddInstanceRejectsDuplicateInstanceID(t *testing.T) {
 	}
 	minder.DIInit()
 
-	assert.True(t, minder.addInstance(minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})))
-	assert.False(t, minder.addInstance(minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})))
+	first := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+	second := minder.newAppInstance(AppRegistration{AppInfo: mustTestMetaApp()})
+	assert.Same(t, first, minder.addInstance(first))
+	assert.Same(t, first, minder.addInstance(second))
 }

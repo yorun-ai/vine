@@ -14,22 +14,13 @@ import (
 var epmgrLogger = logger.New("daemon:portal:epmgr")
 
 type Watcher struct {
-	manager  *Manager
-	prefix   string
-	mutex    sync.Mutex
-	released bool
+	manager *Manager
+	route   *_Route
+	once    sync.Once
 }
 
 func (w *Watcher) Release() {
-	w.mutex.Lock()
-	if w.released {
-		w.mutex.Unlock()
-		return
-	}
-	w.released = true
-	w.mutex.Unlock()
-
-	w.manager.release(w.prefix)
+	w.once.Do(func() { w.manager.release(w.route) })
 }
 
 func (m *Manager) watch(prefix string, registrationType reflect.Type) *Watcher {
@@ -37,25 +28,26 @@ func (m *Manager) watch(prefix string, registrationType reflect.Type) *Watcher {
 	route := m.routesByPrefix[prefix]
 	if route != nil {
 		if route.registrationType != registrationType {
+			m.mutex.Unlock()
 			panic(fmt.Sprintf("endpoint route %s registration type mismatch: got %s want %s", prefix, registrationType, route.registrationType))
 		}
 		route.refCount++
 		m.mutex.Unlock()
-		return m.newWatcher(prefix)
+		return &Watcher{manager: m, route: route}
 	}
 	m.mutex.Unlock()
 
 	watchCtx, cancel := context.WithCancel(m.Context)
-	valuesByKey, subscription := m.Watch.LoadListAndSubscribe(watchCtx, prefix, func(event hubwatch.Event) {
-		m.handleRegistrationEvent(prefix, event)
-	})
 	route = &_Route{
-		prefix:             prefix,
-		registrationType:   registrationType,
-		cancel:             cancel,
-		refCount:           1,
-		registrationsByKey: parseRegistrations(valuesByKey, registrationType),
+		prefix:           prefix,
+		registrationType: registrationType,
+		cancel:           cancel,
+		refCount:         1,
 	}
+	valuesByKey, subscription := m.Watch.LoadListAndSubscribe(watchCtx, prefix, func(event hubwatch.Event) {
+		m.handleRegistrationEvent(route, event)
+	})
+	route.registrationsByKey = parseRegistrations(valuesByKey, registrationType)
 	route.rebuildEndpoints()
 
 	m.mutex.Lock()
@@ -70,19 +62,12 @@ func (m *Manager) watch(prefix string, registrationType reflect.Type) *Watcher {
 		existing.refCount++
 		m.mutex.Unlock()
 		cancel()
-		return m.newWatcher(prefix)
+		return &Watcher{manager: m, route: existing}
 	}
 	m.routesByPrefix[prefix] = route
 	subscription.Start()
 	m.mutex.Unlock()
-	return m.newWatcher(prefix)
-}
-
-func (m *Manager) newWatcher(prefix string) *Watcher {
-	return &Watcher{
-		manager: m,
-		prefix:  prefix,
-	}
+	return &Watcher{manager: m, route: route}
 }
 
 func parseRegistrations(valuesByKey map[string]string, registrationType reflect.Type) map[string]any {
@@ -104,28 +89,23 @@ func parseRegistration(key string, value string, registrationType reflect.Type) 
 	return registration.Interface(), true
 }
 
-func (m *Manager) release(prefix string) {
+func (m *Manager) release(route *_Route) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	route := m.routesByPrefix[prefix]
-	if route == nil {
-		return
-	}
 	route.refCount--
 	if route.refCount > 0 {
 		return
 	}
 	route.cancel()
-	delete(m.routesByPrefix, prefix)
+	delete(m.routesByPrefix, route.prefix)
 }
 
-func (m *Manager) handleRegistrationEvent(prefix string, event hubwatch.Event) {
+func (m *Manager) handleRegistrationEvent(route *_Route, event hubwatch.Event) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	route := m.routesByPrefix[prefix]
-	if route == nil {
+	if m.routesByPrefix[route.prefix] != route {
 		return
 	}
 

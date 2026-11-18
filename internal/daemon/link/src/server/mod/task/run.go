@@ -55,17 +55,7 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 	m.runnerByAppInstanceID[instance.AppInfo.InstanceId()] = runnerByTaskSkel
 	for _, registration := range instance.TaskRunners {
 		taskSkelName := registration.TaskSkelName
-		readContext, cancelRead := context.WithCancel(m.Context)
-		runnerByTaskSkel[taskSkelName] = new(_TaskRunnerState{
-			readContext:   readContext,
-			cancelRead:    cancelRead,
-			instance:      instance,
-			appInstanceID: instance.AppInfo.InstanceId(),
-			taskEndpoint:  instance.TaskEndpoint,
-			registration:  registration,
-			semaphore:     make(chan struct{}, registration.Concurrency),
-		})
-
+		semaphore := make(chan struct{}, registration.Concurrency)
 		subscriptionState, exists := m.subscriptionByTaskSkelName[taskSkelName]
 		if !exists {
 			subscriptionState = new(_TaskSubscription{
@@ -82,8 +72,19 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 			m.subscriptionByTaskSkelName[taskSkelName] = subscriptionState
 			go m.dispatchTaskMessages(subscriptionState)
 		}
-		subscriptionState.runnerByApp[instance.AppInfo.InstanceId()] = runnerByTaskSkel[taskSkelName]
-		runnerByTaskSkel[taskSkelName].subscription = subscriptionState
+		readContext, cancelRead := context.WithCancel(m.Context)
+		runner := new(_TaskRunnerState{
+			readContext:   readContext,
+			cancelRead:    cancelRead,
+			instance:      instance,
+			appInstanceID: instance.AppInfo.InstanceId(),
+			taskEndpoint:  instance.TaskEndpoint,
+			registration:  registration,
+			semaphore:     semaphore,
+			subscription:  subscriptionState,
+		})
+		runnerByTaskSkel[taskSkelName] = runner
+		subscriptionState.runnerByApp[instance.AppInfo.InstanceId()] = runner
 		m.notifyCapacityLocked(subscriptionState)
 	}
 }

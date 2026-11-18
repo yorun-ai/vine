@@ -80,7 +80,7 @@ func TestNewPanicsWhenAppAlreadyCreated(t *testing.T) {
 	restoreAppRegistry(t)
 
 	specType := T[*testAppSpec]()
-	defaultGuard.types[specType] = new(_GuardEntry)
+	defaultGuard.types[specType] = struct{}{}
 
 	assert.PanicsWithError(t, "application *app.testAppSpec already created", func() {
 		New[*testAppSpec]()
@@ -108,9 +108,11 @@ func TestNewPanicsWhenApplicationNameAlreadyCreated(t *testing.T) {
 
 	New[*testNamedAppSpec]()
 
-	assert.PanicsWithError(t, "application name demo.worker already created", func() {
-		New[*testDuplicateNamedAppSpec]()
-	})
+	for range 2 {
+		assert.PanicsWithError(t, "application name demo.worker already created", func() {
+			New[*testDuplicateNamedAppSpec]()
+		})
+	}
 }
 
 func TestNewWithFlagPanicsForSameType(t *testing.T) {

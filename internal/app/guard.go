@@ -7,21 +7,19 @@ import (
 	"go.yorun.ai/vine/util/vpre"
 )
 
-type _GuardEntry struct{}
-
 // _Guard permanently records application spec types and names created in one
 // process. Successful creations are never released, including after the
 // application stops.
 type _Guard struct {
 	mutex sync.Mutex
-	types map[reflect.Type]*_GuardEntry
-	names map[string]*_GuardEntry
+	types map[reflect.Type]struct{}
+	names map[string]reflect.Type
 }
 
 func newGuard() *_Guard {
 	return &_Guard{
-		types: map[reflect.Type]*_GuardEntry{},
-		names: map[string]*_GuardEntry{},
+		types: map[reflect.Type]struct{}{},
+		names: map[string]reflect.Type{},
 	}
 }
 
@@ -32,14 +30,13 @@ func (g *_Guard) create[S ApplicationSpec](enableInproc bool, opts ...FlagApplie
 }
 
 func (g *_Guard) createByType(specType reflect.Type, enableInproc bool, opts ...FlagApplier) App {
-	entry := new(_GuardEntry)
-	g.reserveType(specType, entry)
+	g.reserveType(specType)
 
 	name := ""
 	succeeded := false
 	defer func() {
 		if !succeeded {
-			g.rollback(specType, name, entry)
+			g.rollback(specType, name)
 		}
 	}()
 
@@ -49,34 +46,32 @@ func (g *_Guard) createByType(specType reflect.Type, enableInproc bool, opts ...
 	flags.InitInprocFlag(enableInproc)
 	spec := newSpec(specType, flags)
 	name = spec.Name()
-	g.reserveName(name, entry)
+	g.reserveName(name, specType)
 	app := newApp(spec, flags)
 	succeeded = true
 	return app
 }
 
-func (g *_Guard) reserveType(specType reflect.Type, entry *_GuardEntry) {
+func (g *_Guard) reserveType(specType reflect.Type) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 	vpre.CheckNotOK(g.types, specType, "application %s already created", specType)
-	g.types[specType] = entry
+	g.types[specType] = struct{}{}
 }
 
-func (g *_Guard) reserveName(name string, entry *_GuardEntry) {
+func (g *_Guard) reserveName(name string, specType reflect.Type) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 	_, exists := g.names[name]
 	vpre.Check(!exists, "application name %s already created", name)
-	g.names[name] = entry
+	g.names[name] = specType
 }
 
-func (g *_Guard) rollback(specType reflect.Type, name string, entry *_GuardEntry) {
+func (g *_Guard) rollback(specType reflect.Type, name string) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
-	if g.types[specType] == entry {
-		delete(g.types, specType)
-	}
-	if g.names[name] == entry {
+	delete(g.types, specType)
+	if g.names[name] == specType {
 		delete(g.names, name)
 	}
 }

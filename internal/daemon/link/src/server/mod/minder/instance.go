@@ -18,6 +18,11 @@ type AppInstance struct {
 	// Serializes local setup and Hub mutations with the final unregister.
 	hubMutex sync.Mutex
 
+	// Concurrent callers observe the outcome of the initial registration only
+	// after setup or its rollback is complete.
+	initialRegistration sync.WaitGroup
+	registrationFailure any
+
 	AppInfo            meta.App
 	ConsoleEndpoint    string
 	ServiceEndpoint    string
