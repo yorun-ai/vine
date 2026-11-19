@@ -8,6 +8,53 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-11-19
+
+### Changed
+
+- Use `uuid.UUID` for application instance IDs in the public `core/meta` API.
+  `App.InstanceId()` and `Initiator.InstanceId()` now return a UUID, and
+  `meta.NewApp`, `meta.MustNewApp`, and `meta.NewInitiator` accept a UUID.
+- Reduce Hub Dashboard list queries by batching field-source and portal-rule
+  reads. Index route conflict candidates and batch startup rule publication.
+  Create DI execution resolvers on demand to reduce per-execution allocations.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.34.0.
+
+### Fixed
+
+- Roll back incomplete Link registrations and retry incomplete Hub lease
+  cleanup. Finish Link and Portal heartbeat recovery before unregistering,
+  and handle IPv6 Watch and NATS addresses correctly.
+- Publish Watch updates in revision order and reconcile network subscriptions
+  against consistent snapshots to recover missed updates. Temporarily isolate
+  failed Portal Rpc endpoints and probe them after a cooldown. Retry failed
+  Portal listener updates automatically.
+- Pull Events only when a handler slot is available. Return unstarted deliveries
+  to JetStream during drain, renew acknowledgements for long-running Event and
+  Task handlers, and retry consumers whose streams are unavailable on reconnect.
+- Deduplicate identical cron schedules across task descriptor versions during
+  rolling upgrades. Skip invalid registrations so valid schedules can refresh.
+  Recover missing descriptor hashes for v0.27 registrations from unambiguous
+  legacy definitions supplied by the same instance.
+- Keep the first successfully decoded eternal configuration per app and isolate
+  instant subscriptions. Allow reuse of soft-deleted Hub configuration names.
+  Order Hub config, descriptor, and route changes through Watch publication
+  and coordinate Portal certificate and entry writes.
+- Fix DI resolution for abstract bindings and inherited singletons, and dispose
+  constructed instances when initialization fails. Accept nil arguments for
+  nullable controller parameters and isolate in-process Rpc arguments before
+  dispatch. Report cancellation and timeout errors during HTTP response reads.
+- Skip directories during embedded Web asset lookup, ignore stale default
+  responses in Dashboard Event and Task debug forms, and scan PostgreSQL text
+  columns into Go UUID fields.
+
+### Upgrade Notes
+
+- Update Go callers and custom implementations of `meta.App` and
+  `meta.Initiator` that use string instance IDs. Parse external ID strings with
+  `uuid.Parse` before construction and use `.String()` when emitting text. Rpc
+  application and initiator metadata continue to carry UUID text on the wire.
+
 ## [0.33.0] - 2026-11-11
 
 ### Added
@@ -1967,7 +2014,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.33.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.34.0...HEAD
+[0.34.0]: https://github.com/yorun-ai/vine/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/yorun-ai/vine/compare/v0.32.6...v0.33.0
 [0.32.6]: https://github.com/yorun-ai/vine/compare/v0.32.5...v0.32.6
 [0.32.5]: https://github.com/yorun-ai/vine/compare/v0.32.4...v0.32.5
