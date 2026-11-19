@@ -15,6 +15,71 @@ type _ExecutionCompletedResource struct {
 	ExecutionScoped
 }
 
+type disposalTestPool struct {
+	closes int
+}
+
+func (p *disposalTestPool) DIDispose() { p.closes++ }
+
+func TestCachedDependencyOutlivesItsDependent(t *testing.T) {
+	type session struct{ pool *disposalTestPool }
+	var sessionsClosed int
+	injector := NewInjector(func(b *Binder) {
+		b.BindFactory(func(pool *disposalTestPool) *session {
+			return new(session{pool: pool})
+		}).WithDisposer(func(s *session) {
+			assert.Zero(t, s.pool.closes, "the pool must be usable during session cleanup")
+			sessionsClosed++
+		})
+	})
+	execution := injector.StartExecution()
+	var s *session
+	execution.Resolve(&s)
+	execution.Get(T[*disposalTestPool]())
+	execution.CompleteExecution()
+	assert.Equal(t, 1, s.pool.closes)
+	assert.Equal(t, 1, sessionsClosed)
+}
+
+func TestForwardedDependencyKeepsItsDisposalOwner(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		scope      Scope
+		seed       bool
+		wantCloses int
+	}{
+		{"execution", ExecutionScope, false, 1},
+		{"seed", ExecutionScope, true, 0},
+		{"singleton", SingletonScope, false, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var explicitCloses int
+			injector := NewInjector(func(b *Binder) {
+				b.Bind(T[*disposalTestPool]()).In(tc.scope)
+				b.Bind(T[DisposeDefinition]()).ToImplementation(T[*disposalTestPool]()).In(ExecutionScope)
+				b.Bind(T[any]()).ToImplementation(T[*disposalTestPool]()).WithDisposer(func(value any) {
+					assert.Zero(t, value.(*disposalTestPool).closes)
+					explicitCloses++
+				})
+			})
+			execution := injector.StartExecution(func(s *Seeder) {
+				if tc.seed {
+					s.SeedInstance(new(disposalTestPool))
+				}
+			})
+			var pool *disposalTestPool
+			var forwarded DisposeDefinition
+			execution.Resolve(&forwarded)
+			execution.Get(T[any]())
+			execution.Resolve(&pool)
+			assert.Same(t, pool, forwarded)
+			execution.CompleteExecution()
+			assert.Equal(t, tc.wantCloses, pool.closes)
+			assert.Equal(t, 1, explicitCloses)
+		})
+	}
+}
+
 func TestExecutionCreatesResolversOnDemand(t *testing.T) {
 	parent := NewInjector(func(b *Binder) {
 		b.Bind(T[*RequestMetrics]())

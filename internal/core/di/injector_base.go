@@ -57,11 +57,6 @@ func (i *_BaseInjector) Get(targetType reflect.Type) reflect.Value {
 }
 
 func (i *_BaseInjector) get(targetType reflect.Type, stack _BuildStack) reflect.Value {
-	instance, _ := i.getWithDispose(targetType, stack)
-	return instance
-}
-
-func (i *_BaseInjector) getWithDispose(targetType reflect.Type, stack _BuildStack) (reflect.Value, _DisposeFunc) {
 	if stack.contains(targetType) && stack[len(stack)-1] != targetType {
 		vpre.Panicf("cycle dependency detected at runtime, build stack=%s", stack.push(targetType))
 	}
@@ -70,11 +65,7 @@ func (i *_BaseInjector) getWithDispose(targetType reflect.Type, stack _BuildStac
 	if resolver == nil {
 		vpre.Panicf("type %s is not bind to injector", targetType)
 	}
-	instance, dispose := resolver.GetInstance(stack, targetType)
-	if i.trackDispose != nil {
-		i.trackDispose(dispose)
-	}
-	return instance, dispose
+	return resolver.GetInstance(stack, targetType)
 }
 
 func (i *_BaseInjector) Resolve(targetPtr any) {

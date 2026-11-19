@@ -65,7 +65,7 @@ func (r *resolverTransientResource) DIDispose() {
 	cleanupOrder = append(cleanupOrder, "resolver-transient")
 }
 
-func TestRedirectionResolverReturnsEmptyDispose(t *testing.T) {
+func TestRedirectionResolverLeavesSingletonWithOwner(t *testing.T) {
 	cleanupOrder = nil
 	injector := NewInjector(func(b *Binder) {
 		b.Bind(T[*resolverSingletonResource]())
@@ -76,14 +76,13 @@ func TestRedirectionResolverReturnsEmptyDispose(t *testing.T) {
 	resolver, ok := execution.GetResolver(T[*resolverSingletonResource]()).(*_RedirectionResolver)
 	assert.True(t, ok)
 
-	instance, dispose := resolver.GetInstance(_BuildStack{T[*resolverSingletonResource]()}, T[*resolverSingletonResource]())
-	assert.NotNil(t, instance.Interface())
-
-	dispose()
+	instance := resolver.GetInstance(_BuildStack{T[*resolverSingletonResource]()}, T[*resolverSingletonResource]())
+	assert.Same(t, injector.Get(T[*resolverSingletonResource]()).Interface(), instance.Interface())
+	execution.CompleteExecution()
 	assert.Empty(t, cleanupOrder)
 }
 
-func TestPersistedResolverSeededInstanceReturnsEmptyDispose(t *testing.T) {
+func TestPersistedResolverLeavesSeedWithOwner(t *testing.T) {
 	cleanupOrder = nil
 	injector := NewInjector(func(b *Binder) {
 		b.Bind(T[*resolverExecutionResource]())
@@ -96,10 +95,10 @@ func TestPersistedResolverSeededInstanceReturnsEmptyDispose(t *testing.T) {
 	seeded := &resolverExecutionResource{}
 	resolver.SeedInstance(reflect.ValueOf(seeded))
 
-	instance, dispose := resolver.GetInstance(_BuildStack{T[*resolverExecutionResource]()}, T[*resolverExecutionResource]())
+	instance := resolver.GetInstance(_BuildStack{T[*resolverExecutionResource]()}, T[*resolverExecutionResource]())
 	assert.Same(t, seeded, instance.Interface())
 
-	dispose()
+	execution.CompleteExecution()
 	assert.Empty(t, cleanupOrder)
 }
 
@@ -162,24 +161,18 @@ func TestPersistedResolverStorageSupportsConcurrentSingletonFirstResolution(t *t
 	wg.Wait()
 }
 
-func TestTransientResolverReturnsDisposeForEachInstance(t *testing.T) {
+func TestTransientResolverDisposesEachExecutionInstance(t *testing.T) {
 	cleanupOrder = nil
 	injector := NewInjector(func(b *Binder) {
 		b.Bind(T[*resolverTransientResource]())
-	}).(*_PlainInjector)
-
-	resolver, ok := injector.resolvers[T[*resolverTransientResource]()].(*_TransientResolver)
-	assert.True(t, ok)
-
-	first, firstDispose := resolver.GetInstance(_BuildStack{T[*resolverTransientResource]()}, T[*resolverTransientResource]())
-	second, secondDispose := resolver.GetInstance(_BuildStack{T[*resolverTransientResource]()}, T[*resolverTransientResource]())
-
-	firstInstance := first.Interface().(*resolverTransientResource)
-	secondInstance := second.Interface().(*resolverTransientResource)
-	assert.NotSame(t, firstInstance, secondInstance)
-
-	firstDispose()
-	secondDispose()
+	})
+	execution := injector.StartExecution()
+	var first *resolverTransientResource
+	var second *resolverTransientResource
+	execution.Resolve(&first)
+	execution.Resolve(&second)
+	assert.NotSame(t, first, second)
+	execution.CompleteExecution()
 
 	assert.Equal(t, []string{"resolver-transient", "resolver-transient"}, cleanupOrder)
 }
@@ -193,6 +186,6 @@ func TestIllegalExecutionResolverPanics(t *testing.T) {
 	assert.True(t, ok)
 
 	assert.Panics(t, func() {
-		_, _ = resolver.GetInstance(_BuildStack{T[*resolverExecutionResource]()}, T[*resolverExecutionResource]())
+		resolver.GetInstance(_BuildStack{T[*resolverExecutionResource]()}, T[*resolverExecutionResource]())
 	})
 }

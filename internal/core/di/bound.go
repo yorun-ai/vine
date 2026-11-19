@@ -19,6 +19,7 @@ type _Bound struct {
 	injectedFields      []*_InjectedField
 	factoryDependencies []reflect.Type
 	factoryMayError     bool
+	mayDispose          bool
 	disposeMayError     bool
 }
 
@@ -58,8 +59,8 @@ func (b *_Bound) analyzeFactory() {
 		vpre.Check(reflectutil.IsErrorType(errType), "second return type of %s must be error, but %s found", factoryType, errType)
 	}
 
-	if b.binding.factoryDependenciesOverridden != nil {
-		b.factoryDependencies = append([]reflect.Type{}, b.binding.factoryDependenciesOverridden...)
+	if b.binding.implementationType != nil {
+		b.factoryDependencies = []reflect.Type{b.binding.implementationType}
 		return
 	}
 
@@ -70,9 +71,14 @@ func (b *_Bound) analyzeFactory() {
 
 func (b *_Bound) analyzeDisposer() {
 	if b.binding.disposer == nil {
+		// A factory result can implement DIDispose dynamically. ToImplementation
+		// borrows its result, so the concrete binding owns that cleanup.
+		b.mayDispose = b.binding.implementationType == nil &&
+			(b.binding.factory != nil || b.TargetType().Implements(disposeDefinitionType))
 		return
 	}
 
+	b.mayDispose = true
 	disposerType := b.binding.disposer.Type()
 	vpre.Check(disposerType.NumOut() < 2, "%s must return nothing or (error)", disposerType)
 	if disposerType.NumOut() == 1 {
@@ -132,16 +138,30 @@ func (b *_Bound) String() string {
 
 func (b *_Bound) BuildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc {
 	construct := b.buildInstantiateFunc(injector)
-	if b.binding.onDependenciesResolved == nil {
+	track := injector.trackDispose
+	if !b.mayDispose {
+		track = nil
+	}
+	onResolved := b.binding.onDependenciesResolved
+	if onResolved == nil && track == nil {
 		return construct
 	}
 	return func(stack _BuildStack, requestedType reflect.Type) reflect.Value {
 		instance := construct(stack, requestedType)
-		dependencies := make([]reflect.Value, len(b.binding.extraDependencies))
-		for i, kind := range b.binding.extraDependencies {
-			dependencies[i] = injector.get(kind, stack.push(kind))
+		if onResolved != nil {
+			dependencies := make([]reflect.Value, len(b.binding.extraDependencies))
+			for i, kind := range b.binding.extraDependencies {
+				dependencies[i] = injector.get(kind, stack.push(kind))
+			}
+			onResolved(instance, dependencies)
 		}
-		b.binding.onDependenciesResolved(instance, dependencies)
+		// All dependencies have been constructed and registered before their
+		// dependent. Cached reads never re-enter this constructor.
+		if track != nil {
+			if dispose := b.BuildDisposeFunc(instance); dispose != nil {
+				track(dispose)
+			}
+		}
 		return instance
 	}
 }
@@ -220,12 +240,7 @@ func initInstance(instance reflect.Value) {
 
 func (b *_Bound) BuildDisposeFunc(instance reflect.Value) _DisposeFunc {
 	if reflectutil.IsNilValue(instance) {
-		return emptyDispose
-	}
-
-	_, hasDisposeMethod := reflect.TypeAssert[DisposeDefinition](instance)
-	if b.binding.disposer == nil && !hasDisposeMethod {
-		return emptyDispose
+		return nil
 	}
 
 	if b.binding.disposer != nil {
@@ -237,7 +252,8 @@ func (b *_Bound) BuildDisposeFunc(instance reflect.Value) _DisposeFunc {
 		}
 	}
 
-	return func() {
-		instance.Interface().(DisposeDefinition).DIDispose()
+	if disposable, ok := reflect.TypeAssert[DisposeDefinition](instance); ok {
+		return disposable.DIDispose
 	}
+	return nil
 }
