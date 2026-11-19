@@ -1,20 +1,106 @@
 package admin
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	skeldesc "go.yorun.ai/skel/descriptor"
+	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/db/model"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/repo/descriptor"
 	"go.yorun.ai/vine/util/vslice"
+	"gorm.io/gorm"
 )
 
 func TestPortalRuleAddressesUseOnlyEffectiveTransports(t *testing.T) {
 	entry := core.NormalizePortalEntry(core.PortalEntry{Protocol: "http", Http: new(core.PortalEntryHTTP{Host: "example.com", Http: "DISABLED"})})
 	entry.EffectiveHTTP = new(entry.Http.Effective(false))
-	require.Empty(t, toServerPortalRule(new(core.PortalRule), &entry, nil).EntryAddresses)
+	require.Empty(t, toServerPortalRule(new(core.PortalRule), &entry, nil, nil).EntryAddresses)
 	entry.EffectiveHTTP = new(entry.Http.Effective(true))
-	require.Equal(t, []string{"https://example.com:443"}, toServerPortalRule(new(core.PortalRule), &entry, nil).EntryAddresses)
+	require.Equal(t, []string{"https://example.com:443"}, toServerPortalRule(new(core.PortalRule), &entry, nil, nil).EntryAddresses)
+}
+
+func TestPortalRuleListBatchesRelatedRows(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "rules.db")))
+	require.NoError(t, err)
+	pool, err := db.DB()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, pool.Close()) })
+
+	rules := model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](db)}
+	certs := model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)}
+	sites := model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](db)}
+	rules.EnsureSchema()
+	certs.EnsureSchema()
+	sites.EnsureSchema()
+	descriptors := new(descriptor.DescriptorRepo)
+	service := PortalRuleApiServiceServerImpl{PortalRuleListRepo: new(repo.PortalRuleRepo{
+		Dao:            &rules,
+		PortalSiteRepo: new(repo.PortalSiteRepo{DescriptorRepo: descriptors}),
+	})}
+
+	queries := map[string]int{}
+	require.NoError(t, db.Callback().Query().Before("gorm:query").Register("test:count", func(tx *gorm.DB) {
+		queries[tx.Statement.Table]++
+	}))
+	require.Empty(t, service.List())
+	require.Equal(t, map[string]int{"portal_rule": 1}, queries)
+
+	entry := new(model.PortalEntry{Name: "public", Protocol: "http", HTTPConfig: `{"host":"example.com"}`, ListenIPs: "[]", Enabled: true})
+	require.NoError(t, db.Create(entry).Error)
+	for i := range 32 {
+		require.NoError(t, db.Create(new(model.PortalRule{
+			Name:                    fmt.Sprintf("redirect-%02d", i),
+			EntryId:                 entry.Id,
+			MatchPathPrefix:         fmt.Sprintf("/r/%d", i),
+			RouteType:               core.PortalRuleRouteTypeTemporaryRedirect,
+			RouteRedirectionPattern: "/docs",
+			Enabled:                 true,
+		})).Error)
+	}
+	clear(queries)
+	items := service.List()
+	require.Len(t, items, 32)
+	require.Equal(t, "public", items[0].EntryName)
+	require.Equal(t, []string{"http://example.com:80"}, items[0].EntryAddresses)
+	require.Equal(t, "/r/0", items[0].ResolvedMatchPathPrefix)
+	require.Equal(t, map[string]int{"portal_rule": 1, "portal_entry": 1, "portal_cert": 1}, queries)
+
+	descriptors.SaveDomainDescriptors("app", "instance", []*skeldesc.Domain{{
+		Name:      "demo",
+		Hash:      "domain-hash",
+		Generated: new(skeldesc.GeneratedInfo{CompilerVersion: "v99.0.0"}),
+		Webs:      []*skeldesc.Web{{Name: "Docs", SkelName: "demo.Docs", Hash: "web-hash", MountPath: "/docs", AuthMode: skeldesc.AuthModeAnonymous}},
+	}})
+	require.NoError(t, db.Create(new(model.PortalCert{Name: "tls", Domains: `["example.com"]`, Enabled: true})).Error)
+	site := new(model.PortalSite{Name: "docs", Type: string(core.PortalSiteTypeWEBGW), WebName: "demo.Docs", Enabled: true})
+	require.NoError(t, db.Create(site).Error)
+	for _, name := range []string{"docs", "missing"} {
+		require.NoError(t, db.Create(new(model.PortalRule{
+			Name:            "site-" + name,
+			EntryId:         entry.Id,
+			RouteType:       core.PortalRuleRouteTypeSite,
+			RouteSiteName:   name,
+			MatchPathPrefix: "/original",
+			RoutePathPrefix: "/target",
+		})).Error)
+	}
+	clear(queries)
+	items = service.List()
+	require.Len(t, items, 34)
+	require.Equal(t, []string{"http://example.com:80", "https://example.com:443"}, items[32].EntryAddresses)
+	require.Equal(t, "/docs", items[32].ResolvedMatchPathPrefix)
+	require.Equal(t, "/docs", items[32].ResolvedRoutePathPrefix)
+	require.Equal(t, "missing", items[33].RouteSiteName)
+	require.Equal(t, "/original", items[33].ResolvedMatchPathPrefix)
+	require.Equal(t, "/target", items[33].ResolvedRoutePathPrefix)
+	require.Equal(t, map[string]int{"portal_rule": 1, "portal_entry": 1, "portal_cert": 1, "portal_site": 1}, queries)
 }
 
 // _PortalCertRepoSpy is a map-backed certificate repository.

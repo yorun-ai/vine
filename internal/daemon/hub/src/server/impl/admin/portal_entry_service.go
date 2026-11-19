@@ -78,7 +78,7 @@ func (s *PortalEntryApiServiceServerImpl) toServerPortalEntryRule(entry core.Por
 		site = &value
 	}
 	return skeled.PortalEntryRule{
-		Rule: toServerPortalRuleListItem(&entry, rule.Rule, nil, rule.Site),
+		Rule: toServerPortalRuleListItem(&entry, rule.Rule, rule.Site),
 		Site: site,
 	}
 }
