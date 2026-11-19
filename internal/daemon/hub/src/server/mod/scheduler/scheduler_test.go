@@ -200,7 +200,7 @@ func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	})
 
 	registry.statuses = []*core.AppStatus{old, next}
-	require.ErrorContains(t, target.refreshSchedules(), "must have no arguments")
+	require.NoError(t, target.refreshSchedules())
 	entries := target.cron.Entries()
 	require.Len(t, entries, 1)
 	registry.statuses = []*core.AppStatus{next, old}
@@ -211,18 +211,35 @@ func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	assert.Len(t, publisher.messages, 1)
 }
 
-func TestSchedulerRejectsInvalidCronWithoutChangingExistingJobs(t *testing.T) {
+func TestSchedulerReconcilesHealthySchedulesAlongsideInvalidRegistrations(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}}
+	stale := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+	registryRepo := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{stale}}
 	target := newTestSchedulerWithRegistry(registryRepo, publisher)
 	require.NoError(t, target.refreshSchedules())
-	require.Len(t, target.jobs, 1)
+	previous := target.cron.Entries()[0]
 
-	registryRepo.statuses[0].TaskRunners[0].CronSchedulers[0].CronExpr = "not-a-cron"
-	err := target.refreshSchedules()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cron expression")
-	assert.Len(t, target.jobs, 1)
+	stale.TaskRunners[0].DescriptorHash = ""
+	healthy := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000002"))
+	healthy.Name = "another.app"
+	runner := &healthy.TaskRunners[0]
+	runner.CronSchedulers = append(runner.CronSchedulers,
+		core.TaskRunnerCronScheduler{TriggerSkelName: "rebuild", CronExpr: "not-a-cron"},
+		core.TaskRunnerCronScheduler{TriggerSkelName: "rebuild", CronExpr: "TZ=UTC"},
+	)
+	registryRepo.statuses = append(registryRepo.statuses, healthy)
+	require.NoError(t, target.refreshSchedules())
+	entries := target.cron.Entries()
+	require.Len(t, entries, 1)
+	require.NotEqual(t, previous.ID, entries[0].ID)
+	previous.Job.Run()
+	require.Empty(t, publisher.messages)
+	entries[0].Job.Run()
+	require.Len(t, publisher.messages, 1)
+
+	registryRepo.statuses = []*core.AppStatus{stale}
+	require.NoError(t, target.refreshSchedules())
+	require.Empty(t, target.cron.Entries())
 }
 
 func TestSchedulerRefreshRecoveryContainsUnexpectedPanic(t *testing.T) {

@@ -1,6 +1,7 @@
 package control
 
 import (
+	"cmp"
 	"uuid"
 
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
@@ -19,19 +20,24 @@ type RegistryServiceServerImpl struct {
 }
 
 func (s *RegistryServiceServerImpl) Register(reg skeled.AppRegistration) {
-	s.RegistryCore.Register(core.AppRegistration{
+	s.RegistryCore.Register(toCoreAppRegistration(reg))
+	s.refreshDescriptors()
+	s.refreshPortalSiteRpcgwServices()
+}
+
+func toCoreAppRegistration(reg skeled.AppRegistration) core.AppRegistration {
+	domains, hashes := decodeRegisteredDescriptors(reg)
+	return core.AppRegistration{
 		InstanceId:        reg.InstanceId,
 		Name:              reg.Name,
 		Version:           reg.Version,
 		Endpoint:          reg.Endpoint,
-		ServiceHandlers:   toCoreServiceHandlerRegistrations(reg.ServiceHandlers),
-		WebHandlers:       toCoreWebHandlerRegistrations(reg.WebHandlers),
-		EventListeners:    toCoreEventListenerRegistrations(reg.EventListeners),
-		TaskRunners:       toCoreTaskRunnerRegistrations(reg.TaskRunners),
-		DomainDescriptors: decodeRegisteredDescriptors(reg),
-	})
-	s.refreshDescriptors()
-	s.refreshPortalSiteRpcgwServices()
+		ServiceHandlers:   toCoreServiceHandlerRegistrations(reg.ServiceHandlers, hashes.services),
+		WebHandlers:       toCoreWebHandlerRegistrations(reg.WebHandlers, hashes.webs),
+		EventListeners:    toCoreEventListenerRegistrations(reg.EventListeners, hashes.events),
+		TaskRunners:       toCoreTaskRunnerRegistrations(reg.TaskRunners, hashes.tasks),
+		DomainDescriptors: domains,
+	}
 }
 
 func (s *RegistryServiceServerImpl) Unregister(name string, instanceId uuid.UUID) {
@@ -55,12 +61,12 @@ func (s *RegistryServiceServerImpl) refreshDescriptors() {
 	s.Syncer.RefreshDescriptors(s.DescriptorRepo.ListDomainDescriptorViews)
 }
 
-func toCoreServiceHandlerRegistrations(registrations []skeled.ServiceHandlerRegistration) []core.ServiceHandlerRegistration {
+func toCoreServiceHandlerRegistrations(registrations []skeled.ServiceHandlerRegistration, hashes _LegacyHashes) []core.ServiceHandlerRegistration {
 	return vslice.Collect(func(yield func(core.ServiceHandlerRegistration) bool) {
 		for _, registration := range registrations {
 			if !yield(core.ServiceHandlerRegistration{
 				ServiceSkelName: registration.ServiceSkelName,
-				DescriptorHash:  registration.DescriptorHash,
+				DescriptorHash:  cmp.Or(registration.DescriptorHash, hashes[registration.ServiceSkelName]),
 				Endpoint:        registration.Endpoint,
 			}) {
 				return
@@ -69,12 +75,12 @@ func toCoreServiceHandlerRegistrations(registrations []skeled.ServiceHandlerRegi
 	})
 }
 
-func toCoreWebHandlerRegistrations(registrations []skeled.WebHandlerRegistration) []core.WebHandlerRegistration {
+func toCoreWebHandlerRegistrations(registrations []skeled.WebHandlerRegistration, hashes _LegacyHashes) []core.WebHandlerRegistration {
 	return vslice.Collect(func(yield func(core.WebHandlerRegistration) bool) {
 		for _, registration := range registrations {
 			if !yield(core.WebHandlerRegistration{
 				WebSkelName:    registration.WebSkelName,
-				DescriptorHash: registration.DescriptorHash,
+				DescriptorHash: cmp.Or(registration.DescriptorHash, hashes[registration.WebSkelName]),
 				Endpoint:       registration.Endpoint,
 			}) {
 				return
@@ -83,12 +89,12 @@ func toCoreWebHandlerRegistrations(registrations []skeled.WebHandlerRegistration
 	})
 }
 
-func toCoreEventListenerRegistrations(registrations []skeled.EventListenerRegistration) []core.EventListenerRegistration {
+func toCoreEventListenerRegistrations(registrations []skeled.EventListenerRegistration, hashes _LegacyHashes) []core.EventListenerRegistration {
 	return vslice.Collect(func(yield func(core.EventListenerRegistration) bool) {
 		for _, registration := range registrations {
 			if !yield(core.EventListenerRegistration{
 				EventSkelName:  registration.EventSkelName,
-				DescriptorHash: registration.DescriptorHash,
+				DescriptorHash: cmp.Or(registration.DescriptorHash, hashes[registration.EventSkelName]),
 				TimeoutMs:      registration.TimeoutMs,
 				Concurrency:    registration.Concurrency,
 				NoRetry:        registration.NoRetry,
@@ -99,12 +105,12 @@ func toCoreEventListenerRegistrations(registrations []skeled.EventListenerRegist
 	})
 }
 
-func toCoreTaskRunnerRegistrations(registrations []skeled.TaskRunnerRegistration) []core.TaskRunnerRegistration {
+func toCoreTaskRunnerRegistrations(registrations []skeled.TaskRunnerRegistration, hashes _LegacyHashes) []core.TaskRunnerRegistration {
 	return vslice.Collect(func(yield func(core.TaskRunnerRegistration) bool) {
 		for _, registration := range registrations {
 			if !yield(core.TaskRunnerRegistration{
 				TaskSkelName:   registration.TaskSkelName,
-				DescriptorHash: registration.DescriptorHash,
+				DescriptorHash: cmp.Or(registration.DescriptorHash, hashes[registration.TaskSkelName]),
 				TimeoutMs:      registration.TimeoutMs,
 				Concurrency:    registration.Concurrency,
 				NoRetry:        registration.NoRetry,

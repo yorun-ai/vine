@@ -3,9 +3,9 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"maps"
 	"runtime/debug"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -123,23 +123,14 @@ func (s *Scheduler) refreshSchedules() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	addedJobs := map[_ScheduleConfig]cron.EntryID{}
-	for config := range configs {
+	for config, schedule := range configs {
 		if _, exists := s.jobs[config]; exists {
 			continue
 		}
-		entryId, err := s.cron.AddFunc(config.CronExpr, func() {
+		s.jobs[config] = s.cron.Schedule(schedule, cron.FuncJob(func() {
 			s.publishSchedule(config)
-		})
-		if err != nil {
-			for _, addedEntryId := range addedJobs {
-				s.cron.Remove(addedEntryId)
-			}
-			return fmt.Errorf("add cron schedule %+v: %w", config, err)
-		}
-		addedJobs[config] = entryId
+		}))
 	}
-	maps.Copy(s.jobs, addedJobs)
 
 	for config, entryId := range s.jobs {
 		if _, exists := configs[config]; exists {
@@ -151,8 +142,8 @@ func (s *Scheduler) refreshSchedules() error {
 	return nil
 }
 
-func (s *Scheduler) scheduleConfigs() (map[_ScheduleConfig]struct{}, error) {
-	configs := map[_ScheduleConfig]struct{}{}
+func (s *Scheduler) scheduleConfigs() (map[_ScheduleConfig]cron.Schedule, error) {
+	configs := map[_ScheduleConfig]cron.Schedule{}
 	statuses := s.RegistryRepo.ListAppStatuses()
 	versions := s.DescriptorRepo.ListTaskDescriptorVersions()
 	for statusIndex, status := range statuses {
@@ -166,13 +157,16 @@ func (s *Scheduler) scheduleConfigs() (map[_ScheduleConfig]struct{}, error) {
 					TaskSkelName:            runner.TaskSkelName,
 					TaskRunnerCronScheduler: scheduler,
 				}
-				if err := config.validate(); err != nil {
-					return nil, err
+				schedule, err := config.parse(runner.DescriptorHash, versions)
+				if err != nil {
+					schedulerLogger.Warn("skipping invalid cron registration",
+						"appName", status.Name, "instanceId", status.InstanceId,
+						"taskSkelName", config.TaskSkelName, "triggerSkelName", config.TriggerSkelName,
+						"cronExpr", config.CronExpr, "error", err,
+					)
+					continue
 				}
-				if err := config.checkNoArgumentTrigger(runner.DescriptorHash, versions); err != nil {
-					return nil, err
-				}
-				configs[config] = struct{}{}
+				configs[config] = schedule
 			}
 		}
 	}
@@ -253,18 +247,22 @@ func (s *Scheduler) hasActiveRunner(config _ScheduleConfig) bool {
 	return false
 }
 
-func (c _ScheduleConfig) validate() error {
+func (c _ScheduleConfig) parse(descriptorHash string, versions []core.DescriptorVersion[*skeldesc.Task]) (cron.Schedule, error) {
 	if c.AppName == "" {
-		return fmt.Errorf("scheduled task app name is empty")
+		return nil, fmt.Errorf("scheduled task app name is empty")
 	}
 	if c.TaskSkelName == "" {
-		return fmt.Errorf("scheduled task skel name is empty")
+		return nil, fmt.Errorf("scheduled task skel name is empty")
 	}
 	if c.TriggerSkelName == "" {
-		return fmt.Errorf("scheduled task trigger skel name is empty")
+		return nil, fmt.Errorf("scheduled task trigger skel name is empty")
 	}
-	if _, err := cron.ParseStandard(c.CronExpr); err != nil {
-		return fmt.Errorf("scheduled task cron expression %q is invalid: %w", c.CronExpr, err)
+	if err := c.checkNoArgumentTrigger(descriptorHash, versions); err != nil {
+		return nil, err
 	}
-	return nil
+	// robfig/cron splits a leading time zone at the first space.
+	if (strings.HasPrefix(c.CronExpr, "TZ=") || strings.HasPrefix(c.CronExpr, "CRON_TZ=")) && !strings.Contains(c.CronExpr, " ") {
+		return nil, fmt.Errorf("missing schedule after time zone")
+	}
+	return cron.ParseStandard(c.CronExpr)
 }
