@@ -108,8 +108,11 @@ func (m *Manager) dispatchEvents(ctx context.Context, listener *_EventListenerSt
 
 func (m *Manager) onEvent(listener *_EventListenerState, natsMsg jetstream.Msg) {
 	defer listener.instance.FinishWork()
+	stopRenewal := linknats.KeepMessageAlive(natsMsg)
+	defer stopRenewal()
 	msg := *vcode.MustUnmarshalJson[*eventspec.NATSMessage](natsMsg.Data())
 	err := m.runEvent(listener, msg)
+	stopRenewal()
 	if err != nil {
 		m.onEventDispatchError(natsMsg, listener.registration.NoRetry)
 		return

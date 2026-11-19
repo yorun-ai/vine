@@ -12,7 +12,7 @@ type PortalRuleRepo struct {
 	Dao             *model.PortalRuleDao `inject:""`
 	Syncer          *syncer.Syncer       `inject:""`
 	Access          *configaccess.Access `inject:""`
-	PortalSiteRepo  core.PortalSiteRepo  `inject:""`
+	PortalSiteRepo  *PortalSiteRepo      `inject:""`
 	PortalEntryRepo core.PortalEntryRepo `inject:""`
 }
 
@@ -24,6 +24,35 @@ func (s *PortalRuleRepo) List() []*core.PortalRule {
 		rules = append(rules, toCorePortalRule(row, entries[row.EntryId]))
 	}
 	return rules
+}
+
+// ListViews resolves entry transports and target sites once per distinct reference.
+func (s *PortalRuleRepo) ListViews() []core.PortalRuleView {
+	rows := s.Dao.ListWithTargets()
+	certs := make([]*core.PortalCert, 0, len(rows.Certs))
+	for _, row := range rows.Certs {
+		certs = append(certs, toCorePortalCert(row))
+	}
+	entries := make(map[int]*core.PortalEntry, len(rows.Entries))
+	for _, row := range rows.Entries {
+		entry := toCorePortalEntry(row)
+		resolveEntryHTTP(entry, certs)
+		entries[entry.Id] = entry
+	}
+	sites := make(map[string]*core.PortalSite, len(rows.Sites))
+	for _, site := range s.PortalSiteRepo.sitesFromRows(rows.Sites) {
+		sites[site.Name] = site
+	}
+	views := make([]core.PortalRuleView, 0, len(rows.Rules))
+	for _, row := range rows.Rules {
+		entry := entries[row.EntryId]
+		views = append(views, core.PortalRuleView{
+			Rule:  toCorePortalRule(row, entry),
+			Entry: entry,
+			Site:  sites[row.RouteSiteName],
+		})
+	}
+	return views
 }
 
 func (s *PortalRuleRepo) GetById(id int) (*core.PortalRule, bool) {
@@ -41,6 +70,8 @@ func (s *PortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 }
 
 func (s *PortalRuleRepo) Save(rules ...*core.PortalRule) {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	// Each DAO save commits independently. If a later save fails, Watch must
 	// still reflect every committed row, including any newly assigned IDs.
@@ -62,6 +93,8 @@ func (s *PortalRuleRepo) Save(rules ...*core.PortalRule) {
 }
 
 func (s *PortalRuleRepo) Remove(id int) bool {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	rule, ok := s.Dao.DeleteById(id)
 	if !ok {

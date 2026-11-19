@@ -1,6 +1,7 @@
 package configaccess
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"go.yorun.ai/vine/internal/app"
@@ -9,6 +10,10 @@ import (
 
 type Access struct {
 	app.BaseComponent
+
+	// PortalRouteWrites orders entry and rule writes through their Watch
+	// publication. Every request in this Hub shares the same Access.
+	PortalRouteWrites sync.Mutex
 
 	readOnly atomic.Bool
 }

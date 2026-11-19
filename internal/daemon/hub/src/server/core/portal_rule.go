@@ -53,6 +53,19 @@ func ResolvePortalRulePaths(rule *PortalRule, site *PortalSite) (string, string)
 
 // Repo
 
+// PortalRuleView contains the rule and the related entities needed to display it.
+// Site is nil for redirects and unresolved site names.
+type PortalRuleView struct {
+	Rule  *PortalRule
+	Entry *PortalEntry
+	Site  *PortalSite
+}
+
+// PortalRuleListRepo reads rule views in name order without field provenance.
+type PortalRuleListRepo interface {
+	ListViews() []PortalRuleView
+}
+
 // PortalRuleRepo stores entry rules. List and the lookups return entities the
 // caller owns.
 type PortalRuleRepo interface {
@@ -70,15 +83,6 @@ type PortalRuleCore struct {
 	PortalCertRepo  PortalCertRepo   `inject:""`
 	PortalEntryCore *PortalEntryCore `inject:""`
 	PortalSiteRepo  PortalSiteRepo   `inject:""`
-}
-
-func (m *PortalRuleCore) List() []*PortalRule {
-	rules := m.PortalRuleRepo.List()
-	ret := make([]*PortalRule, 0, len(rules))
-	for _, rule := range rules {
-		ret = append(ret, rule)
-	}
-	return ret
 }
 
 // FindByName returns the rule with the name.

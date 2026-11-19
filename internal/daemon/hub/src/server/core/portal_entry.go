@@ -76,6 +76,7 @@ type PortalEntryRepo interface {
 	// GetByName returns the entry Hub labels with the name.
 	GetByName(name string) (*PortalEntry, bool)
 	Save(entry *PortalEntry)
+	// Remove refuses entries still referenced by any live rule, including disabled rules.
 	Remove(id int) bool
 }
 
@@ -174,17 +175,7 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 // Remove deletes the entry that routes no rule. Hub keeps the rules of an entry,
 // so the operator moves or removes them first.
 func (m *PortalEntryCore) Remove(id int) {
-	entry, ok := m.PortalEntryRepo.GetById(id)
-	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("portal entry %d not found", id))
-	rules := 0
-	for _, rule := range m.PortalRuleRepo.List() {
-		if rule.EntryId == entry.Id {
-			rules++
-		}
-	}
-	ex.PanicNewIfNot(rules == 0, ex.OperationFailed,
-		ex.F("portal entry %q still routes %d rules; remove them first", entry.Name, rules))
-	ex.PanicNewIfNot(m.PortalEntryRepo.Remove(entry.Id), ex.OperationFailed, ex.F("portal entry %d not found", id))
+	ex.PanicNewIfNot(m.PortalEntryRepo.Remove(id), ex.OperationFailed, ex.F("portal entry %d not found", id))
 }
 
 // Get returns the entry with the id.

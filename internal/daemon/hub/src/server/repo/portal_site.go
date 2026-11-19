@@ -17,9 +17,15 @@ type PortalSiteRepo struct {
 }
 
 func (s *PortalSiteRepo) List() []*core.PortalSite {
-	descriptors := s.descriptors()
-	rows := s.Dao.ListOrdered()
+	return s.sitesFromRows(s.Dao.ListOrdered())
+}
+
+func (s *PortalSiteRepo) sitesFromRows(rows []*model.PortalSite) []*core.PortalSite {
 	entries := make([]*core.PortalSite, 0, len(rows))
+	if len(rows) == 0 {
+		return entries
+	}
+	descriptors := s.descriptors()
 	for _, row := range rows {
 		entries = append(entries, s.toCorePortalSite(row, descriptors))
 	}

@@ -12,16 +12,17 @@ import (
 type PortalRuleApiServiceServerImpl struct {
 	skeled.DefaultPortalRuleApiServiceServer
 
-	PortalRuleCore  *core.PortalRuleCore  `inject:""`
-	PortalEntryCore *core.PortalEntryCore `inject:""`
-	PortalSiteRepo  core.PortalSiteRepo   `inject:""`
+	PortalRuleListRepo core.PortalRuleListRepo `inject:""`
+	PortalRuleCore     *core.PortalRuleCore    `inject:""`
+	PortalEntryCore    *core.PortalEntryCore   `inject:""`
+	PortalSiteRepo     core.PortalSiteRepo     `inject:""`
 }
 
 func (s *PortalRuleApiServiceServerImpl) List() []skeled.PortalRuleListItem {
-	rules := s.PortalRuleCore.List()
-	ret := make([]skeled.PortalRuleListItem, 0, len(rules))
-	for _, rule := range rules {
-		ret = append(ret, toServerPortalRuleListItem(s.ruleEntry(rule), rule, s.PortalSiteRepo))
+	views := s.PortalRuleListRepo.ListViews()
+	ret := make([]skeled.PortalRuleListItem, 0, len(views))
+	for _, view := range views {
+		ret = append(ret, toServerPortalRuleListItem(view.Entry, view.Rule, view.Site))
 	}
 	return ret
 }
@@ -70,8 +71,8 @@ func (s *PortalRuleApiServiceServerImpl) Remove(id int) {
 	s.PortalRuleCore.Remove(id)
 }
 
-func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, fieldSources []skeled.FieldSource) skeled.PortalRule {
-	resolvedMatchPathPrefix, resolvedRoutePathPrefix := resolvePortalRulePaths(rule, nil)
+func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, site *core.PortalSite, fieldSources []skeled.FieldSource) skeled.PortalRule {
+	resolvedMatchPathPrefix, resolvedRoutePathPrefix := core.ResolvePortalRulePaths(rule, site)
 	ret := skeled.PortalRule{
 		Enabled:                 rule.Enabled,
 		Id:                      rule.Id,
@@ -103,13 +104,11 @@ func toServerPortalRule(rule *core.PortalRule, entry *core.PortalEntry, fieldSou
 }
 
 func (s *PortalRuleApiServiceServerImpl) toServerPortalRule(rule *core.PortalRule, fieldSources []skeled.FieldSource) skeled.PortalRule {
-	ret := toServerPortalRule(rule, s.ruleEntry(rule), fieldSources)
-	if s.PortalSiteRepo != nil {
-		if site, ok := s.PortalSiteRepo.GetByName(rule.RouteSiteName); ok {
-			ret.ResolvedMatchPathPrefix, ret.ResolvedRoutePathPrefix = resolvePortalRulePaths(rule, site)
-		}
+	var site *core.PortalSite
+	if rule.RouteType == core.PortalRuleRouteTypeSite && s.PortalSiteRepo != nil {
+		site, _ = s.PortalSiteRepo.GetByName(rule.RouteSiteName)
 	}
-	return ret
+	return toServerPortalRule(rule, s.ruleEntry(rule), site, fieldSources)
 }
 
 // ruleEntry returns the entry a rule belongs to. An entry Hub cannot resolve
@@ -125,21 +124,10 @@ func (s *PortalRuleApiServiceServerImpl) ruleEntry(rule *core.PortalRule) *core.
 	return entry
 }
 
-func resolvePortalRulePaths(rule *core.PortalRule, site *core.PortalSite) (string, string) {
-	return core.ResolvePortalRulePaths(rule, site)
-}
-
 // toServerPortalRuleListItem maps a rule for list responses, which carry the
 // entity values without its seed provenance.
-func toServerPortalRuleListItem(entry *core.PortalEntry, rule *core.PortalRule, siteRepo core.PortalSiteRepo, sites ...*core.PortalSite) skeled.PortalRuleListItem {
-	detail := toServerPortalRule(rule, entry, nil)
-	if len(sites) > 0 {
-		detail.ResolvedMatchPathPrefix, detail.ResolvedRoutePathPrefix = resolvePortalRulePaths(rule, sites[0])
-	} else if siteRepo != nil {
-		if site, ok := siteRepo.GetByName(rule.RouteSiteName); ok {
-			detail.ResolvedMatchPathPrefix, detail.ResolvedRoutePathPrefix = resolvePortalRulePaths(rule, site)
-		}
-	}
+func toServerPortalRuleListItem(entry *core.PortalEntry, rule *core.PortalRule, site *core.PortalSite) skeled.PortalRuleListItem {
+	detail := toServerPortalRule(rule, entry, site, nil)
 	return skeled.PortalRuleListItem{
 		Enabled:                 detail.Enabled,
 		Id:                      detail.Id,

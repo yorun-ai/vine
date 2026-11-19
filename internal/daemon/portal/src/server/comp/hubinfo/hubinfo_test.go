@@ -1,6 +1,8 @@
 package hubinfo
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -26,13 +28,13 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 
 func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 	client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
-	flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+	flags := &flag.Flag{HubEndpoint: "http://[::1]:7071"}
 	flags.Normalize()
 	component := &HubInfo{Flag: flags, InfoServiceClient: client}
 
 	component.DIInit()
 	assert.Equal(t, 1, client.getInfoCall)
-	assert.Equal(t, "127.0.0.1:7072", component.WatchEndpoint())
+	assert.Equal(t, "[::1]:7072", component.WatchEndpoint())
 }
 
 func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
@@ -56,7 +58,8 @@ func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
 		{"prefer watch port", `{"watchPort":8072,"redisPort":7072}`, "hub:8072"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			component := &HubInfo{host: "hub", info: vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload)}
+			component := &HubInfo{host: "hub"}
+			component.cache.Init(vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload))
 			assert.Equal(t, tc.want, component.WatchEndpoint())
 		})
 	}
@@ -105,4 +108,54 @@ func TestHubInfoBeforeAppStartPollsHubInformation(t *testing.T) {
 		assert.GreaterOrEqual(t, client.getInfoCall, 2)
 		assert.Equal(t, 0, refreshes)
 	})
+}
+
+func TestConcurrentRefreshAfterFailedRepairKeepsLatestEndpoint(t *testing.T) {
+	for _, port := range []int{7072, 7074} {
+		client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
+		flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+		flags.Normalize()
+		component := &HubInfo{Flag: flags, InfoServiceClient: client}
+		component.DIInit()
+
+		entered := make(chan struct{})
+		release := make(chan struct{})
+		var first sync.Once
+		component.OnRefresh(func() {
+			first.Do(func() {
+				close(entered)
+				<-release
+				panic("repair failed")
+			})
+		})
+		repairs := make(chan string, 2)
+		component.OnRefresh(func() { repairs <- component.WatchEndpoint() })
+		client.info.WatchPort = 7073
+		failure := make(chan any, 1)
+		go func() {
+			defer func() { failure <- recover() }()
+			component.Refresh()
+		}()
+		<-entered
+		client.info.WatchPort = port
+		starting := make(chan struct{})
+		done := make(chan struct{})
+		go func() {
+			close(starting)
+			component.Refresh()
+			close(done)
+		}()
+		<-starting
+		close(release)
+		assert.Equal(t, "repair failed", <-failure)
+		<-done
+		close(repairs)
+		var repaired []string
+		for endpoint := range repairs {
+			repaired = append(repaired, endpoint)
+		}
+		want := fmt.Sprintf("127.0.0.1:%d", port)
+		assert.Equal(t, want, component.WatchEndpoint())
+		assert.Equal(t, []string{"127.0.0.1:7073", want}, repaired)
+	}
 }

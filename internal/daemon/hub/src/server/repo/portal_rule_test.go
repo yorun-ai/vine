@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
@@ -69,6 +70,58 @@ func TestPortalRuleRepoPublishesCommittedRulesAfterBatchFailure(t *testing.T) {
 	require.True(t, ok)
 	_, ok = server.Get(watched.FormatPortalRuleKey(invalid.Name))
 	require.False(t, ok)
+}
+
+// Hold the first write at a database callback. Before serialization, the second
+// write can complete while it is held. With serialization, releasing the first
+// write lets the second acquire the lock.
+func overlapRouteWrites(t *testing.T, paused <-chan struct{}, resume chan struct{}, first func(), second func()) {
+	t.Helper()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		first()
+	}()
+	select {
+	case <-paused:
+	case <-done:
+		t.Fatal("first write finished without reaching the database callback")
+	}
+	release := sync.OnceFunc(func() { close(resume) })
+	timer := time.AfterFunc(100*time.Millisecond, release)
+	defer func() {
+		timer.Stop()
+		release()
+		<-done
+	}()
+	second()
+}
+
+func TestPortalRuleDeleteDuringUpdatePublication(t *testing.T) {
+	db, rules, watch := newTestPortalRuleRepo(t)
+	rule := testPortalRule(t, rules, "admin")
+	rules.Save(rule)
+	otherRequest := *rules
+	id := rule.Id
+	rule.MatchPathPrefix = "/updated"
+	paused, resume := make(chan struct{}), make(chan struct{})
+	update := db.Callback().Update()
+	const hook = "test:pause_committed_rule"
+	require.NoError(t, update.After("gorm:commit_or_rollback_transaction").Register(hook, func(tx *gorm.DB) {
+		if tx.Statement.Table == "portal_rule" {
+			close(paused)
+			<-resume
+		}
+	}))
+	t.Cleanup(func() { require.NoError(t, update.Remove(hook)) })
+
+	overlapRouteWrites(t, paused, resume, func() { rules.Save(rule) }, func() {
+		require.True(t, otherRequest.Remove(id))
+	})
+	_, exists := rules.GetById(id)
+	require.False(t, exists)
+	_, published := watch.Get(watched.FormatPortalRuleKey(rule.Name))
+	require.False(t, published, "the committed deletion must be the last Watch change")
 }
 
 func TestPortalRuleRepoSaveRename(t *testing.T) {
@@ -156,7 +209,7 @@ func newTestPortalRuleRepo(t testing.TB) (*gorm.DB, *PortalRuleRepo, *watchserve
 	repo := &PortalRuleRepo{
 		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](db)},
 		Syncer:          sync,
-		Access:          new(configaccess.Access),
+		Access:          entryRepo.Access,
 		PortalEntryRepo: entryRepo,
 	}
 	repo.Dao.EnsureSchema()

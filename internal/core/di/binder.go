@@ -56,9 +56,9 @@ type Binding struct {
 	disposer          *reflect.Value
 	initFactoryResult bool
 
-	onDependenciesResolved        func(reflect.Value, []reflect.Value)
-	extraDependencies             []reflect.Type
-	factoryDependenciesOverridden []reflect.Type
+	onDependenciesResolved func(reflect.Value, []reflect.Value)
+	extraDependencies      []reflect.Type
+	implementationType     reflect.Type
 }
 
 func (b *Binding) ensureMutable() {
@@ -103,7 +103,6 @@ func (b *Binding) setFactory(factory any) {
 	vpre.Check(reflectutil.IsFuncType(factoryType), "%s must be function", factoryType)
 
 	b.factory = new(reflect.ValueOf(factory))
-	b.factoryDependenciesOverridden = nil
 }
 
 func (b *Binding) ensureFactoryMode(isAbstract bool) {
@@ -150,7 +149,7 @@ func (b *Binding) ToImplementation(implType reflect.Type) *Binding {
 	b.setFactory(func(implInstance any) any { return implInstance })
 	b.isAbstract = false
 	b.initFactoryResult = false
-	b.factoryDependenciesOverridden = []reflect.Type{implType}
+	b.implementationType = implType
 	return b
 }
 

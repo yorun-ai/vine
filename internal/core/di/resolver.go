@@ -2,7 +2,6 @@ package di
 
 import (
 	"reflect"
-	"sync"
 
 	"go.yorun.ai/vine/internal/util/goutil"
 	"go.yorun.ai/vine/util/vmap"
@@ -12,10 +11,8 @@ import (
 type _DisposeFunc func()
 type _InstantiateFunc func(_BuildStack, reflect.Type) reflect.Value
 
-var emptyDispose _DisposeFunc = func() {}
-
 type _Resolver interface {
-	GetInstance(stack _BuildStack, requestedType reflect.Type) (reflect.Value, _DisposeFunc)
+	GetInstance(stack _BuildStack, requestedType reflect.Type) reflect.Value
 }
 
 type _InjectorResolver struct {
@@ -26,8 +23,8 @@ func newInjectorResolver(injector Injector) *_InjectorResolver {
 	return &_InjectorResolver{injector: injector}
 }
 
-func (r *_InjectorResolver) GetInstance(_BuildStack, reflect.Type) (reflect.Value, _DisposeFunc) {
-	return reflect.ValueOf(r.injector), emptyDispose
+func (r *_InjectorResolver) GetInstance(_BuildStack, reflect.Type) reflect.Value {
+	return reflect.ValueOf(r.injector)
 }
 
 // _RedirectionResolver resolves instance from source injector.
@@ -43,16 +40,16 @@ func newRedirectionResolver(bound *_Bound) *_RedirectionResolver {
 	}
 }
 
-func (r *_RedirectionResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) (reflect.Value, _DisposeFunc) {
+func (r *_RedirectionResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) reflect.Value {
 	sourceType := r.bound.TargetType()
 	if r.bound.binding.isAbstract {
 		sourceType = requestedType
 	}
-	instance, _ := r.sourceInjector.getWithDispose(sourceType, stack)
+	instance := r.sourceInjector.get(sourceType, stack)
 	if requestedType != r.bound.TargetType() {
 		vpre.Check(instance.Type().AssignableTo(requestedType), "redirected instance %s is not assignable to %s", instance.Type(), requestedType)
 	}
-	return instance, emptyDispose
+	return instance
 }
 
 // _PersistedResolver resolves instance from scoped persist storage.
@@ -60,13 +57,8 @@ type _PersistedResolver struct {
 	bound   *_Bound
 	storage *vmap.MutexMap[reflect.Type, reflect.Value]
 
-	isSeeded bool
-
 	instantiateOnce goutil.RecoverableOnce
 	instantiateFunc _InstantiateFunc
-
-	disposeOnce sync.Once
-	disposeFunc _DisposeFunc
 }
 
 func newPersistedResolver(bound *_Bound, storage *vmap.MutexMap[reflect.Type, reflect.Value], injector *_BaseInjector) *_PersistedResolver {
@@ -91,31 +83,19 @@ func (r *_PersistedResolver) hasInstance() bool {
 	return ok
 }
 
-func (r *_PersistedResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) (reflect.Value, _DisposeFunc) {
+func (r *_PersistedResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) reflect.Value {
 	r.instantiateOnce.Do(func() {
 		instance := r.instantiateFunc(stack, requestedType)
 		r.setInstance(instance)
-		if r.isSeeded {
-			r.disposeFunc = emptyDispose
-			return
-		}
-		r.disposeFunc = r.bound.BuildDisposeFunc(instance)
 	})
-	return r.getInstance(), r.dispose
+	return r.getInstance()
 }
 
 func (r *_PersistedResolver) SeedInstance(instance reflect.Value) {
 	vpre.Check(!r.hasInstance(), "type %s was already instantiated, cannot be seeded", r.bound.TargetType())
-	r.isSeeded = true
 	r.instantiateFunc = func(_BuildStack, reflect.Type) reflect.Value {
 		return instance
 	}
-}
-
-func (r *_PersistedResolver) dispose() {
-	r.disposeOnce.Do(func() {
-		r.disposeFunc()
-	})
 }
 
 // _IllegalExecutionResolver panics when resolving instance without execution state.
@@ -127,34 +107,29 @@ func newIllegalExecutionResolver(bound *_Bound) *_IllegalExecutionResolver {
 	return &_IllegalExecutionResolver{bound: bound}
 }
 
-func (r *_IllegalExecutionResolver) GetInstance(stack _BuildStack, _ reflect.Type) (reflect.Value, _DisposeFunc) {
+func (r *_IllegalExecutionResolver) GetInstance(stack _BuildStack, _ reflect.Type) reflect.Value {
 	vpre.Panicf("get execution scoped type %s under non-execution mode, build stack=%s", r.bound.TargetType(), stack)
-	return reflect.Value{}, emptyDispose
+	return reflect.Value{}
 }
 
 // _TransientResolver resolves a new instance on each request.
 type _TransientResolver struct {
-	bound           *_Bound
 	instantiateFunc _InstantiateFunc
 }
 
 func newTransientResolver(bound *_Bound, injector *_BaseInjector) *_TransientResolver {
 	return &_TransientResolver{
-		bound:           bound,
 		instantiateFunc: bound.BuildInstantiateFunc(injector),
 	}
 }
 
-func (r *_TransientResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) (reflect.Value, _DisposeFunc) {
-	instance := r.instantiateFunc(stack, requestedType)
-	return instance, r.bound.BuildDisposeFunc(instance)
+func (r *_TransientResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) reflect.Value {
+	return r.instantiateFunc(stack, requestedType)
 }
 
 type _AbstractPersistedEntry struct {
-	once        goutil.RecoverableOnce
-	disposeOnce sync.Once
-	instance    reflect.Value
-	disposeFunc _DisposeFunc
+	once     goutil.RecoverableOnce
+	instance reflect.Value
 }
 
 type _AbstractResolver struct {
@@ -174,7 +149,7 @@ func newAbstractResolver(bound *_Bound, injector *_BaseInjector, fallbackScope S
 	}
 }
 
-func (r *_AbstractResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) (reflect.Value, _DisposeFunc) {
+func (r *_AbstractResolver) GetInstance(stack _BuildStack, requestedType reflect.Type) reflect.Value {
 	vpre.Check(requestedType != r.bound.TargetType(),
 		"abstract binding %s cannot resolve direct interface requests", r.bound.TargetType())
 
@@ -183,27 +158,17 @@ func (r *_AbstractResolver) GetInstance(stack _BuildStack, requestedType reflect
 		entry := r.getEntry(requestedType)
 		entry.once.Do(func() {
 			entry.instance = r.instantiateFunc(stack, requestedType)
-			entry.disposeFunc = r.bound.BuildDisposeFunc(entry.instance)
 		})
-		return entry.instance, entry.dispose
+		return entry.instance
 	case TransientScope:
-		instance := r.instantiateFunc(stack, requestedType)
-		return instance, r.bound.BuildDisposeFunc(instance)
+		return r.instantiateFunc(stack, requestedType)
 	}
 
 	vpre.MustNotReach()
-	return reflect.Value{}, emptyDispose
+	return reflect.Value{}
 }
 
 func (r *_AbstractResolver) getEntry(requestedType reflect.Type) *_AbstractPersistedEntry {
 	entry, _ := r.storage.LoadOrStore(requestedType, &_AbstractPersistedEntry{})
 	return entry
-}
-
-func (e *_AbstractPersistedEntry) dispose() {
-	e.disposeOnce.Do(func() {
-		if e.disposeFunc != nil {
-			e.disposeFunc()
-		}
-	})
 }

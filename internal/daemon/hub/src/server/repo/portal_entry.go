@@ -49,6 +49,8 @@ func (s *PortalEntryRepo) GetByName(name string) (*core.PortalEntry, bool) {
 }
 
 func (s *PortalEntryRepo) Save(entry *core.PortalEntry) {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	*entry = core.NormalizePortalEntry(*entry)
 	row := toModelPortalEntry(entry)
@@ -59,6 +61,8 @@ func (s *PortalEntryRepo) Save(entry *core.PortalEntry) {
 }
 
 func (s *PortalEntryRepo) Remove(id int) bool {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	row, ok := s.Dao.DeleteById(id)
 	if !ok {

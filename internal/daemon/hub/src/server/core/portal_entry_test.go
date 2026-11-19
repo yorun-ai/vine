@@ -370,34 +370,6 @@ func TestPortalEntryCoreCreate(t *testing.T) {
 	assert.Len(t, entryRepo.entries, 1)
 }
 
-func TestPortalEntryCoreRemove(t *testing.T) {
-	entryRepo := newPortalEntryRepoSpy(
-		&PortalEntry{Id: 1, Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 7088}},
-	)
-	ruleRepo := &entryRuleRepoSpy{
-		rules: map[int]*PortalRule{
-			1: {Id: 1, Name: "web", EntryId: 1, MatchPathPrefix: "/", RouteType: PortalRuleRouteTypeSite, RouteSiteName: "web-site"},
-		},
-	}
-	core := newPortalEntryCoreForTest(ruleRepo, entryRepo, nil)
-
-	// An entry keeps its rules: Hub refuses to leave them without an access.
-	require.PanicsWithError(t,
-		`portal entry "http:7088" still routes 1 rules; remove them first type=APPLICATION code=OPERATION_FAILED`,
-		func() { core.Remove(1) })
-	assert.Contains(t, entryRepo.entries, 1)
-
-	// An entry that routes nothing is removed.
-	core.Create(PortalEntryCreation{Name: "idle", Protocol: "http", Http: &PortalEntryHTTP{Http: "ENABLED", Https: "DISABLED", HttpPort: 8080}})
-	created, ok := entryRepo.GetByName("idle")
-	require.True(t, ok)
-	assert.Equal(t, "idle", created.Name)
-	core.Remove(created.Id)
-	_, ok = entryRepo.GetByName("idle")
-	assert.False(t, ok)
-	assert.Contains(t, entryRepo.removed, created.Id)
-}
-
 func TestPortalEntryCoreListRejectsUnknownScheme(t *testing.T) {
 	entryRepo := newPortalEntryRepoSpy(&PortalEntry{Id: 1, Name: "invalid", Protocol: "tcp", Http: &PortalEntryHTTP{Http: "DISABLED", Https: "DISABLED", HttpPort: 9000, HttpsPort: 9000}})
 	ruleRepo := &entryRuleRepoSpy{

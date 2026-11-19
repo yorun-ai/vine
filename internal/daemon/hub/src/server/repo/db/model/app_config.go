@@ -31,9 +31,7 @@ type AppConfigDao struct {
 }
 
 func (d *AppConfigDao) EnsureSchema() {
-	sql := schemaSQL(d.GormDB(), createAppConfigSQLiteSQL, createAppConfigPgSQL)
-	err := d.GormDB().Exec(sql).Error
-	ex.PanicIfError(err)
+	ensureLiveNameSchema(d.GormDB(), "app_config", createAppConfigSQLiteSQL, createAppConfigPgSQL)
 	ensureFieldSourceTable(d.GormDB())
 }
 

@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS portal_site (
     enabled BOOLEAN NOT NULL DEFAULT TRUE -- Whether Hub publishes this site
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_site_name
-    ON portal_site(name);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_site_live_name
+    ON portal_site(name) WHERE deleted_at IS NULL;

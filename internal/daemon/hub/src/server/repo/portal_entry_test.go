@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yorun.ai/vine/infra/rdb"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
@@ -47,6 +49,59 @@ func TestPortalEntryRepoRejectsReadOnlyWrites(t *testing.T) {
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() {
 		repo.Remove(1)
 	})
+}
+
+func TestPortalEntryDeleteDuringRuleCreation(t *testing.T) {
+	db, rules, _ := newTestPortalRuleRepo(t)
+	entryCore := core.PortalEntryCore{PortalEntryRepo: rules.PortalEntryRepo, PortalRuleRepo: rules}
+	rule := testPortalRule(t, rules, "admin")
+	rule.Enabled = false // Disabled rules still belong to their entry.
+	paused, resume := make(chan struct{}), make(chan struct{})
+	create := db.Callback().Create()
+	const hook = "test:pause_rule_insert"
+	require.NoError(t, create.Before("gorm:begin_transaction").Register(hook, func(tx *gorm.DB) {
+		if tx.Statement.Table == "portal_rule" {
+			close(paused)
+			<-resume
+		}
+	}))
+	t.Cleanup(func() { require.NoError(t, create.Remove(hook)) })
+
+	overlapRouteWrites(t, paused, resume, func() { rules.Save(rule) }, func() {
+		require.PanicsWithError(t, `portal entry "test-entry" still routes 1 rules; remove them first type=APPLICATION code=OPERATION_FAILED`, func() {
+			entryCore.Remove(rule.EntryId)
+		})
+	})
+	require.Len(t, rules.List(), 1)
+	require.True(t, rules.Remove(rule.Id))
+	entryCore.Remove(rule.EntryId)
+	_, exists := rules.PortalEntryRepo.GetById(rule.EntryId)
+	require.False(t, exists)
+}
+
+func TestPortalRuleCreationDuringEntryDeletion(t *testing.T) {
+	db, rules, watch := newTestPortalRuleRepo(t)
+	entryCore := core.PortalEntryCore{PortalEntryRepo: rules.PortalEntryRepo, PortalRuleRepo: rules}
+	rule := testPortalRule(t, rules, "admin")
+	paused, resume := make(chan struct{}), make(chan struct{})
+	deletion := db.Callback().Delete()
+	const hook = "test:pause_entry_delete"
+	require.NoError(t, deletion.Before("gorm:begin_transaction").Register(hook, func(tx *gorm.DB) {
+		if tx.Statement.Table == "portal_entry" {
+			close(paused)
+			<-resume
+		}
+	}))
+	t.Cleanup(func() { require.NoError(t, deletion.Remove(hook)) })
+
+	overlapRouteWrites(t, paused, resume, func() { entryCore.Remove(rule.EntryId) }, func() {
+		require.PanicsWithError(t, fmt.Sprintf(`portal rule "admin" references missing portal entry %d type=APPLICATION code=OPERATION_FAILED`, rule.EntryId), func() {
+			rules.Save(rule)
+		})
+	})
+	require.Empty(t, rules.List())
+	_, published := watch.Get(watched.FormatPortalRuleKey(rule.Name))
+	require.False(t, published)
 }
 
 func newTestPortalEntryRepoDB(t *testing.T) *PortalEntryRepo {

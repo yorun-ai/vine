@@ -689,25 +689,26 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	t.Cleanup(watchServer.AfterAppStop)
 
 	sharedSyncer := testSyncer(watchServer)
+	access := new(configaccess.Access)
 	return &repo.AppConfigRepo{
 		Dao:            &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
 		DescriptorRepo: new(repodescriptor.DescriptorRepo),
 		Syncer:         sharedSyncer,
-		Access:         new(configaccess.Access),
+		Access:         access,
 	}, &repo.PortalRuleRepo{
 		Dao:             &model.PortalRuleDao{Dao: rdb.NewDao[*model.PortalRule](gdb)},
 		Syncer:          sharedSyncer,
-		Access:          new(configaccess.Access),
-		PortalEntryRepo: &repo.PortalEntryRepo{CertDao: &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)}, Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: sharedSyncer, Access: new(configaccess.Access)},
+		Access:          access,
+		PortalEntryRepo: &repo.PortalEntryRepo{CertDao: &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)}, Dao: &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](gdb)}, Syncer: sharedSyncer, Access: access},
 	}, &repo.PortalCertRepo{
 		Dao:    &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](gdb)},
 		Syncer: sharedSyncer,
-		Access: new(configaccess.Access),
+		Access: access,
 	}, &repo.PortalSiteRepo{
 		Dao:            &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](gdb)},
 		DescriptorRepo: new(repodescriptor.DescriptorRepo),
 		Syncer:         sharedSyncer,
-		Access:         new(configaccess.Access),
+		Access:         access,
 	}, &repo.MetadataRepo{Dao: &model.MetadataDao{Dao: rdb.NewDao[*model.Metadata](gdb)}}, watchServer
 }
 

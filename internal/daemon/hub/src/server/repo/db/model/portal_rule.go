@@ -1,10 +1,14 @@
 package model
 
 import (
+	"database/sql"
 	_ "embed"
+	"maps"
+	"slices"
 
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/ex"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"gorm.io/gorm"
 )
 
@@ -39,8 +43,7 @@ type PortalRuleDao struct {
 
 func (d *PortalRuleDao) EnsureSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
-	sql := schemaSQL(d.GormDB(), createPortalRuleSQLiteSQL, createPortalRulePgSQL)
-	ex.PanicIfError(d.GormDB().Exec(sql).Error)
+	ensureLiveNameSchema(d.GormDB(), "portal_rule", createPortalRuleSQLiteSQL, createPortalRulePgSQL)
 	ensureFieldSourceTable(d.GormDB())
 }
 
@@ -48,6 +51,51 @@ func (d *PortalRuleDao) ListOrdered() []*PortalRule {
 	return listWithFieldSources(d.GormDB().Order("name"), func(row *PortalRule) (int, *string) {
 		return row.Id, &row.FieldSources
 	})
+}
+
+// PortalRuleListRows holds the rule list and its associations from one database snapshot.
+type PortalRuleListRows struct {
+	Rules   []*PortalRule
+	Entries []*PortalEntry
+	Certs   []*PortalCert
+	Sites   []*PortalSite
+}
+
+// ListWithTargets reads just the associations used by the listed rules.
+// The list does not expose field provenance or need certificate key material.
+func (d *PortalRuleDao) ListWithTargets() PortalRuleListRows {
+	var rows PortalRuleListRows
+	ex.PanicIfError(d.GormDB().Transaction(func(tx *gorm.DB) error {
+		db := tx.Session(&gorm.Session{SkipHooks: true})
+		err := db.Select("id", "name", "entry_id", "enabled", "match_path_prefix", "route_type",
+			"route_site_name", "route_redirection_pattern", "route_path_prefix").
+			Order("name").Find(&rows.Rules).Error
+		if err != nil || len(rows.Rules) == 0 {
+			return err
+		}
+		entryIDs := make(map[int]struct{})
+		siteNames := make(map[string]struct{})
+		for _, rule := range rows.Rules {
+			entryIDs[rule.EntryId] = struct{}{}
+			if rule.RouteType == core.PortalRuleRouteTypeSite {
+				siteNames[rule.RouteSiteName] = struct{}{}
+			}
+		}
+		rows.Entries = listRuleTargets[*PortalEntry](db, "id IN ?", entryIDs)
+		rows.Sites = listRuleTargets[*PortalSite](db, "name IN ?", siteNames)
+		return db.Select("domains", "enabled").Where("enabled = ?", true).Find(&rows.Certs).Error
+	}, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead}))
+	return rows
+}
+
+func listRuleTargets[T any, K comparable](db *gorm.DB, condition string, keys map[K]struct{}) []T {
+	var rows []T
+	for batch := range slices.Chunk(slices.Collect(maps.Keys(keys)), lookupBatchSize) {
+		var targets []T
+		ex.PanicIfError(db.Where(condition, batch).Find(&targets).Error)
+		rows = append(rows, targets...)
+	}
+	return rows
 }
 
 func (d *PortalRuleDao) ByName(name string) (*PortalRule, bool) {

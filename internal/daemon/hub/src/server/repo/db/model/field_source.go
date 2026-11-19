@@ -22,15 +22,15 @@ type FieldSourceDao struct {
 	db *gorm.DB
 }
 
-// Keep both the entity IDs and the kind within SQLite's bind parameter limit.
-const fieldSourceBatchSize = 500
+// Leave room for additional predicates within SQLite's bind parameter limit.
+const lookupBatchSize = 500
 
 // ListByEntityIDs returns the stored fields for the requested IDs of one kind.
 // Entities without a source row have no entry in the result.
 func (d FieldSourceDao) ListByEntityIDs(kind string, ids []int) map[int]string {
 	fieldsByID := make(map[int]string)
 	db := d.db.Session(&gorm.Session{NewDB: true})
-	for batch := range slices.Chunk(ids, fieldSourceBatchSize) {
+	for batch := range slices.Chunk(ids, lookupBatchSize) {
 		var sources []_FieldSource
 		err := db.Select("entity_id", "fields").
 			Where("kind = ? AND entity_id IN ?", kind, batch).Find(&sources).Error

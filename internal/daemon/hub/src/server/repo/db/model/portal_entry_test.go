@@ -33,6 +33,8 @@ func TestPortalEntryDaoStoresAndFindsName(t *testing.T) {
 
 func TestPortalEntryDaoCreateQueryAndRemove(t *testing.T) {
 	dao := newTestPortalEntryDao(t)
+	rules := PortalRuleDao{Dao: rdb.NewDao[*PortalRule](dao.GormDB())}
+	rules.EnsureSchema()
 
 	entry := dao.Save(&PortalEntry{Protocol: "http", HTTPConfig: `{"host":"demo.local","http":"DISABLED","httpPort":80,"https":"ENABLED","httpsPort":8443,"autohttps":"DISABLED"}`})
 	require.NotZero(t, entry.Id)

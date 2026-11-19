@@ -13,5 +13,5 @@ CREATE TABLE IF NOT EXISTS portal_cert (
     enabled BOOLEAN NOT NULL DEFAULT TRUE -- Whether Hub publishes this certificate
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_cert_name
-    ON portal_cert(name);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_cert_live_name
+    ON portal_cert(name) WHERE deleted_at IS NULL;

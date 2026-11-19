@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 	"uuid"
 
@@ -184,6 +185,54 @@ func TestBusyEventListenerLeavesBacklogForAnotherInstance(t *testing.T) {
 			}, 3*time.Second, time.Millisecond)
 		})
 	}
+}
+
+type longEventMessage struct {
+	jetstream.Msg
+	handlerDone chan struct{}
+	replies     []string
+}
+
+func (*longEventMessage) Data() []byte { return []byte("{}") }
+
+func (m *longEventMessage) InProgress() error {
+	// The second send is still in flight when the handler returns at 45s.
+	if len(m.replies) == 1 {
+		<-m.handlerDone
+	}
+	m.replies = append(m.replies, "InProgress")
+	return nil
+}
+
+func (m *longEventMessage) Ack() error {
+	m.replies = append(m.replies, "Ack")
+	return nil
+}
+
+func TestLongEventKeepsRenewingDuringDrain(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		instance := new(minder.AppInstance)
+		require.True(t, instance.TryStartWork())
+		msg := new(longEventMessage{handlerDone: make(chan struct{})})
+		oldFactory := newAppEventServiceClient
+		t.Cleanup(func() { newAppEventServiceClient = oldFactory })
+		newAppEventServiceClient = func(context.Context, meta.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
+			return &_ManagerAppEventClient{onEvent: func(appskeled.EventOn) error {
+				instance.BeginDrain()
+				time.Sleep(45 * time.Second)
+				close(msg.handlerDone)
+				return nil
+			}}
+		}
+		manager := &Manager{Context: t.Context()}
+		listener := &_EventListenerState{
+			instance:     instance,
+			registration: skeled.EventListenerRegistration{TimeoutMs: 60_000},
+		}
+		manager.onEvent(listener, msg)
+		time.Sleep(30 * time.Second)
+		require.Equal(t, []string{"InProgress", "InProgress", "Ack"}, msg.replies)
+	})
 }
 
 // The pull was already outstanding when the instance started draining.

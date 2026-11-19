@@ -493,18 +493,22 @@ func newDispatcherFixture(t *testing.T, capacities ...int) (*Manager, *_TaskSubs
 
 func TestTaskMessageRenewalStopsBeforeFinalAck(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
+		manager, _, _, runners := newDispatcherFixture(t, 1)
+		runners[0].registration.TimeoutMs = 60_000
+		oldFactory := newAppTaskServiceClient
+		t.Cleanup(func() { newAppTaskServiceClient = oldFactory })
+		newAppTaskServiceClient = func(context.Context, meta.App, string, taskspec.NATSMessage) appskeled.TaskServiceClientER {
+			return &_ManagerAppTaskClient{runTask: func(appskeled.TaskRun) error {
+				time.Sleep(45 * time.Second)
+				return nil
+			}}
+		}
 		msg := newDispatcherMessage()
-		stop := keepTaskMessageAlive(msg)
-		synctest.Wait()
-		time.Sleep(35 * time.Second)
-		synctest.Wait()
-		require.Equal(t, int64(3), msg.renewed.Load())
-		stop()
-		require.NoError(t, msg.Ack())
-		stop()
-		time.Sleep(20 * time.Second)
-		synctest.Wait()
-		require.Equal(t, int64(3), msg.renewed.Load())
+		require.True(t, runners[0].instance.TryStartWork())
+		manager.runTaskMessage(runners[0], msg)
+		require.EqualValues(t, 1, msg.acked.Load())
+		time.Sleep(30 * time.Second)
+		require.EqualValues(t, 2, msg.renewed.Load())
 	})
 }
 

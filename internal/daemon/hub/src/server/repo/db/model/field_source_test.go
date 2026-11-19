@@ -189,7 +189,7 @@ func checkFieldSourceList[T rdb.ModelConstraint](t *testing.T, counter *fieldSou
 func TestFieldSourceDaoSplitsLargeIDLists(t *testing.T) {
 	db := sourceTestDB(t)
 	ensureFieldSourceTable(db)
-	ids := make([]int, fieldSourceBatchSize+1)
+	ids := make([]int, lookupBatchSize+1)
 	for i := range ids {
 		ids[i] = i + 1
 	}
