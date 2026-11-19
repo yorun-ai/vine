@@ -55,7 +55,7 @@ func (i *Initializer) DIInit() {
 	for _, entry := range i.PortalEntryRepo.List() {
 		i.Syncer.SyncPortalEntry(entry)
 	}
-	i.Syncer.SyncPortalSites(i.PortalSiteRepo.List())
+	i.Syncer.RefreshPortalSites(i.PortalSiteRepo.List)
 	i.Syncer.SyncPortalRules(i.PortalRuleRepo.List())
 	i.checkPortalRuleConflicts()
 	if i.Flag.NoDB {

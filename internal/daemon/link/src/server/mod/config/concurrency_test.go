@@ -28,6 +28,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	}
 
 	watchKey := watched.FormatConfigKey(configName)
+	state := reader.instantConfigStatesByKey[watchKey]
 	eventValues := []string{
 		marshalTestConfigValue(configName, firstValue),
 		marshalTestConfigValue(configName, secondValue),
@@ -38,7 +39,7 @@ func TestGetInstantConcurrentWithEventUpdate(t *testing.T) {
 	waitGroup.Go(func() {
 		<-start
 		for idx := range 1000 {
-			reader.handleInstantConfigEvent(watchKey, hubwatch.Event{
+			reader.handleInstantConfigEvent(watchKey, state, hubwatch.Event{
 				Kind:  hubwatch.EventKindUpsert,
 				Key:   watchKey,
 				Value: eventValues[idx%len(eventValues)],

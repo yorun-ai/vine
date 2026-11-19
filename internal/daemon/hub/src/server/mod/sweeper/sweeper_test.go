@@ -10,6 +10,7 @@ import (
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -101,7 +102,7 @@ func TestSweeperSkipsLiveLeaseStatus(t *testing.T) {
 func TestSweeperUnregistersExpiredLeaseStatus(t *testing.T) {
 	watchServer := watchserver.NewServerForTest()
 	defer watchServer.AfterAppStop()
-	syncerModule := &syncer.Syncer{WatchServer: watchServer}
+	syncerModule := &syncer.Syncer{WatchServer: watchServer, Access: new(configaccess.Access)}
 	syncerModule.DIInit()
 	registryRepo := &_SweeperRegistryRepo{
 		leases: []core.AppHeartbeat{{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-000000000001")}},
@@ -225,7 +226,7 @@ func TestSweeperRetriesPublicationAfterCleanup(t *testing.T) {
 		t.Run(stage, func(t *testing.T) {
 			server := watchserver.NewServerForTest()
 			t.Cleanup(server.AfterAppStop)
-			publisher := &syncer.Syncer{WatchServer: server}
+			publisher := &syncer.Syncer{WatchServer: server, Access: new(configaccess.Access)}
 			publisher.DIInit()
 			publisher.SyncDescriptors([]core.DomainDescriptorView{{DomainVersion: core.DomainDescriptorVersion{
 				Descriptor: &skeldesc.Domain{Name: "demo", Hash: "00000000-0000-0000-0000-0000000000d5"},

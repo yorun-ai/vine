@@ -15,6 +15,7 @@ import (
 	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/admin"
 	_ "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	hubflag "go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
@@ -167,6 +168,15 @@ func (r *testPortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 	return nil, false
 }
 
+func (r *testPortalRuleRepo) Update(id int, edit func(*core.PortalRule)) (*core.PortalRule, bool) {
+	rule, ok := r.GetById(id)
+	if ok {
+		edit(rule)
+		r.Save(rule)
+	}
+	return rule, ok
+}
+
 func (r *testPortalRuleRepo) Save(rules ...*core.PortalRule) {
 	for _, rule := range rules {
 		i := slices.IndexFunc(r.rules, func(current *core.PortalRule) bool { return current.Name == rule.Name })
@@ -245,7 +255,7 @@ func (r *testPortalSiteRepo) Remove(id int) bool {
 }
 
 func testSyncer(watchServer *watchserver.Server) *syncer.Syncer {
-	target := &syncer.Syncer{WatchServer: watchServer}
+	target := &syncer.Syncer{WatchServer: watchServer, Access: new(configaccess.Access)}
 	target.DIInit()
 	return target
 }

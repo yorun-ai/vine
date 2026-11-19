@@ -2,47 +2,56 @@ package config
 
 import (
 	"context"
+	"sync"
 	"uuid"
 
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
-	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
-func (c *Reader) newInstantConfigState(watchKey string) (*_InstantConfigState, hubwatch.Subscription) {
+func (c *Reader) newInstantConfigState(watchKey string) *_InstantConfigState {
 	watchCtx, cancel := context.WithCancel(c.Context)
 	state := &_InstantConfigState{
 		refsByAppInstanceID: map[uuid.UUID]struct{}{},
 		cancel:              cancel,
 	}
-	loadedConfigValue, loadedOk, subscription := c.loadAndWatchInstantConfigValue(watchKey, watchCtx)
-	if !loadedOk {
-		return state, subscription
-	}
-
-	state.value = string(loadedConfigValue.Value)
-	return state, subscription
-}
-
-func (c *Reader) loadAndWatchInstantConfigValue(watchKey string, ctx context.Context) (watched.ConfigValue, bool, hubwatch.Subscription) {
-	value, ok, subscription := c.Client.LoadAndSubscribe(ctx, watchKey, func(event hubwatch.Event) {
-		c.handleInstantConfigEvent(watchKey, event)
+	state.start = sync.OnceFunc(func() {
+		c.startInstantConfig(watchCtx, watchKey, state)
 	})
-	if !ok {
-		return watched.ConfigValue{}, false, subscription
-	}
-	configValue, err := unmarshalConfigValue(value)
-	if err != nil {
-		return watched.ConfigValue{}, false, subscription
-	}
-	return configValue, true, subscription
+	return state
 }
 
-func (c *Reader) handleInstantConfigEvent(watchKey string, event hubwatch.Event) {
+func (c *Reader) startInstantConfig(ctx context.Context, watchKey string, state *_InstantConfigState) {
+	// A failed Watch attachment panics. Release its resources and allow the
+	// next request to start a fresh subscription for this key.
+	started := false
+	defer func() {
+		if !started {
+			state.cancel()
+			c.mutex.Lock()
+			if c.instantConfigStatesByKey[watchKey] == state {
+				delete(c.instantConfigStatesByKey, watchKey)
+			}
+			c.mutex.Unlock()
+		}
+	}()
+	raw, ok, subscription := c.Client.LoadAndSubscribe(ctx, watchKey, func(event hubwatch.Event) {
+		c.handleInstantConfigEvent(watchKey, state, event)
+	})
+	if ok {
+		if value, err := unmarshalConfigValue(raw); err == nil {
+			c.mutex.Lock()
+			state.value = string(value.Value)
+			c.mutex.Unlock()
+		}
+	}
+	subscription.Start()
+	started = true
+}
+
+func (c *Reader) handleInstantConfigEvent(watchKey string, state *_InstantConfigState, event hubwatch.Event) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	state, ok := c.instantConfigStatesByKey[watchKey]
-	if !ok {
+	if c.instantConfigStatesByKey[watchKey] != state {
 		return
 	}
 

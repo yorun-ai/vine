@@ -129,6 +129,23 @@ func TestPortalSiteRepoRemove(t *testing.T) {
 	assert.False(t, repo.Remove(entry.Id))
 }
 
+func TestPortalSiteRefreshDuringDeletion(t *testing.T) {
+	_, repo, server := newTestPortalSiteRepo(t)
+	site := testPortalSite("docs")
+	repo.Save(site)
+	paused, resume := make(chan struct{}), make(chan struct{})
+	overlapRouteWrites(t, paused, resume, func() {
+		repo.Syncer.RefreshPortalSites(func() []*core.PortalSite {
+			snapshot := repo.List()
+			close(paused)
+			<-resume
+			return snapshot
+		})
+	}, func() { require.True(t, repo.Remove(site.Id)) })
+	_, exists := server.Get(watched.FormatPortalSiteKey(site.Name))
+	require.False(t, exists)
+}
+
 func newTestPortalSiteRepo(t *testing.T) (*gorm.DB, *PortalSiteRepo, *watchserver.Server) {
 	t.Helper()
 
@@ -136,11 +153,12 @@ func newTestPortalSiteRepo(t *testing.T) (*gorm.DB, *PortalSiteRepo, *watchserve
 	watchServer := watchserver.NewServerForTest()
 	t.Cleanup(watchServer.AfterAppStop)
 
+	publisher := testSyncer(watchServer)
 	repo := &PortalSiteRepo{
 		Dao:            &model.PortalSiteDao{Dao: rdb.NewDao[*model.PortalSite](db)},
 		DescriptorRepo: new(_PortalSiteDescriptorRepo),
-		Syncer:         testSyncer(watchServer),
-		Access:         new(configaccess.Access),
+		Syncer:         publisher,
+		Access:         publisher.Access,
 	}
 	repo.Dao.EnsureSchema()
 	require.NoError(t, db.Exec("DELETE FROM portal_site").Error)

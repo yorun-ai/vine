@@ -4,7 +4,6 @@ import (
 	"encoding/json/v2"
 	"uuid"
 
-	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 )
 
@@ -18,14 +17,19 @@ func (c *Reader) GetEternal(appInstanceID uuid.UUID, key string) string {
 func (c *Reader) retainEternalConfig(appInstanceID uuid.UUID, key string) string {
 	watchKey := watched.FormatConfigKey(key)
 	configValue, ok := c.loadConfigValue(watchKey)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	values := c.configValuesByAppInstanceID[appInstanceID]
+	if cached, exists := values[watchKey]; exists {
+		return cached
+	}
 	if !ok {
 		return ""
 	}
-
 	value := string(configValue.Value)
-	c.mutex.Lock()
-	c.setConfigValueSnapshotLocked(appInstanceID, watchKey, value)
-	c.mutex.Unlock()
+	if values != nil {
+		values[watchKey] = value
+	}
 	return value
 }
 
@@ -39,20 +43,24 @@ func (c *Reader) GetInstant(appInstanceID uuid.UUID, key string) string {
 func (c *Reader) retainInstantConfig(appInstanceID uuid.UUID, key string) string {
 	watchKey := watched.FormatConfigKey(key)
 	c.mutex.Lock()
-	state, exists := c.instantConfigStatesByKey[watchKey]
-	var subscription hubwatch.Subscription
-	if !exists {
-		state, subscription = c.newInstantConfigState(watchKey)
+	state := c.instantConfigStatesByKey[watchKey]
+	if state == nil {
+		state = c.newInstantConfigState(watchKey)
 		c.instantConfigStatesByKey[watchKey] = state
 	}
-	value := state.value
 	state.refsByAppInstanceID[appInstanceID] = struct{}{}
-	c.setConfigValueSnapshotLocked(appInstanceID, watchKey, value)
-	if subscription != nil {
-		subscription.Start()
-	}
 	c.mutex.Unlock()
-	return value
+
+	// Callers for the same key share the initial load. Other keys and
+	// instance teardown can proceed while Watch attaches the subscription.
+	state.start()
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if _, retained := state.refsByAppInstanceID[appInstanceID]; retained && c.instantConfigStatesByKey[watchKey] == state {
+		c.setConfigValueSnapshotLocked(appInstanceID, watchKey, state.value)
+	}
+	return state.value
 }
 
 func (c *Reader) loadConfigValue(watchKey string) (watched.ConfigValue, bool) {

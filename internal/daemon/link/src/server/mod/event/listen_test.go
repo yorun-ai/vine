@@ -268,26 +268,23 @@ func (m *unadmittedEvent) Term() error {
 	return nil
 }
 
-func TestEventPullFinishingDuringDrainUsesListenerRetryPolicy(t *testing.T) {
-	for _, test := range []struct {
-		noRetry bool
-		reply   string
-	}{{false, "Nak"}, {true, "Term"}} {
-		t.Run(test.reply, func(t *testing.T) {
+func TestEventPullFinishingDuringDrainReturnsUnprocessedMessage(t *testing.T) {
+	for _, noRetry := range []bool{false, true} {
+		t.Run(fmt.Sprintf("noRetry=%t", noRetry), func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			t.Cleanup(cancel)
 			instance := new(minder.AppInstance)
 			listener := &_EventListenerState{
 				instance:     instance,
 				cancelRead:   cancel,
-				registration: skeled.EventListenerRegistration{NoRetry: test.noRetry},
+				registration: skeled.EventListenerRegistration{NoRetry: noRetry},
 				semaphore:    make(chan struct{}, 1),
 				done:         make(chan struct{}),
 			}
 			msg := new(unadmittedEvent)
 			manager := new(Manager)
 			manager.dispatchEvents(ctx, listener, &drainingEventPull{instance: instance, message: msg})
-			require.Equal(t, test.reply, msg.reply)
+			require.Equal(t, "Nak", msg.reply)
 			require.Empty(t, listener.semaphore)
 		})
 	}

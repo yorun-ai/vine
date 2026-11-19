@@ -73,6 +73,8 @@ type PortalRuleRepo interface {
 	GetById(id int) (*PortalRule, bool)
 	GetByName(name string) (*PortalRule, bool)
 	Save(rules ...*PortalRule)
+	// Update reads the latest rule and saves the edit under the same write lock.
+	Update(id int, edit func(*PortalRule)) (*PortalRule, bool)
 	Remove(id int) bool
 }
 
@@ -107,45 +109,48 @@ func (m *PortalRuleCore) Create(rule PortalRule) *PortalRule {
 }
 
 func (m *PortalRuleCore) Update(id int, update PortalRuleUpdate) *PortalRule {
-	rule, ok := m.PortalRuleRepo.GetById(id)
+	rule, ok := m.PortalRuleRepo.Update(id, func(rule *PortalRule) {
+		m.applyUpdate(rule, update)
+		*rule = m.validateForEntry(*rule)
+	})
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry rule %d not found", id))
+	return rule
+}
 
-	next := *rule
-	next.FieldSources = cloneFieldSources(rule.FieldSources)
+func (m *PortalRuleCore) applyUpdate(rule *PortalRule, update PortalRuleUpdate) {
+	rule.FieldSources = cloneFieldSources(rule.FieldSources)
 	if update.Name != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/name")
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/name")
 		if *update.Name != rule.Name {
 			_, exists := m.PortalRuleRepo.GetByName(*update.Name)
 			ex.PanicNewIfNot(!exists, ex.OperationFailed, ex.F("entry rule %q already exists", *update.Name))
 		}
-		next.Name = *update.Name
+		rule.Name = *update.Name
 	}
 	if update.MatchPathPrefix != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/matchPathPrefix")
-		next.MatchPathPrefix = *update.MatchPathPrefix
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/matchPathPrefix")
+		rule.MatchPathPrefix = *update.MatchPathPrefix
 	}
 	if update.RouteType != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/routeType")
-		next.RouteType = *update.RouteType
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/routeType")
+		rule.RouteType = *update.RouteType
 	}
 	if update.RouteSiteName != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/routeSiteName")
-		next.RouteSiteName = *update.RouteSiteName
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/routeSiteName")
+		rule.RouteSiteName = *update.RouteSiteName
 	}
 	if update.RouteRedirectionPattern != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/routeRedirectionPattern")
-		next.RouteRedirectionPattern = *update.RouteRedirectionPattern
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/routeRedirectionPattern")
+		rule.RouteRedirectionPattern = *update.RouteRedirectionPattern
 	}
 	if update.RoutePathPrefix != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/routePathPrefix")
-		next.RoutePathPrefix = *update.RoutePathPrefix
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/routePathPrefix")
+		rule.RoutePathPrefix = *update.RoutePathPrefix
 	}
 	if update.Enabled != nil {
-		next.FieldSources = overrideFieldSource(next.FieldSources, "/enabled")
-		next.Enabled = *update.Enabled
+		rule.FieldSources = overrideFieldSource(rule.FieldSources, "/enabled")
+		rule.Enabled = *update.Enabled
 	}
-
-	return m.save(next)
 }
 
 // normalizePortalRuleRoutePathPrefix validates a site-relative escaped path prefix.
@@ -224,6 +229,9 @@ func (*PortalRuleCore) Validate(rule PortalRule) PortalRule {
 func PortalEntryMatchKey(entry PortalEntry, matchPathPrefix string) string {
 	entry = NormalizePortalEntry(entry)
 	h := entry.Http.Effective(true)
+	if matchPathPrefix == "" {
+		matchPathPrefix = "/"
+	}
 	return fmt.Sprintf("%s\x00%s\x00%t:%d:%t:%d\x00%s", entry.Protocol, h.Host, h.HttpEnabled, h.HttpPort, h.HttpsEnabled, h.HttpsPort, matchPathPrefix)
 }
 

@@ -9,6 +9,7 @@ import (
 	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/mod/syncer"
@@ -148,7 +149,7 @@ func (*_RegistryServiceDescriptorRepo) ListWebDescriptors() []*skeldesc.Web {
 }
 
 func testRegistrySyncer(watchServer *watchserver.Server) *syncer.Syncer {
-	target := &syncer.Syncer{WatchServer: watchServer}
+	target := &syncer.Syncer{WatchServer: watchServer, Access: new(configaccess.Access)}
 	target.DIInit()
 	return target
 }

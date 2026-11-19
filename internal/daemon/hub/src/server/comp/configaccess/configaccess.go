@@ -11,8 +11,8 @@ import (
 type Access struct {
 	app.BaseComponent
 
-	// PortalRouteWrites orders entry and rule writes through their Watch
-	// publication. Every request in this Hub shares the same Access.
+	// PortalRouteWrites orders entry, rule and site changes, including full site
+	// refreshes, through Watch publication. It is shared by all Hub requests.
 	PortalRouteWrites sync.Mutex
 
 	readOnly atomic.Bool

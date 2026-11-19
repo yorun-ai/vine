@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -124,6 +125,63 @@ func TestPortalRuleDeleteDuringUpdatePublication(t *testing.T) {
 	require.False(t, published, "the committed deletion must be the last Watch change")
 }
 
+func TestPortalRulePatchesPreserveConcurrentEdits(t *testing.T) {
+	db, repo, server := newTestPortalRuleRepo(t)
+	rule := testPortalRule(t, repo, "admin")
+	repo.Save(rule)
+	service := core.PortalRuleCore{
+		PortalRuleRepo:  repo,
+		PortalEntryCore: &core.PortalEntryCore{PortalEntryRepo: repo.PortalEntryRepo},
+	}
+	paused, resume := make(chan struct{}), make(chan struct{})
+	var pausedFirstRead atomic.Bool
+	query := db.Callback().Query()
+	const hook = "test:pause_rule_patch_read"
+	require.NoError(t, query.After("gorm:after_query").Register(hook, func(tx *gorm.DB) {
+		if tx.Statement.Table == "portal_rule" && pausedFirstRead.CompareAndSwap(false, true) {
+			close(paused)
+			<-resume
+		}
+	}))
+	t.Cleanup(func() { require.NoError(t, query.Remove(hook)) })
+	overlapRouteWrites(t, paused, resume, func() {
+		service.Update(rule.Id, core.PortalRuleUpdate{MatchPathPrefix: new("/new")})
+	}, func() {
+		service.Update(rule.Id, core.PortalRuleUpdate{Enabled: new(false)})
+	})
+	stored := service.Get(rule.Id)
+	require.Equal(t, "/new", stored.MatchPathPrefix)
+	require.False(t, stored.Enabled)
+	_, published := server.Get(watched.FormatPortalRuleKey(rule.Name))
+	require.False(t, published)
+}
+
+func TestPortalRuleEmptyAndSlashShareWinner(t *testing.T) {
+	_, repo, server := newTestPortalRuleRepo(t)
+	service := core.PortalRuleCore{
+		PortalRuleRepo:  repo,
+		PortalEntryCore: &core.PortalEntryCore{PortalEntryRepo: repo.PortalEntryRepo},
+	}
+	first, fallback := testPortalRule(t, repo, "a-default"), testPortalRule(t, repo, "z-root")
+	for _, r := range []*core.PortalRule{first, fallback} {
+		r.RouteType = core.PortalRuleRouteTypeTemporaryRedirect
+		r.RouteSiteName = ""
+		r.RouteRedirectionPattern = "/docs"
+	}
+	first.MatchPathPrefix, fallback.MatchPathPrefix = "", "/"
+	repo.Save(fallback, first)
+	conflicts := service.Conflicts()
+	require.Len(t, conflicts, 1)
+	require.Equal(t, first.Name, conflicts[0].Published)
+	_, published := server.Get(watched.FormatPortalRuleKey(first.Name))
+	require.True(t, published)
+	_, published = server.Get(watched.FormatPortalRuleKey(fallback.Name))
+	require.False(t, published)
+	service.Update(first.Id, core.PortalRuleUpdate{Enabled: new(false)})
+	_, published = server.Get(watched.FormatPortalRuleKey(fallback.Name))
+	require.True(t, published)
+}
+
 func TestPortalRuleRepoSaveRename(t *testing.T) {
 	_, repo, watchServer := newTestPortalRuleRepo(t)
 
@@ -224,7 +282,7 @@ func newTestPortalEntryRepo(db *gorm.DB, sync *syncer.Syncer) *PortalEntryRepo {
 		CertDao: &model.PortalCertDao{Dao: rdb.NewDao[*model.PortalCert](db)},
 		Dao:     &model.PortalEntryDao{Dao: rdb.NewDao[*model.PortalEntry](db)},
 		Syncer:  sync,
-		Access:  new(configaccess.Access),
+		Access:  sync.Access,
 	}
 }
 

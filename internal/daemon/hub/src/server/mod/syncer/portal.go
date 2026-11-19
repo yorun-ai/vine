@@ -51,16 +51,36 @@ func (s *Syncer) updateEntryRules(batch *watchserver.NotifyBatch, entryID int) {
 
 // SyncPortalSite publishes the site and any changes to its rules in one revision.
 func (s *Syncer) SyncPortalSite(site *core.PortalSite) {
-	s.SyncPortalSites([]*core.PortalSite{site})
+	s.syncPortalSites([]*core.PortalSite{site}, false)
 }
 
-// SyncPortalSites applies all mount paths from one descriptor refresh together.
-func (s *Syncer) SyncPortalSites(sites []*core.PortalSite) {
+// RefreshPortalSites reads and publishes the complete site snapshot in order with
+// configuration writes. Descriptor refreshes also run in read-only Hubs.
+func (s *Syncer) RefreshPortalSites(load func() []*core.PortalSite) {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
+	s.syncPortalSites(load(), true)
+}
+
+func (s *Syncer) syncPortalSites(sites []*core.PortalSite, fullSnapshot bool) {
 	s.namesMutex.Lock()
 	defer s.namesMutex.Unlock()
 
 	batch := s.WatchServer.NotifyBatch()
 	changedSites := make(map[string]struct{})
+	if fullSnapshot {
+		present := make(map[int]struct{}, len(sites))
+		for _, site := range sites {
+			present[site.Id] = struct{}{}
+		}
+		for id, name := range s.portalSiteNamesById {
+			if _, ok := present[id]; !ok {
+				delete(s.portalSiteNamesById, id)
+				delete(s.portalSitesByName, name)
+				changedSites[name] = struct{}{}
+			}
+		}
+	}
 	// Resolve old names first, so a name can move to another site in this refresh.
 	for _, site := range sites {
 		oldName := s.portalSiteNamesById[site.Id]

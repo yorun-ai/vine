@@ -67,5 +67,5 @@ func (s *Sweeper) refreshDescriptors() {
 }
 
 func (s *Sweeper) refreshPortalSiteRpcgwServices() {
-	s.Syncer.SyncPortalSites(s.PortalSiteCore.List())
+	s.Syncer.RefreshPortalSites(s.PortalSiteCore.List)
 }
