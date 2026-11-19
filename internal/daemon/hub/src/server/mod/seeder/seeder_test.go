@@ -134,7 +134,7 @@ portalCerts:
 }
 
 func testSyncer(watchServer *watchserver.Server) *syncer.Syncer {
-	target := &syncer.Syncer{WatchServer: watchServer}
+	target := &syncer.Syncer{WatchServer: watchServer, Access: new(configaccess.Access)}
 	target.DIInit()
 	return target
 }
@@ -689,7 +689,7 @@ func newTestSeederRepos(t *testing.T) (*repo.AppConfigRepo, *repo.PortalRuleRepo
 	t.Cleanup(watchServer.AfterAppStop)
 
 	sharedSyncer := testSyncer(watchServer)
-	access := new(configaccess.Access)
+	access := sharedSyncer.Access
 	return &repo.AppConfigRepo{
 		Dao:            &model.AppConfigDao{Dao: rdb.NewDao[*model.AppConfig](gdb)},
 		DescriptorRepo: new(repodescriptor.DescriptorRepo),

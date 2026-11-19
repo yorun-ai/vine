@@ -6,6 +6,7 @@ import (
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 	"go.yorun.ai/vine/util/vcode"
@@ -14,7 +15,8 @@ import (
 type Syncer struct {
 	app.BaseModule
 
-	WatchServer *watchserver.Server `inject:""`
+	WatchServer *watchserver.Server  `inject:""`
+	Access      *configaccess.Access `inject:""`
 
 	namesMutex          sync.Mutex
 	descriptorMutex     sync.Mutex

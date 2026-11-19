@@ -276,6 +276,15 @@ func (s *_PortalRuleRepoSpy) GetByName(name string) (*core.PortalRule, bool) {
 	return nil, false
 }
 
+func (s *_PortalRuleRepoSpy) Update(id int, edit func(*core.PortalRule)) (*core.PortalRule, bool) {
+	rule, ok := s.GetById(id)
+	if ok {
+		edit(rule)
+		s.Save(rule)
+	}
+	return rule, ok
+}
+
 func (s *_PortalRuleRepoSpy) Save(rules ...*core.PortalRule) {
 	for _, rule := range rules {
 		value := *rule

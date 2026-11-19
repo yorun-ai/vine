@@ -47,6 +47,8 @@ func (s *PortalSiteRepo) GetByName(name string) (*core.PortalSite, bool) {
 }
 
 func (s *PortalSiteRepo) Save(entry *core.PortalSite) {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	row := toModelPortalSite(entry)
 	s.Dao.Save(row)
@@ -57,6 +59,8 @@ func (s *PortalSiteRepo) Save(entry *core.PortalSite) {
 }
 
 func (s *PortalSiteRepo) Remove(id int) bool {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	entry, ok := s.Dao.DeleteById(id)
 	if !ok {

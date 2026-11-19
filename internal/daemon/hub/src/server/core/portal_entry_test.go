@@ -48,6 +48,15 @@ func (s *entryRuleRepoSpy) GetByName(name string) (*PortalRule, bool) {
 	return nil, false
 }
 
+func (s *entryRuleRepoSpy) Update(id int, edit func(*PortalRule)) (*PortalRule, bool) {
+	rule, ok := s.GetById(id)
+	if ok {
+		edit(rule)
+		s.Save(rule)
+	}
+	return rule, ok
+}
+
 func (s *entryRuleRepoSpy) Save(rules ...*PortalRule) {
 	for _, rule := range rules {
 		s.calls = append(s.calls, "Save")

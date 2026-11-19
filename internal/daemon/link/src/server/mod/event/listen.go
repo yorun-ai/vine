@@ -97,7 +97,8 @@ func (m *Manager) dispatchEvents(ctx context.Context, listener *_EventListenerSt
 				return true
 			}
 			target.cancelRead()
-			m.onEventDispatchError(msg, target.registration.NoRetry)
+			// The handler never started. Return the delivery to the application group.
+			ackNATSMessage(msg.Nak())
 			return false
 		},
 		Handle:  m.onEvent,

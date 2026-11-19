@@ -110,7 +110,8 @@ func TestPortalRuleRefreshUsesFinalSiteNamesAndMounts(t *testing.T) {
 	target.SyncPortalEntry(&core.PortalEntry{Id: 1, Name: "web", Protocol: "http", Enabled: true})
 	first := &core.PortalSite{Id: 1, Name: "first", Type: core.PortalSiteTypeWEBGW, WebMountPath: "/first", Enabled: true}
 	second := &core.PortalSite{Id: 2, Name: "second", Type: core.PortalSiteTypeWEBGW, WebMountPath: "/second", Enabled: true}
-	target.SyncPortalSites([]*core.PortalSite{first, second})
+	loadSites := func() []*core.PortalSite { return []*core.PortalSite{first, second} }
+	target.RefreshPortalSites(loadSites)
 	target.SyncPortalRules([]*core.PortalRule{
 		{Id: 1, Name: "a", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "first", Enabled: true},
 		{Id: 2, Name: "b", EntryId: 1, RouteType: core.PortalRuleRouteTypeSite, RouteSiteName: "second", Enabled: true},
@@ -118,8 +119,15 @@ func TestPortalRuleRefreshUsesFinalSiteNamesAndMounts(t *testing.T) {
 
 	revision := testWatchRevision(t, server)
 	first.Name, second.Name = second.Name, first.Name
-	target.SyncPortalSites([]*core.PortalSite{first, second})
+	target.RefreshPortalSites(loadSites)
 	require.Equal(t, revision+1, testWatchRevision(t, server))
 	requirePublishedRule(t, server, "a", "/second")
+	requirePublishedRule(t, server, "b", "/first")
+
+	// A complete snapshot withdraws absent sites and recomputes their rules.
+	target.RefreshPortalSites(func() []*core.PortalSite { return []*core.PortalSite{first} })
+	_, exists := server.Get(watched.FormatPortalSiteKey(second.Name))
+	require.False(t, exists)
+	requirePublishedRule(t, server, "a", "")
 	requirePublishedRule(t, server, "b", "/first")
 }

@@ -73,6 +73,23 @@ func (s *PortalRuleRepo) Save(rules ...*core.PortalRule) {
 	s.Access.PortalRouteWrites.Lock()
 	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
+	s.saveLocked(rules...)
+}
+
+func (s *PortalRuleRepo) Update(id int, edit func(*core.PortalRule)) (*core.PortalRule, bool) {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
+	s.Access.CheckWrite()
+	rule, ok := s.GetById(id)
+	if !ok {
+		return nil, false
+	}
+	edit(rule)
+	s.saveLocked(rule)
+	return rule, true
+}
+
+func (s *PortalRuleRepo) saveLocked(rules ...*core.PortalRule) {
 	// Each DAO save commits independently. If a later save fails, Watch must
 	// still reflect every committed row, including any newly assigned IDs.
 	saved := 0

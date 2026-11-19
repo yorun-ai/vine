@@ -1,12 +1,15 @@
 package config
 
 import (
-	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
-	"go.yorun.ai/vine/internal/utilfortest/watchtest"
+	"sync/atomic"
 	"testing"
 	"uuid"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
+	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/utilfortest/watchtest"
 )
 
 func TestGetInstantReturnsEmptyWhenConfigDoesNotExist(t *testing.T) {
@@ -160,4 +163,40 @@ func TestGetEternalKeepsSnapshotAfterDeleteForExistingInstance(t *testing.T) {
 
 	assert.Equal(t, `{"enabled":true}`, reader.GetEternal(uuid.MustParse(firstAppInstanceID), "demo.FeatureConfig"))
 	assert.Equal(t, "", reader.GetEternal(uuid.MustParse(secondAppInstanceID), "demo.FeatureConfig"))
+}
+
+type delayedConfigLoad struct {
+	hubwatch.ClientOps
+	first  atomic.Bool
+	loaded chan struct{}
+	resume chan struct{}
+}
+
+func (c *delayedConfigLoad) Load(key string) (string, bool) {
+	value, ok := c.ClientOps.Load(key)
+	if c.first.CompareAndSwap(false, true) {
+		close(c.loaded)
+		<-c.resume
+	}
+	return value, ok
+}
+
+func TestConcurrentEternalReadsReturnOneSnapshot(t *testing.T) {
+	const name = "demo.FeatureConfig"
+	reader := newTestReader(t, map[string]watched.ConfigValue{name: {Value: []byte("1")}})
+	base := reader.Client.(*watchtest.Client)
+	client := &delayedConfigLoad{ClientOps: base, loaded: make(chan struct{}), resume: make(chan struct{})}
+	reader.Client = client
+	id := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	registerTestAppInstance(reader, id)
+	done := make(chan string, 1)
+	go func() { done <- reader.GetEternal(id, name) }()
+	<-client.loaded
+	base.SetValue(watched.FormatConfigKey(name), marshalTestConfigValue(name, "2"))
+	firstResult := reader.GetEternal(id, name)
+	close(client.resume)
+	secondResult := <-done
+	require.Equal(t, "2", firstResult)
+	require.Equal(t, firstResult, secondResult)
+	require.Equal(t, firstResult, reader.GetEternal(id, name))
 }

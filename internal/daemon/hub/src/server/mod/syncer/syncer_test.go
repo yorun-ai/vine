@@ -10,12 +10,13 @@ import (
 	skeldesc "go.yorun.ai/skel/descriptor"
 	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
+	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/core"
 )
 
 func testSyncer(watchServer *watchserver.Server) *Syncer {
-	target := &Syncer{WatchServer: watchServer}
+	target := &Syncer{WatchServer: watchServer, Access: new(configaccess.Access)}
 	target.DIInit()
 	return target
 }

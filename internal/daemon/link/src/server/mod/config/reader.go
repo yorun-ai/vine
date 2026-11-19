@@ -13,6 +13,7 @@ import (
 type _InstantConfigState struct {
 	refsByAppInstanceID map[uuid.UUID]struct{}
 	value               string
+	start               func()
 	cancel              context.CancelFunc
 }
 
