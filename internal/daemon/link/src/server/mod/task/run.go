@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"math/rand/v2"
-	"sync"
 	"time"
 	"uuid"
 
@@ -184,9 +183,7 @@ func (m *Manager) releaseTaskSlot(runner *_TaskRunnerState) {
 
 func (m *Manager) runTaskMessage(runner *_TaskRunnerState, natsMsg jetstream.Msg) {
 	defer runner.instance.FinishWork()
-	// Renew only admitted work. The renewal goroutine is bounded by the same
-	// execution slots and is joined before the final acknowledgement.
-	stopRenewal := keepTaskMessageAlive(natsMsg)
+	stopRenewal := linknats.KeepMessageAlive(natsMsg)
 	defer stopRenewal()
 	msg := *vcode.MustUnmarshalJson[*taskspec.NATSMessage](natsMsg.Data())
 
@@ -231,26 +228,6 @@ func taskRetryDelay(delivered uint64) time.Duration {
 	}
 	// Jitter down by up to 10%, keeping the maximum delay at ten minutes.
 	return delay - time.Duration(rand.Int64N(int64(delay/10)+1))
-}
-
-func keepTaskMessageAlive(msg jetstream.Msg) func() {
-	stop, done := make(chan struct{}), make(chan struct{})
-	go func() {
-		defer close(done)
-		ticker := time.NewTicker(linknats.MessageAckWait / 3)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-stop:
-				return
-			case <-ticker.C:
-				if err := msg.InProgress(); err != nil {
-					taskLogger.Warn("task acknowledgement renewal failed", "error", err)
-				}
-			}
-		}
-	}()
-	return sync.OnceFunc(func() { close(stop); <-done })
 }
 
 func (m *Manager) runTask(runner *_TaskRunnerState, msg taskspec.NATSMessage) ex.Error {
