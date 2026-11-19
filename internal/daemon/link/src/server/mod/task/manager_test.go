@@ -65,6 +65,15 @@ func newTestManager(t *testing.T) (*Manager, func()) {
 	}
 	natsModule.DIInit()
 
+	manager, cleanup := newTestManagerOnCurrentNATS(t)
+	return manager, func() {
+		cleanup()
+		natsModule.AfterAppStop()
+	}
+}
+
+func newTestManagerOnCurrentNATS(t *testing.T) (*Manager, func()) {
+	t.Helper()
 	natsClient, conn := newTestNATSClient(t)
 
 	appInfo, err := meta.NewApp("vine.link", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222"))
@@ -89,7 +98,6 @@ func newTestManager(t *testing.T) (*Manager, func()) {
 	cleanup := func() {
 		manager.AfterAppStop()
 		conn.Close()
-		natsModule.AfterAppStop()
 	}
 	return manager, cleanup
 }

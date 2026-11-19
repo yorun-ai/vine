@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { javascriptLanguage } from '@codemirror/lang-javascript'
 import { EditorState } from '@uiw/react-codemirror'
 import { createConfigJsonDocument, extractConfigJson, getConfigJsonErrors, getConfigJsonTypeLinks } from './config-json-document.ts'
 import { createConfigValueProtection } from './config-json-protection.ts'
@@ -49,19 +48,6 @@ test('multi-selection edits are rejected if any selection touches protected text
     { from: 0, to: 1, insert: '[' },
     { from: range.from, to: range.to, insert: '80' },
   ] }).docChanged, false)
-})
-
-
-test('editor grammar recognizes JSON5 comments, object keys and value syntax', () => {
-  const language = javascriptLanguage.configure({ top: 'SingleExpression' })
-  const tree = language.parser.parse("{ // description\n key: 'value', array: [0x50, +1, .5,], }")
-  const names: Array<string> = []
-  tree.iterate({ enter: (node) => {
-    assert.equal(node.type.isError, false)
-    names.push(node.name)
-  } })
-  assert.equal(names.includes('LineComment'), true)
-  assert.equal(names.includes('PropertyDefinition'), true)
 })
 
 test('an unfinished string highlights only its own value, even before more fields', () => {

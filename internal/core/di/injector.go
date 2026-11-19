@@ -1,6 +1,7 @@
 package di
 
 import (
+	"maps"
 	"reflect"
 
 	"go.yorun.ai/vine/internal/util/reflectutil"
@@ -49,7 +50,6 @@ func NewInjector(bindAppliers ...BindApplier) PlainInjector {
 func (i *_PlainInjector) init() {
 	i.initBindings()
 	i.initBounds()
-	i.completeImplicits()
 	i.freezeBindings()
 	i.checkDependencies()
 	i.initSingletonStorage()
@@ -89,14 +89,12 @@ func (i *_PlainInjector) initBounds() {
 	for _, binding := range vmap.Values(i.bindings) {
 		i.bounds[binding.targetType] = newBound(binding)
 	}
-}
-
-func (i *_PlainInjector) visibleBounds() []*_Bound {
-	bounds := vmap.Values(i.bounds)
+	i.completeImplicits()
+	// Inherited bindings are already complete. Include them in the read-only
+	// index shared by this injector and every execution it starts.
 	if i.parent != nil {
-		return append(bounds, i.parent.visibleBounds()...)
+		maps.Copy(i.bounds, i.parent.bounds)
 	}
-	return bounds
 }
 
 func (i *_PlainInjector) completeImplicits() {
@@ -146,8 +144,8 @@ func (i *_PlainInjector) initResolvers() {
 	i.resolvers = map[reflect.Type]_Resolver{injectorType: newInjectorResolver(i)}
 	i.dynamicResolvers = map[reflect.Type]_Resolver{}
 	i.resolveDynamic = i.resolveDynamicResolver
-	for _, bound := range i.visibleBounds() {
-		i.resolvers[bound.TargetType()] = i.buildResolver(bound)
+	for targetType, bound := range i.bounds {
+		i.resolvers[targetType] = i.buildResolver(bound)
 	}
 }
 
@@ -185,7 +183,7 @@ func (i *_PlainInjector) resolveDynamicResolver(targetType reflect.Type) _Resolv
 
 func (i *_PlainInjector) lookupAbstractBound(targetType reflect.Type) *_Bound {
 	var matched *_Bound
-	for _, bound := range i.visibleBounds() {
+	for _, bound := range i.bounds {
 		if !bound.binding.isAbstract {
 			continue
 		}

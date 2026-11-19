@@ -16,7 +16,7 @@ func TestMethodInfoPositionsArgumentsBySkelIndex(t *testing.T) {
 		Second string `skel:"index(1),sensitive"`
 		First  int    `skel:"index(0)"`
 	}
-	method := newInitializedMethodInfo(reflect.TypeFor[arguments](), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[arguments](), nil)
 	require.Equal(t, []any{42, " second "}, method.PositionArguments(&arguments{First: 42, Second: " second "}))
 }
 
@@ -29,7 +29,7 @@ func TestServiceInfoInitRejectsMissingOrNegativeArgumentIndexes(t *testing.T) {
 				Tag:  tag,
 			}})
 			require.Panics(t, func() {
-				newInitializedMethodInfo(kind, nil, false, false)
+				newInitializedMethodInfo(kind, nil)
 			})
 		})
 	}
@@ -50,25 +50,23 @@ type testGapArgumentIndexInput struct {
 	Third int    `skel:"index(2)"`
 }
 
-func newInitializedMethodInfo(argumentsType reflect.Type, resultType reflect.Type, argumentsContainsBinaryType bool, resultContainsBinaryType bool) *_MethodInfo {
+func newInitializedMethodInfo(argumentsType reflect.Type, resultType reflect.Type) *_MethodInfo {
 	service := registerTestService(&ServiceSpec{
 		Type:     ServiceSpecTypeBoth,
 		Name:     "UserService",
 		SkelName: fmt.Sprintf("user.service.%d", initializedMethodInfoCounter.Add(1)),
 		Methods: []*MethodSpec{{
-			Name:                        "CreateUser",
-			SkelName:                    "create_user",
-			ArgumentsType:               argumentsType,
-			ResultType:                  resultType,
-			ArgumentsContainsBinaryType: argumentsContainsBinaryType,
-			ResultContainsBinaryType:    resultContainsBinaryType,
+			Name:          "CreateUser",
+			SkelName:      "create_user",
+			ArgumentsType: argumentsType,
+			ResultType:    resultType,
 		}},
 	}).(*_ServiceInfo)
 	return service.methods[0].(*_MethodInfo)
 }
 
 func TestMethodInfoNewArgumentsAndNewResult(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeFor[testArgumentsInput](), reflect.TypeFor[string](), false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testArgumentsInput](), reflect.TypeFor[string]())
 
 	if !method.HasArguments() {
 		t.Fatalf("expected method to have arguments")
@@ -85,7 +83,7 @@ func TestMethodInfoNewArgumentsAndNewResult(t *testing.T) {
 }
 
 func TestMethodInfoPositionArgumentsRequiresPointer(t *testing.T) {
-	method := newInitializedMethodInfo(reflect.TypeFor[testArgumentsInput](), nil, false, false)
+	method := newInitializedMethodInfo(reflect.TypeFor[testArgumentsInput](), nil)
 
 	defer func() {
 		if recover() == nil {
@@ -96,28 +94,6 @@ func TestMethodInfoPositionArgumentsRequiresPointer(t *testing.T) {
 	method.PositionArguments(testArgumentsInput{})
 }
 
-func TestMethodInfoArgumentsContainsBinaryType(t *testing.T) {
-	method := newInitializedMethodInfo(nil, nil, true, false)
-
-	if !method.ArgumentsContainsBinaryType() {
-		t.Fatalf("expected method arguments to contain binary type")
-	}
-	if method.ResultContainsBinaryType() {
-		t.Fatalf("expected method result to not contain binary type")
-	}
-}
-
-func TestMethodInfoResultContainsBinaryType(t *testing.T) {
-	method := newInitializedMethodInfo(nil, nil, false, true)
-
-	if method.ArgumentsContainsBinaryType() {
-		t.Fatalf("expected method arguments to not contain binary type")
-	}
-	if !method.ResultContainsBinaryType() {
-		t.Fatalf("expected method result to contain binary type")
-	}
-}
-
 func TestServiceInfoInitRejectsDuplicateArgumentIndexes(t *testing.T) {
 	defer func() {
 		if recover() == nil {
@@ -125,7 +101,7 @@ func TestServiceInfoInitRejectsDuplicateArgumentIndexes(t *testing.T) {
 		}
 	}()
 
-	_ = newInitializedMethodInfo(reflect.TypeFor[testDuplicateArgumentIndexInput](), nil, false, false)
+	_ = newInitializedMethodInfo(reflect.TypeFor[testDuplicateArgumentIndexInput](), nil)
 }
 
 func TestServiceInfoInitRejectsArgumentIndexGaps(t *testing.T) {
@@ -135,5 +111,5 @@ func TestServiceInfoInitRejectsArgumentIndexGaps(t *testing.T) {
 		}
 	}()
 
-	_ = newInitializedMethodInfo(reflect.TypeFor[testGapArgumentIndexInput](), nil, false, false)
+	_ = newInitializedMethodInfo(reflect.TypeFor[testGapArgumentIndexInput](), nil)
 }

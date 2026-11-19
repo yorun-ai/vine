@@ -55,17 +55,7 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 	m.runnerByAppInstanceID[instance.AppInfo.InstanceId()] = runnerByTaskSkel
 	for _, registration := range instance.TaskRunners {
 		taskSkelName := registration.TaskSkelName
-		readContext, cancelRead := context.WithCancel(m.Context)
-		runnerByTaskSkel[taskSkelName] = new(_TaskRunnerState{
-			readContext:   readContext,
-			cancelRead:    cancelRead,
-			instance:      instance,
-			appInstanceID: instance.AppInfo.InstanceId(),
-			taskEndpoint:  instance.TaskEndpoint,
-			registration:  registration,
-			semaphore:     make(chan struct{}, registration.Concurrency),
-		})
-
+		semaphore := make(chan struct{}, registration.Concurrency)
 		subscriptionState, exists := m.subscriptionByTaskSkelName[taskSkelName]
 		if !exists {
 			subscriptionState = new(_TaskSubscription{
@@ -82,8 +72,19 @@ func (m *Manager) OnSetup(instance *minder.AppInstance) {
 			m.subscriptionByTaskSkelName[taskSkelName] = subscriptionState
 			go m.dispatchTaskMessages(subscriptionState)
 		}
-		subscriptionState.runnerByApp[instance.AppInfo.InstanceId()] = runnerByTaskSkel[taskSkelName]
-		runnerByTaskSkel[taskSkelName].subscription = subscriptionState
+		readContext, cancelRead := context.WithCancel(m.Context)
+		runner := new(_TaskRunnerState{
+			readContext:   readContext,
+			cancelRead:    cancelRead,
+			instance:      instance,
+			appInstanceID: instance.AppInfo.InstanceId(),
+			taskEndpoint:  instance.TaskEndpoint,
+			registration:  registration,
+			semaphore:     semaphore,
+			subscription:  subscriptionState,
+		})
+		runnerByTaskSkel[taskSkelName] = runner
+		subscriptionState.runnerByApp[instance.AppInfo.InstanceId()] = runner
 		m.notifyCapacityLocked(subscriptionState)
 	}
 }
@@ -117,46 +118,29 @@ func (m *Manager) removeAppLocked(instanceId uuid.UUID) {
 	}
 }
 
-// Each task subscription has one dispatcher. It reserves capacity before Next,
-// so neither decoded messages nor goroutines form an unbounded local queue.
 func (m *Manager) dispatchTaskMessages(state *_TaskSubscription) {
 	defer close(state.done)
-	defer state.messages.Stop()
-	for {
-		runner := m.nextAvailableRunner(state)
-		if runner == nil {
-			return
-		}
-		natsMsg, err := state.messages.Next(runner.readContext)
-		if err != nil {
-			m.releaseTaskSlot(runner)
-			if m.Context.Err() != nil || errors.Is(err, jetstream.ErrMsgIteratorClosed) {
-				return
+	dispatch := linknats.MessageDispatcher[_TaskRunnerState]{
+		Reserve: func() (*_TaskRunnerState, context.Context) {
+			runner := m.nextAvailableRunner(state)
+			if runner == nil {
+				return nil, nil
 			}
-			if runner.readContext.Err() != nil {
-				continue
+			return runner, runner.readContext
+		},
+		Admit: func(runner *_TaskRunnerState, msg jetstream.Msg) bool {
+			m.mutex.Lock()
+			admitted := !state.stopped && runner.readContext.Err() == nil && runner.instance.TryStartWork()
+			m.mutex.Unlock()
+			if !admitted {
+				ackTaskMessage(msg.Nak())
 			}
-			taskLogger.Warn("task message read failed", "taskSkelName", runner.registration.TaskSkelName, "error", err)
-			timer := time.NewTimer(100 * time.Millisecond)
-			select {
-			case <-runner.readContext.Done():
-			case <-timer.C:
-			}
-			timer.Stop()
-			continue
-		}
-		// A reservation is not inflight work: idle reads must not delay app drain.
-		// Recheck admission after Next, since the selected runner may have drained.
-		m.mutex.Lock()
-		admitted := !state.stopped && runner.readContext.Err() == nil && runner.instance.TryStartWork()
-		m.mutex.Unlock()
-		if !admitted {
-			ackTaskMessage(natsMsg.Nak())
-			m.releaseTaskSlot(runner)
-			continue
-		}
-		go m.runTaskMessage(natsMsg, runner)
+			return admitted
+		},
+		Handle:  m.runTaskMessage,
+		Release: m.releaseTaskSlot,
 	}
+	dispatch.Run(m.Context, state.messages)
 }
 
 func (m *Manager) nextAvailableRunner(state *_TaskSubscription) *_TaskRunnerState {
@@ -198,8 +182,7 @@ func (m *Manager) releaseTaskSlot(runner *_TaskRunnerState) {
 	m.mutex.Unlock()
 }
 
-func (m *Manager) runTaskMessage(natsMsg jetstream.Msg, runner *_TaskRunnerState) {
-	defer m.releaseTaskSlot(runner)
+func (m *Manager) runTaskMessage(runner *_TaskRunnerState, natsMsg jetstream.Msg) {
 	defer runner.instance.FinishWork()
 	// Renew only admitted work. The renewal goroutine is bounded by the same
 	// execution slots and is joined before the final acknowledgement.

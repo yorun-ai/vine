@@ -38,7 +38,9 @@ func (d *AppConfigDao) EnsureSchema() {
 }
 
 func (d *AppConfigDao) ListOrdered() []*AppConfig {
-	return d.Query().Order("name").Order("version").List()
+	return listWithFieldSources(d.GormDB().Order("version"), func(row *AppConfig) (int, *string) {
+		return row.Id, &row.FieldSources
+	})
 }
 
 func (d *AppConfigDao) LatestByName(name string) (*AppConfig, bool) {

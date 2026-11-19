@@ -47,7 +47,7 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 		HubInfo:               newTestHubInfo(new(_TestInfoServiceClient)),
 	}
 	minder.DIInit()
-	minder.AddMutator(&_EndpointMutator{})
+	mutator := new(_EndpointMutator)
 	instance := minder.newAppInstance(AppRegistration{
 		AppInfo:         appInfo,
 		ConsoleEndpoint: "http://127.0.0.1:8080/console",
@@ -57,7 +57,7 @@ func TestRegisterHubInstancePublishesRegistration(t *testing.T) {
 		EventListeners:  []skeled.EventListenerRegistration{{EventSkelName: "demo.event.Created"}},
 		TaskRunners:     []skeled.TaskRunnerRegistration{{TaskSkelName: "demo.task.Sync"}},
 	})
-	minder.beforeRegistration(instance)
+	mutator.OnSetup(instance)
 
 	instance.registerHubInstance()
 

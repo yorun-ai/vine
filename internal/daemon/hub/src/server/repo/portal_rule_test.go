@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -54,6 +55,20 @@ func TestPortalRuleRepoSaveUpdate(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "/console", got.MatchPathPrefix)
 	assert.Equal(t, "console@demo.app", got.RouteSiteName)
+}
+
+func TestPortalRuleRepoPublishesCommittedRulesAfterBatchFailure(t *testing.T) {
+	_, repo, server := newTestPortalRuleRepo(t)
+	first := testPortalRule(t, repo, "first")
+	invalid := testPortalRule(t, repo, "invalid")
+	invalid.EntryId = -1
+	require.Panics(t, func() { repo.Save(first, invalid) })
+	require.NotZero(t, first.Id)
+	require.Len(t, repo.List(), 1)
+	_, ok := server.Get(watched.FormatPortalRuleKey(first.Name))
+	require.True(t, ok)
+	_, ok = server.Get(watched.FormatPortalRuleKey(invalid.Name))
+	require.False(t, ok)
 }
 
 func TestPortalRuleRepoSaveRename(t *testing.T) {
@@ -125,7 +140,7 @@ func portalRuleEntry(t *testing.T, repo *PortalRuleRepo, rule *core.PortalRule) 
 	return entry
 }
 
-func newTestPortalRuleRepo(t *testing.T) (*gorm.DB, *PortalRuleRepo, *watchserver.Server) {
+func newTestPortalRuleRepo(t testing.TB) (*gorm.DB, *PortalRuleRepo, *watchserver.Server) {
 	t.Helper()
 
 	db := sharedTestPortalRuleRepoDB(t)
@@ -160,7 +175,7 @@ func newTestPortalEntryRepo(db *gorm.DB, sync *syncer.Syncer) *PortalEntryRepo {
 	}
 }
 
-func sharedTestPortalRuleRepoDB(t *testing.T) *gorm.DB {
+func sharedTestPortalRuleRepoDB(t testing.TB) *gorm.DB {
 	t.Helper()
 
 	testPortalRuleRepoDBOnce.Do(func() {
@@ -200,4 +215,28 @@ func TestPortalRuleRepoRejectsReadOnlyWrites(t *testing.T) {
 	repo := &PortalRuleRepo{Access: access}
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Save(new(core.PortalRule)) })
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Remove(1) })
+}
+
+// BenchmarkPortalRuleUpdateSQLite includes core validation, persistence and Watch publication.
+func BenchmarkPortalRuleUpdateSQLite(b *testing.B) {
+	_, repo, _ := newTestPortalRuleRepo(b)
+	entry := &core.PortalEntry{Name: "web", Protocol: "http", Enabled: true}
+	repo.PortalEntryRepo.Save(entry)
+	service := &core.PortalRuleCore{PortalRuleRepo: repo, PortalEntryCore: &core.PortalEntryCore{PortalEntryRepo: repo.PortalEntryRepo}}
+	var id int
+	for i := range 100 {
+		rule := &core.PortalRule{Name: fmt.Sprintf("rule-%03d", i), EntryId: entry.Id, Enabled: true,
+			MatchPathPrefix: fmt.Sprintf("/route/%d", i), RouteType: core.PortalRuleRouteTypeTemporaryRedirect, RouteRedirectionPattern: "/v1"}
+		repo.Save(rule)
+		if i == 0 {
+			id = rule.Id
+		}
+	}
+	destinations := [2]string{"/v2", "/v1"}
+	i := 0
+	b.ReportAllocs()
+	for b.Loop() {
+		service.Update(id, core.PortalRuleUpdate{RouteRedirectionPattern: &destinations[i%2]})
+		i++
+	}
 }

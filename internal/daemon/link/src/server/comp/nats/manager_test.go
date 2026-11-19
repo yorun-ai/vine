@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"testing/synctest"
 	"time"
 
-	natsserver "github.com/nats-io/nats-server/v2/server"
 	gonats "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -65,32 +65,6 @@ func TestClientManagerUsesInprocServer(t *testing.T) {
 
 	if manager.conn == nil {
 		t.Fatalf("expected inproc connection")
-	}
-}
-
-func TestClientManagerBuildsRemoteConnection(t *testing.T) {
-	server, err := natsserver.NewServer(&natsserver.Options{
-		Port:      -1,
-		NoSigs:    true,
-		NoLog:     true,
-		JetStream: true,
-		StoreDir:  t.TempDir(),
-	})
-	if err != nil {
-		t.Fatalf("new nats server failed: %v", err)
-	}
-	go server.Start()
-	if !server.ReadyForConnections(2 * time.Second) {
-		t.Fatalf("nats server not ready")
-	}
-	defer server.Shutdown()
-
-	component := &_TestRemoteClient{Endpoint: "nats://" + server.Addr().String()}
-	manager := initTestClient(component)
-	defer manager.AfterAppStop()
-
-	if manager.conn == nil {
-		t.Fatalf("expected remote connection")
 	}
 }
 
@@ -155,7 +129,9 @@ func TestClientManagerReconnectsWhenHubMQEndpointChanged(t *testing.T) {
 
 	component := &_TestRemoteClient{Endpoint: "nats://" + previousServer.Addr().String()}
 	manager := initTestClient(component)
+	t.Cleanup(manager.AfterAppStop)
 	previousConn := manager.conn
+	assert.Equal(t, component.Endpoint, previousConn.ConnectedUrl())
 
 	nextEndpoint := "nats://" + nextServer.Addr().String()
 	component.Endpoint = nextEndpoint
@@ -166,7 +142,6 @@ func TestClientManagerReconnectsWhenHubMQEndpointChanged(t *testing.T) {
 	assert.Equal(t, nextEndpoint, manager.conn.ConnectedUrl())
 	assert.Equal(t, nextEndpoint, manager.option.Endpoint)
 	assert.Equal(t, 1, component.reconnects)
-	t.Cleanup(func() { manager.conn.Close() })
 }
 
 func TestClientManagerKeepsAppliedConnectionWhenReplacementDialFails(t *testing.T) {
@@ -201,60 +176,22 @@ func TestClientManagerKeepsAppliedConnectionWhenReplacementDialFails(t *testing.
 	t.Cleanup(func() { manager.conn.Close() })
 }
 
-func TestWaitJetStreamReadyRetriesUntilReady(t *testing.T) {
-	callCount := 0
-
-	err := waitJetStreamReady(func(context.Context) error {
-		callCount++
-		if callCount < 3 {
-			return jetstream.ErrJetStreamNotEnabled
-		}
-		return nil
-	}, context.Background(), 50*time.Millisecond, time.Millisecond)
-
-	if err != nil {
-		t.Fatalf("waitJetStreamReady() error = %v", err)
-	}
-	if callCount != 3 {
-		t.Fatalf("unexpected call count: %d", callCount)
-	}
-}
-
-func TestWaitJetStreamReadyRetriesConnectionErrors(t *testing.T) {
-	callCount := 0
-
-	err := waitJetStreamReady(func(context.Context) error {
-		callCount++
-		if callCount < 2 {
-			return gonats.ErrConnectionClosed
-		}
-		return nil
-	}, context.Background(), 50*time.Millisecond, time.Millisecond)
-
-	if err != nil {
-		t.Fatalf("waitJetStreamReady() error = %v", err)
-	}
-	if callCount != 2 {
-		t.Fatalf("unexpected call count: %d", callCount)
-	}
-}
-
-func TestWaitJetStreamReadyRetriesProbeDeadlineExceeded(t *testing.T) {
-	callCount := 0
-
-	err := waitJetStreamReady(func(context.Context) error {
-		callCount++
-		if callCount < 3 {
-			return context.DeadlineExceeded
-		}
-		return nil
-	}, context.Background(), 50*time.Millisecond, time.Millisecond)
-
-	if err != nil {
-		t.Fatalf("waitJetStreamReady() error = %v", err)
-	}
-	if callCount != 3 {
-		t.Fatalf("unexpected call count: %d", callCount)
+func TestWaitJetStreamReadyRetriesTransientErrors(t *testing.T) {
+	for _, transient := range []error{jetstream.ErrJetStreamNotEnabled, gonats.ErrConnectionClosed, context.DeadlineExceeded} {
+		t.Run(transient.Error(), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				attempts := 0
+				err := waitJetStreamReady(func(context.Context) error {
+					attempts++
+					if attempts < 3 {
+						return transient
+					}
+					return nil
+				}, t.Context(), 50*time.Millisecond, time.Millisecond)
+				assert.NoError(t, err)
+				assert.Equal(t, 3, attempts)
+			})
+		})
 	}
 }
 

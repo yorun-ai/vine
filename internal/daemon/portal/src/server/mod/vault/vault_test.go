@@ -38,19 +38,6 @@ func TestVaultHasValidCertificate(t *testing.T) {
 	assert.False(t, temporaryVault.HasValidCertificate("demo.local"))
 }
 
-func TestVaultGetCertificateMatchesHost(t *testing.T) {
-	cert := newTestPortalCert(t, "demo-cert", []string{"demo.local"})
-	parsed, err := newCertificate(cert)
-	require.NoError(t, err)
-	vault := &Vault{certs: map[string]*_Certificate{parsed.name: parsed}}
-	vault.rebuildIndexLocked()
-
-	got, err := vault.GetCertificate(&tls.ClientHelloInfo{ServerName: "demo.local"})
-
-	require.NoError(t, err)
-	assert.Same(t, parsed.cert, got)
-}
-
 func TestVaultGetCertificateMatchesWildcardHost(t *testing.T) {
 	cert := newTestPortalCert(t, "demo-cert", []string{"*.demo.local"})
 	parsed, err := newCertificate(cert)

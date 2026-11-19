@@ -33,6 +33,59 @@ func TestMessagesPullsOnlyOnDemand(t *testing.T) {
 	}
 }
 
+type observedMessageReads struct {
+	jetstream.MessagesContext
+	reads chan struct{}
+}
+
+func (i *observedMessageReads) Next(opts ...jetstream.NextOpt) (jetstream.Msg, error) {
+	i.reads <- struct{}{}
+	return i.MessagesContext.Next(opts...)
+}
+
+func TestMessagesRechecksOnceAfterDelivery(t *testing.T) {
+	server := newTestNATSServer(t)
+	client := new(_Client)
+	client.setConn(connectTestNATS(t, "nats://"+server.Addr().String()))
+	subject := formatTestQueueSubject("refill")
+	messages := client.Messages(t.Context(), queueStreamConfigForTest(), subject, "refill").(*_MessagesContext)
+	t.Cleanup(messages.Stop)
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	read := func() error {
+		msg, err := messages.Next(ctx)
+		if err != nil {
+			return err
+		}
+		return msg.Ack()
+	}
+	client.Publish(queueStreamConfigForTest(), subject, []byte("first"))
+	require.NoError(t, read())
+	iter, _, err := messages.currentIterator()
+	require.NoError(t, err)
+	reads := make(chan struct{}, 3)
+	iter.MessagesContext = &observedMessageReads{MessagesContext: iter.MessagesContext, reads: reads}
+	done := make(chan error, 1)
+	go func() { done <- read() }()
+	// Withhold the next message until the reader has re-entered the same
+	// iterator. With no recheck it would wait here until the heartbeat.
+	for range 2 {
+		select {
+		case <-reads:
+		case <-ctx.Done():
+			t.Fatal("reader did not recheck the iterator")
+		}
+	}
+	select {
+	case <-reads:
+		t.Fatal("idle reader kept polling after the recheck")
+	case <-time.After(150 * time.Millisecond):
+	}
+	requireWaitingPulls(t, client, "refill", 1)
+	client.Publish(queueStreamConfigForTest(), subject, []byte("second"))
+	require.NoError(t, <-done)
+}
+
 func TestMessagesSurvivesRecoveryAndConnectionReplacement(t *testing.T) {
 	first, second := newTestNATSServer(t), newTestNATSServer(t)
 	client := new(_Client)
@@ -53,6 +106,7 @@ func TestMessagesSurvivesRecoveryAndConnectionReplacement(t *testing.T) {
 	result := make(chan jetstream.Msg, 1)
 	errors := make(chan error, 1)
 	go func() { msg, err := messages.Next(ctx); result <- msg; errors <- err }()
+	requireWaitingPulls(t, client, "recovery", 1)
 	client.recoverJetStream(ctx)
 	client.setConn(connectTestNATS(t, "nats://"+second.Addr().String()))
 	old.Close()
@@ -76,26 +130,44 @@ func TestMessagesCancelStopAndRecovery(t *testing.T) {
 	messages := client.Messages(t.Context(), queueStreamConfigForTest(), subject, "stop")
 	t.Cleanup(messages.Stop)
 	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-	_, err := messages.Next(ctx)
-	require.ErrorIs(t, err, context.Canceled)
-	ctx, cancel = context.WithTimeout(t.Context(), time.Second)
-	defer cancel()
 	done := make(chan error, 1)
 	go func() { _, err := messages.Next(ctx); done <- err }()
+	requireWaitingPulls(t, client, "stop", 1)
+	cancel()
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("cancel did not interrupt Next")
+	}
+	requireWaitingPulls(t, client, "stop", 0)
+	readCtx, stopRead := context.WithTimeout(t.Context(), 3*time.Second)
+	defer stopRead()
+	go func() { _, err := messages.Next(readCtx); done <- err }()
+	requireWaitingPulls(t, client, "stop", 1)
 	messages.Stop()
 	messages.Stop()
 	select {
 	case err := <-done:
 		require.ErrorIs(t, err, jetstream.ErrMsgIteratorClosed)
-	case <-ctx.Done():
+	case <-readCtx.Done():
 		t.Fatal("Stop did not interrupt Next")
 	}
-	client.recoverJetStream(ctx)
+	client.recoverJetStream(readCtx)
 	client.mutex.Lock()
 	count := len(client.messages)
 	client.mutex.Unlock()
 	require.Zero(t, count)
-	_, err = messages.Next(ctx)
+	_, err := messages.Next(readCtx)
 	require.ErrorIs(t, err, jetstream.ErrMsgIteratorClosed)
+}
+
+func requireWaitingPulls(t *testing.T, client *_Client, consumerName string, count int) {
+	t.Helper()
+	consumer, err := client.jetStream.Consumer(t.Context(), testQueueStreamName, consumerName)
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		info, err := consumer.Info(t.Context())
+		return err == nil && info.NumWaiting == count
+	}, time.Second, time.Millisecond)
 }

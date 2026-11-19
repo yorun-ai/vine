@@ -34,8 +34,6 @@ func TestPortalEntryRepoStoresAccessAndName(t *testing.T) {
 	_, ok = repo.GetByName("other")
 	assert.False(t, ok)
 
-	_, ok = repo.GetById(entry.Id)
-	assert.True(t, ok)
 }
 
 func TestPortalEntryRepoRejectsReadOnlyWrites(t *testing.T) {

@@ -23,10 +23,10 @@ import {
   createEventDebugApiService,
   type EventDebugEventItem,
 } from '@/skeled/admin'
+import { useDebugDefaultRequest } from './use-debug-default-request'
 
 const eventDebugService = createEventDebugApiService(vrpcClient)
 const jsonExtensions = [json()]
-const defaultEventJson = '{\n  \n}'
 const storageEventJsonPrefix = 'vine.hub.debug.eventEmitter.eventJson.'
 const storageEventSkelNameKey = 'vine.hub.debug.eventEmitter.eventSkelName'
 
@@ -40,6 +40,19 @@ function eventKey(event: EventDebugEventItem) {
 
 function eventJsonStorageKey(eventSkelName: string, descriptorHash: string) {
   return `${storageEventJsonPrefix}${eventSkelName}:${descriptorHash}`
+}
+
+async function loadEventDefaults(event: EventDebugEventItem, signal: AbortSignal) {
+  const { eventSkelName, descriptorHash } = event
+  const { traceId, spanId, eventJson } = await eventDebugService.buildDefaultEmitRequest(
+    { eventSkelName, descriptorHash },
+    { requestInit: { signal }, suppressGlobalToast: true },
+  )
+  return {
+    traceId,
+    spanId,
+    json: readStorage(eventJsonStorageKey(eventSkelName, descriptorHash)) ?? eventJson,
+  }
 }
 
 function readStorage(key: string) {
@@ -164,12 +177,7 @@ export function EventEmitterPage() {
   const eventSearchInputRef = React.useRef<HTMLInputElement>(null)
   const [selectedEvent, setSelectedEvent] =
     React.useState<EventDebugEventItem | null>(null)
-  const [eventJson, setEventJson] = React.useState(defaultEventJson)
-  const [traceId, setTraceId] = React.useState('')
-  const [spanId, setSpanId] = React.useState('')
   const [loadingEvents, setLoadingEvents] = React.useState(true)
-  const [loadingDefaultRequest, setLoadingDefaultRequest] =
-    React.useState(false)
   const [emitting, setEmitting] = React.useState(false)
   const [result, setResult] = React.useState('No event emitted yet.')
 
@@ -204,36 +212,14 @@ export function EventEmitterPage() {
     focusEventSearchInput()
   }, [eventQuery, eventSelectOpen, focusEventSearchInput])
 
-  const loadDefaultEmitRequest = React.useCallback(async () => {
-    if (selectedEvent === null) {
-      setTraceId('')
-      setSpanId('')
-      setEventJson(defaultEventJson)
-      return
-    }
-
-    setLoadingDefaultRequest(true)
-    try {
-      const nextRequest = await eventDebugService.buildDefaultEmitRequest({
-        eventSkelName: selectedEvent.eventSkelName,
-        descriptorHash: selectedEvent.descriptorHash,
-      })
-      const savedEventJson = readStorage(
-        eventJsonStorageKey(
-          selectedEvent.eventSkelName,
-          selectedEvent.descriptorHash,
-        ),
-      )
-      setTraceId(nextRequest.traceId)
-      setSpanId(nextRequest.spanId)
-      setEventJson(savedEventJson ?? nextRequest.eventJson)
-      setResult('No event emitted yet.')
-    } catch (error) {
-      toast.error(getErrorMessage(error))
-    } finally {
-      setLoadingDefaultRequest(false)
-    }
-  }, [selectedEvent])
+  const {
+    json: eventJson,
+    setJson: setEventJson,
+    traceId,
+    spanId,
+    loading: loadingDefaultRequest,
+    reset: resetDefaults,
+  } = useDebugDefaultRequest(selectedEvent, loadEventDefaults, () => setResult('No event emitted yet.'))
 
   React.useEffect(() => {
     let ignore = false
@@ -299,10 +285,6 @@ export function EventEmitterPage() {
     pathSelection.isCurrent,
     selectedEvent,
   ])
-
-  React.useEffect(() => {
-    void loadDefaultEmitRequest()
-  }, [loadDefaultEmitRequest])
 
   const emitEvent = React.useCallback(async () => {
     if (selectedEvent === null) {
@@ -431,7 +413,7 @@ export function EventEmitterPage() {
               variant="outline"
               className="h-10 min-w-28"
               disabled={loadingDefaultRequest}
-              onClick={() => void loadDefaultEmitRequest()}
+              onClick={resetDefaults}
             >
               {loadingDefaultRequest ? (
                 <Loader2 className="animate-spin" />

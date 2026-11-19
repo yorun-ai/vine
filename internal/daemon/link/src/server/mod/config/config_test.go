@@ -9,19 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetInstantLoadsAndGetsValue(t *testing.T) {
-	reader := newTestReader(t, map[string]watched.ConfigValue{
-		"demo.FeatureConfig": {
-			Name:  "demo.FeatureConfig",
-			Value: []byte(`{"enabled":true}`),
-		},
-	})
-	registerTestAppInstance(reader, uuid.MustParse("11111111-1111-1111-1111-111111111111"))
-
-	value := reader.GetInstant(uuid.MustParse("11111111-1111-1111-1111-111111111111"), "demo.FeatureConfig")
-	assert.Equal(t, `{"enabled":true}`, value)
-}
-
 func TestGetInstantReturnsEmptyWhenConfigDoesNotExist(t *testing.T) {
 	reader := newTestReader(t, nil)
 	registerTestAppInstance(reader, uuid.MustParse("11111111-1111-1111-1111-111111111111"))
@@ -94,7 +81,7 @@ func TestGetInstantReturnsRetainedSnapshot(t *testing.T) {
 	})
 	appInstanceID := "11111111-1111-1111-1111-111111111111"
 	registerTestAppInstance(reader, uuid.MustParse(appInstanceID))
-	reader.GetInstant(uuid.MustParse(appInstanceID), "demo.FeatureConfig")
+	assert.Equal(t, `{"enabled":true}`, reader.GetInstant(uuid.MustParse(appInstanceID), "demo.FeatureConfig"))
 	reader.Client.(*watchtest.Client).SetValue(
 		watched.FormatConfigKey("demo.FeatureConfig"),
 		marshalTestConfigValue("demo.FeatureConfig", `{"enabled":false}`),

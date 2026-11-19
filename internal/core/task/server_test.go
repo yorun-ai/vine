@@ -94,6 +94,10 @@ type benchmarkTaskRunner interface {
 	mustBeBenchmarkTaskRunner()
 }
 
+type benchmarkTaskArguments struct {
+	GroupId int `json:"groupId"`
+}
+
 type defaultBenchmarkTaskRunner struct{}
 
 func (*defaultBenchmarkTaskRunner) RunForGroup(int)            {}
@@ -199,7 +203,7 @@ func ensureBenchmarkTaskRegistered() {
 				SkelName:           "forGroup",
 				LauncherMethodName: "LaunchForGroup",
 				RunnerMethodName:   "RunForGroup",
-				ArgumentsType:      reflect.TypeFor[testRunnerArguments](),
+				ArgumentsType:      reflect.TypeFor[benchmarkTaskArguments](),
 			}},
 		})
 	})

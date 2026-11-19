@@ -7,23 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type testRule struct {
-	Name                    string `yaml:"name"`
-	EntryName               string `yaml:"entryName"`
-	MatchPathPrefix         string `yaml:"matchPathPrefix"`
-	RouteType               string `yaml:"routeType"`
-	RouteSiteName           string `yaml:"routeSiteName"`
-	RoutePathPrefix         string `yaml:"routePathPrefix"`
-	RouteRedirectionPattern string `yaml:"routeRedirectionPattern"`
-}
-
-func (r *testRule) UnmarshalYAML(node *yaml.Node) error {
-	type plain testRule
-	return decodePortalRule(node, (*plain)(r))
-}
-
 func TestPortalRuleYAMLCurrentFieldsAndRejectsAliases(t *testing.T) {
-	var rule testRule
+	var rule _PortalRule
 	require.NoError(t, yaml.Unmarshal([]byte("name: example\nentryName: web\nmatchPathPrefix: /api\nrouteType: SITE\nrouteSiteName: web\nroutePathPrefix: /internal"), &rule))
 	require.Equal(t, "web", rule.EntryName)
 	for _, field := range []string{"matchScheme", "matchHost", "matchPort", "scheme", "host", "port", "pathPrefix", "targetType", "siteName", "targetPath", "redirectionPattern"} {
@@ -38,12 +23,12 @@ func TestPortalRuleYAMLRejectsReferencesAndDuplicateKeys(t *testing.T) {
 		"name: &name rule\nhost: *name",
 	} {
 		t.Run(input, func(t *testing.T) {
-			var rule testRule
+			var rule _PortalRule
 			require.ErrorContains(t, yaml.Unmarshal([]byte(input), &rule), "not supported")
 		})
 	}
-	var rule testRule
-	require.Error(t, yaml.Unmarshal([]byte("host: a\nhost: b"), &rule))
+	var rule _PortalRule
+	require.ErrorContains(t, yaml.Unmarshal([]byte("name: a\nname: b"), &rule), "already defined")
 }
 
 func TestSeedRulesRequireDeclaredEntries(t *testing.T) {

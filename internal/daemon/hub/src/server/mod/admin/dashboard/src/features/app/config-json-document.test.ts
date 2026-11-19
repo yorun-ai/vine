@@ -129,20 +129,6 @@ test('unsafe integers block saving including nested and rounded backend values',
   assert.doesNotThrow(() => normalizeConfigJson('{"max":9007199254740991,"min":-9007199254740991,"fraction":1.5,"text":"9007199254740993"}'))
 })
 
-test('source metadata is protected commentary and never part of saved JSON', () => {
-  const value = { enabled: true }
-  const document = createConfigJsonDocument(JSON.stringify(value), [{
-    name: 'enabled', type: 'bool', description: 'Enabled',
-    commentTags: ['type', 'desc', 'define', 'override', 'source'],
-    sourceComment: '@define domain/user\n@override profile/dev',
-  }])
-  assert.ok(document.doc.includes('// @define   domain/user'))
-  assert.ok(document.doc.includes('// @override profile/dev'))
-  const offset = document.doc.indexOf('domain/user')
-  assert.equal(isConfigValueChange(document.ranges, offset, offset + 1), false)
-  assert.deepEqual(JSON.parse(extractConfigJson(document.doc, document.ranges)), value)
-})
-
 test('field documentation renders line comment tags with optional origins', () => {
   const document = createConfigJsonDocument('{"enabled":true}', [{
     name: 'enabled', type: 'bool', description: 'Enable feature',
@@ -156,6 +142,8 @@ test('field documentation renders line comment tags with optional origins', () =
   // @override app/default
   "enabled": true
 }`)
+  const origin = document.doc.indexOf('domain/demo')
+  assert.equal(isConfigValueChange(document.ranges, origin, origin + 1), false)
   assert.deepEqual(JSON.parse(extractConfigJson(document.doc, document.ranges)), { enabled: true })
 })
 

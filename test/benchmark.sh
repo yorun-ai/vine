@@ -10,6 +10,8 @@ benchmark_time="${VINE_BENCH_TIME:-1s}"
 benchmark_count="${VINE_BENCH_COUNT:-5}"
 
 packages=(
+  ./internal/core/di
+  ./internal/daemon/hub/src/server/app
   ./internal/core/rpc/transport/http
   ./internal/daemon/portal/src/server/mod/access
   ./internal/daemon/portal/src/server/util/computil

@@ -77,35 +77,23 @@ func TestPortalSiteRepoSaveCreate(t *testing.T) {
 	assertWatchedPortalSite(t, entry, vcode.MustUnmarshalJsonS[*watched.PortalSite](raw))
 }
 
-func TestPortalSiteInspectSwitchRoundTripsToWatch(t *testing.T) {
+func TestPortalSiteRPCGWSwitchesRoundTripToWatch(t *testing.T) {
 	_, repo, watchServer := newTestPortalSiteRepo(t)
-	entry := testPortalSite("inspect-api")
-	for _, enabled := range []bool{false, true, false} {
-		entry.InspectEnabled = enabled
+	entry := testPortalSite("api")
+	for _, switches := range []struct{ inspect, mcp bool }{
+		{false, false}, {true, false}, {true, true}, {false, true}, {false, false},
+	} {
+		entry.InspectEnabled, entry.McpEnabled = switches.inspect, switches.mcp
 		repo.Save(entry)
 		stored, ok := repo.GetById(entry.Id)
 		require.True(t, ok)
-		require.Equal(t, enabled, stored.InspectEnabled)
+		require.Equal(t, switches.inspect, stored.InspectEnabled)
+		require.Equal(t, switches.mcp, stored.McpEnabled)
 		raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
 		require.True(t, ok)
 		wire := vcode.MustUnmarshalJsonS[*watched.PortalSite](raw)
-		require.Equal(t, enabled, wire.RpcgwConfig.InspectEnabled)
-	}
-}
-
-func TestPortalSiteMcpSwitchRoundTripsToWatch(t *testing.T) {
-	_, repo, watchServer := newTestPortalSiteRepo(t)
-	entry := testPortalSite("mcp-api")
-	for _, enabled := range []bool{false, true, false} {
-		entry.McpEnabled = enabled
-		repo.Save(entry)
-		stored, ok := repo.GetById(entry.Id)
-		require.True(t, ok)
-		require.Equal(t, enabled, stored.McpEnabled)
-		raw, ok := watchServer.Get(watched.FormatPortalSiteKey(entry.Name))
-		require.True(t, ok)
-		wire := vcode.MustUnmarshalJsonS[*watched.PortalSite](raw)
-		require.Equal(t, enabled, wire.RpcgwConfig.McpEnabled)
+		require.Equal(t, switches.inspect, wire.RpcgwConfig.InspectEnabled)
+		require.Equal(t, switches.mcp, wire.RpcgwConfig.McpEnabled)
 	}
 }
 

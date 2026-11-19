@@ -23,14 +23,15 @@ export const vrpcClient = createVrpcClient({
 })
 
 vrpcClient.use({
-  onError: (error) => {
+  onError: (error, context) => {
+    if (context.init.signal?.aborted) return
     console.error('VRPC Error:', error)
 
     if (error instanceof VrpcInvokeError) {
       if (error.status === 401) {
         // TODO: Handle unauthorized error, e.g., redirect to login page
         console.warn('Unauthorized access - please log in.')
-      } else {
+      } else if (!context.options.suppressGlobalToast) {
         toast.error(error.message)
       }
     }

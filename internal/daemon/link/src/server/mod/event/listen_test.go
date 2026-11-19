@@ -3,12 +3,14 @@ package event
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
-	"testing/synctest"
 	"time"
 	"uuid"
 
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appskeled "go.yorun.ai/vine/internal/core/app/skeled"
@@ -16,6 +18,7 @@ import (
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/link/skeled"
 	"go.yorun.ai/vine/internal/core/meta"
+	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	"go.yorun.ai/vine/internal/daemon/link/src/server/mod/minder"
 )
 
@@ -88,86 +91,157 @@ func TestManagerRegistersListenerAndDispatchesEvent(t *testing.T) {
 	assert.Equal(t, "launcher.app", hooks.events[0].Metadata.AppName)
 }
 
-func TestManagerLimitsDispatchConcurrency(t *testing.T) {
-	oldFactory := newAppEventServiceClient
-	oldRun := runAppEvent
-	defer func() {
-		newAppEventServiceClient = oldFactory
-		runAppEvent = oldRun
-	}()
+func TestBusyEventListenerLeavesBacklogForAnotherInstance(t *testing.T) {
+	for _, test := range []struct{ total, capacity int }{{64, 1}, {500, 1}, {64, 3}} {
+		total, capacity := test.total, test.capacity
+		t.Run(fmt.Sprintf("events=%d/capacity=%d", total, capacity), func(t *testing.T) {
+			const eventName = "OrderPaid"
+			const appName = "orders"
+			managers, cleanup := newTestManagers(t, 2)
+			oldFactory := newAppEventServiceClient
+			defer func() { newAppEventServiceClient = oldFactory }()
+			defer cleanup()
 
-	synctest.Test(t, func(t *testing.T) {
-		hooks := &_ManagerDispatchHooks{
-			startedChan: make(chan struct{}, 2),
-			releaseChan: make(chan struct{}),
-		}
-		newAppEventServiceClient = func(context.Context, meta.App, string, eventspec.NATSMessage) appskeled.EventServiceClientER {
-			return &_ManagerAppEventClient{
-				onEvent: func(on appskeled.EventOn) error {
-					hooks.mutex.Lock()
-					hooks.events = append(hooks.events, on)
-					hooks.active++
-					hooks.maxActive = max(hooks.maxActive, hooks.active)
-					hooks.mutex.Unlock()
-					hooks.startedChan <- struct{}{}
-					<-hooks.releaseChan
-					hooks.mutex.Lock()
-					hooks.active--
-					hooks.mutex.Unlock()
+			gate := make(chan struct{})
+			release := sync.OnceFunc(func() { close(gate) })
+			defer release()
+			startedA := make(chan string, total)
+			startedB := make(chan string, total)
+			newAppEventServiceClient = func(_ context.Context, _ meta.App, endpoint string, _ eventspec.NATSMessage) appskeled.EventServiceClientER {
+				return &_ManagerAppEventClient{onEvent: func(on appskeled.EventOn) error {
+					if endpoint == "A" {
+						startedA <- on.EventJson
+						<-gate
+					} else {
+						startedB <- on.EventJson
+					}
 					return nil
-				},
+				}}
 			}
-		}
-		runAppEvent = func(client appskeled.EventServiceClientER, on appskeled.EventOn, _ time.Duration) ex.Error {
-			return client.OnEvent(on)
-		}
+			listener := func(endpoint string) *minder.AppInstance {
+				return &minder.AppInstance{
+					AppInfo:       meta.MustNewAppWithRandomId(appName, "1.0.0"),
+					EventEndpoint: endpoint,
+					EventListeners: []skeled.EventListenerRegistration{{
+						EventSkelName: eventName,
+						TimeoutMs:     3000,
+						Concurrency:   capacity,
+					}},
+				}
+			}
+			a, b := listener("A"), listener("B")
+			managers[0].OnSetup(a)
+			emit := func(id int) {
+				managers[0].EmitEvent(skeled.EventEmission{EventSkelName: eventName, EventJson: strconv.Itoa(id)})
+			}
+			conn := hubnats.ConnectInproc()
+			defer conn.Close()
+			js, err := jetstream.New(conn)
+			require.NoError(t, err)
+			consumer, err := js.Consumer(t.Context(), eventspec.NATSStreamName, eventspec.NATSConsumerName(eventName, appName))
+			require.NoError(t, err)
+			next := func(started <-chan string) string {
+				t.Helper()
+				select {
+				case id := <-started:
+					return id
+				case <-time.After(3 * time.Second):
+					info, err := consumer.Info(t.Context())
+					require.NoError(t, err)
+					t.Fatalf("event delivery timed out: delivered=%d pending=%d ackPending=%d waitingPulls=%d",
+						info.Delivered.Consumer, info.NumPending, info.NumAckPending, info.NumWaiting)
+					return ""
+				}
+			}
+			for id := range capacity {
+				emit(id)
+				require.Equal(t, strconv.Itoa(id), next(startedA))
+			}
+			var remaining []string
+			for id := capacity; id < total; id++ {
+				emit(id)
+				remaining = append(remaining, strconv.Itoa(id))
+			}
 
-		manager := &Manager{
-			Context:    context.Background(),
-			CurrentApp: meta.MustNewApp("vine.link", "1.0.0", uuid.MustParse("22222222-2222-2222-2222-222222222222")),
-		}
-		listener := &_EventListenerState{
-			eventEndpoint: testLocalAppEndpoint(8080) + testPathEvent,
-			registration: skeled.EventListenerRegistration{
-				TimeoutMs:   1000,
-				Concurrency: 1,
-			},
-			semaphore: make(chan struct{}, 1),
-		}
-		message := eventspec.NATSMessage{
-			Metadata: eventspec.NATSMessageMeta{
-				TraceId:       "trace-1",
-				TraceSpan:     "0123456789abcdef",
-				AppName:       "launcher.app",
-				AppVersion:    "2.0.0",
-				AppInstanceId: uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-			},
-			EventSkelName: "demo.user.UserCreatedEvent",
-			EventJson:     `{"userId":"u1"}`,
-		}
-		done := make(chan ex.Error, 2)
-		go func() { done <- manager.runEvent(listener, message) }()
-		go func() { done <- manager.runEvent(listener, message) }()
+			// B can process the entire backlog while A's calls remain blocked.
+			managers[1].OnSetup(b)
+			var received []string
+			for range remaining {
+				received = append(received, next(startedB))
+			}
+			require.ElementsMatch(t, remaining, received)
 
-		synctest.Wait()
-		<-hooks.startedChan
-		hooks.mutex.Lock()
-		assert.Equal(t, 1, hooks.active)
-		hooks.mutex.Unlock()
+			a.BeginDrain()
+			managers[0].OnDrain(a)
+			release()
+			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+			defer cancel()
+			require.True(t, a.WaitDrain(ctx))
+			require.Empty(t, startedA)
+			require.Eventually(t, func() bool {
+				info, err := consumer.Info(ctx)
+				return err == nil && info.NumAckPending == 0 && info.NumPending == 0
+			}, 3*time.Second, time.Millisecond)
+		})
+	}
+}
 
-		hooks.releaseChan <- struct{}{}
-		synctest.Wait()
-		<-hooks.startedChan
-		hooks.releaseChan <- struct{}{}
-		synctest.Wait()
+// The pull was already outstanding when the instance started draining.
+type drainingEventPull struct {
+	instance *minder.AppInstance
+	message  *unadmittedEvent
+}
 
-		assert.Nil(t, <-done)
-		assert.Nil(t, <-done)
-		hooks.mutex.Lock()
-		defer hooks.mutex.Unlock()
-		assert.Len(t, hooks.events, 2)
-		assert.Equal(t, 1, hooks.maxActive)
-	})
+func (p *drainingEventPull) Next(context.Context) (jetstream.Msg, error) {
+	if p.message == nil {
+		return nil, jetstream.ErrMsgIteratorClosed
+	}
+	p.instance.BeginDrain()
+	msg := p.message
+	p.message = nil
+	return msg, nil
+}
+
+func (*drainingEventPull) Stop() {}
+
+type unadmittedEvent struct {
+	jetstream.Msg
+	reply string
+}
+
+func (m *unadmittedEvent) Nak() error {
+	m.reply = "Nak"
+	return nil
+}
+
+func (m *unadmittedEvent) Term() error {
+	m.reply = "Term"
+	return nil
+}
+
+func TestEventPullFinishingDuringDrainUsesListenerRetryPolicy(t *testing.T) {
+	for _, test := range []struct {
+		noRetry bool
+		reply   string
+	}{{false, "Nak"}, {true, "Term"}} {
+		t.Run(test.reply, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			t.Cleanup(cancel)
+			instance := new(minder.AppInstance)
+			listener := &_EventListenerState{
+				instance:     instance,
+				cancelRead:   cancel,
+				registration: skeled.EventListenerRegistration{NoRetry: test.noRetry},
+				semaphore:    make(chan struct{}, 1),
+				done:         make(chan struct{}),
+			}
+			msg := new(unadmittedEvent)
+			manager := new(Manager)
+			manager.dispatchEvents(ctx, listener, &drainingEventPull{instance: instance, message: msg})
+			require.Equal(t, test.reply, msg.reply)
+			require.Empty(t, listener.semaphore)
+		})
+	}
 }
 
 func TestManagerFansOutByAppName(t *testing.T) {

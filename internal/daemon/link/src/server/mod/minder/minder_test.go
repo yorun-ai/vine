@@ -169,6 +169,81 @@ func TestUnregisterInstanceRemovesCatalogState(t *testing.T) {
 	assert.False(t, ok)
 }
 
+type registrationMutator struct {
+	_Mutator
+	setup func()
+}
+
+func (m *registrationMutator) OnSetup(instance *AppInstance) {
+	m._Mutator.OnSetup(instance)
+	m.setup()
+}
+
+func TestRegisterInstanceRetriesAfterFailure(t *testing.T) {
+	for _, stage := range []string{"setup", "hub"} {
+		t.Run(stage, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				registry := new(_RegistryServiceClient)
+				manager := newTestMinder(&flag.Flag{}, &app.InternalInprocFlag{Enabled: true}, registry)
+				manager.Context = t.Context()
+				defer manager.AfterAppStop()
+				reg := AppRegistration{AppInfo: mustTestMetaApp()}
+				entered := make(chan struct{})
+				resume := make(chan struct{})
+				var first sync.Once
+				failOnce := func() {
+					first.Do(func() {
+						close(entered)
+						<-resume
+						panic("registration failed")
+					})
+				}
+				mutator := &registrationMutator{setup: func() {}}
+				if stage == "setup" {
+					mutator.setup = failOnce
+				} else {
+					registry.onRegister = func(hubskeled.AppRegistration) { failOnce() }
+				}
+				manager.AddMutator(mutator)
+				last := new(_Mutator)
+				manager.AddMutator(last)
+				results := make(chan any, 2)
+				register := func() {
+					defer func() { results <- recover() }()
+					manager.RegisterInstance(reg)
+				}
+				go register()
+				<-entered
+				failed, _ := manager.appInstance(reg.AppInfo.InstanceId())
+				go register()
+				synctest.Wait()
+				assert.Empty(t, results, "a duplicate must wait for the initial registration")
+				close(resume)
+				require.Equal(t, "registration failed", <-results)
+				require.Equal(t, "registration failed", <-results)
+				_, exists := manager.appInstance(reg.AppInfo.InstanceId())
+				require.False(t, exists)
+				require.Nil(t, failed.heartbeatCancel)
+				require.False(t, failed.TryStartWork())
+				require.Len(t, mutator.drainedIDs, 1)
+				require.Len(t, mutator.destroyedIDs, 1)
+				if stage == "setup" {
+					require.Empty(t, last.destroyedIDs)
+					require.Empty(t, registry.unregistered)
+				} else {
+					require.Len(t, last.destroyedIDs, 1)
+					require.Equal(t, []uuid.UUID{reg.AppInfo.InstanceId()}, registry.unregistered)
+				}
+				before := len(registry.registrations)
+				manager.RegisterInstance(reg)
+				manager.RegisterInstance(reg)
+				require.Len(t, registry.registrations, before+1)
+				require.Len(t, mutator.setupIDs, 2)
+			})
+		})
+	}
+}
+
 func TestRegisterInstanceStartsRuntimeLifecycle(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		appInfo := mustTestMetaApp()

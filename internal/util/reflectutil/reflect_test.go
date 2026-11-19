@@ -29,8 +29,14 @@ func TestStructHelpers(t *testing.T) {
 	assert.Equal(t, "two", fields[1].Interface())
 	assert.Equal(t, "three", fields[2].Interface())
 
-	embeddedTypes := EmbeddedStructTypes(reflect.TypeOf(exported))
-	assert.Equal(t, []reflect.Type{reflect.TypeFor[EmbeddedA](), reflect.TypeFor[EmbeddedB]()}, embeddedTypes)
+	type embedded EmbeddedA
+	embeddedTypes := EmbeddedStructTypes(reflect.TypeFor[struct {
+		embedded
+		EmbeddedB
+		Alias   embedded
+		Visible string
+	}]())
+	assert.Equal(t, []reflect.Type{reflect.TypeFor[embedded](), reflect.TypeFor[EmbeddedB]()}, embeddedTypes)
 
 	embeddedFields := EmbeddedStructFields(reflect.ValueOf(exported))
 	assert.Len(t, embeddedFields, 2)

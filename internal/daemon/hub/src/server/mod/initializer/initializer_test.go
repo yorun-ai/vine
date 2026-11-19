@@ -2,6 +2,7 @@ package initializer
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -166,14 +167,15 @@ func (r *testPortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 	return nil, false
 }
 
-func (r *testPortalRuleRepo) Save(rule *core.PortalRule) {
-	for i := range r.rules {
-		if r.rules[i].Name == rule.Name {
+func (r *testPortalRuleRepo) Save(rules ...*core.PortalRule) {
+	for _, rule := range rules {
+		i := slices.IndexFunc(r.rules, func(current *core.PortalRule) bool { return current.Name == rule.Name })
+		if i < 0 {
+			r.rules = append(r.rules, rule)
+		} else {
 			r.rules[i] = rule
-			return
 		}
 	}
-	r.rules = append(r.rules, rule)
 }
 
 func (r *testPortalRuleRepo) Remove(id int) bool {

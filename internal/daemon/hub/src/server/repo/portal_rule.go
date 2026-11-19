@@ -40,15 +40,25 @@ func (s *PortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 	return nil, false
 }
 
-func (s *PortalRuleRepo) Save(rule *core.PortalRule) {
+func (s *PortalRuleRepo) Save(rules ...*core.PortalRule) {
 	s.Access.CheckWrite()
-	entry := s.entryById(rule.EntryId)
-	ex.PanicNewIfNot(entry != nil, ex.OperationFailed,
-		ex.F("portal rule %q references missing portal entry %d", rule.Name, rule.EntryId))
-	row := toModelPortalRule(rule)
-	s.Dao.Save(row)
-	rule.Id = row.Id
-	s.Syncer.SyncPortalRule(rule)
+	// Each DAO save commits independently. If a later save fails, Watch must
+	// still reflect every committed row, including any newly assigned IDs.
+	saved := 0
+	defer func() {
+		if saved > 0 {
+			s.Syncer.SyncPortalRules(rules[:saved])
+		}
+	}()
+	for _, rule := range rules {
+		entry := s.entryById(rule.EntryId)
+		ex.PanicNewIfNot(entry != nil, ex.OperationFailed,
+			ex.F("portal rule %q references missing portal entry %d", rule.Name, rule.EntryId))
+		row := toModelPortalRule(rule)
+		s.Dao.Save(row)
+		rule.Id = row.Id
+		saved++
+	}
 }
 
 func (s *PortalRuleRepo) Remove(id int) bool {

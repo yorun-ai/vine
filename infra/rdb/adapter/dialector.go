@@ -115,9 +115,7 @@ func (d *_PostgresDialector) Initialize(db *gorm.DB) error {
 	return nil
 }
 
-// Native UUID reads are supported by the Go SQL conversion path; writes are
-// handled by our driver. Infer only the column type, without mutating cached
-// schemas or replacing explicit field serializers.
+// Infer the column type only when the model leaves it to the dialector.
 func automaticUUIDField(field *schema.Field) bool {
 	return field.IndirectFieldType == reflect.TypeFor[uuid.UUID]() &&
 		field.TagSettings["TYPE"] == "" && field.Serializer == nil

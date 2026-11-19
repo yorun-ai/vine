@@ -147,19 +147,19 @@ func TestSuccessfulTransportResetsConsecutiveFailures(t *testing.T) {
 
 func TestReplacementAndRemovalRetireOldAttempt(t *testing.T) {
 	m := singleEndpointManager(t)
-	prefix := watched.FormatRpcServiceRegistrationPrefix(testService)
+	route := m.routesByPrefix[watched.FormatRpcServiceRegistrationPrefix(testService)]
 	key := testRpcRegistrationKey(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"))
 	old := acquireAttempt(t, m)
 	replacement := testRpcRegistrationValue(testService, uuid.MustParse("00000000-0000-0000-0000-00000000000a"), "http://new-ip")
-	m.handleRegistrationEvent(prefix, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
+	m.handleRegistrationEvent(route, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
 	old.Finish(syscall.ECONNREFUSED)
 	registration, next, _ := m.NextRpcEndpoint(testService)
 	require.Equal(t, "http://new-ip", registration.Endpoint)
 	next.Finish(syscall.ECONNREFUSED)
-	m.handleRegistrationEvent(prefix, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
+	m.handleRegistrationEvent(route, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
 	requireIsolated(t, m)
-	m.handleRegistrationEvent(prefix, hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
-	m.handleRegistrationEvent(prefix, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
+	m.handleRegistrationEvent(route, hubwatch.Event{Kind: hubwatch.EventKindDelete, Key: key})
+	m.handleRegistrationEvent(route, hubwatch.Event{Kind: hubwatch.EventKindUpsert, Key: key, Value: replacement})
 	acquireAttempt(t, m).Finish(nil)
 }
 

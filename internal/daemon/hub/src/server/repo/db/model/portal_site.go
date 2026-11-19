@@ -57,7 +57,9 @@ func (d *PortalSiteDao) EnsureSchema() {
 }
 
 func (d *PortalSiteDao) ListOrdered() []*PortalSite {
-	return d.Query().Order("name").List()
+	return listWithFieldSources(d.GormDB().Order("name"), func(row *PortalSite) (int, *string) {
+		return row.Id, &row.FieldSources
+	})
 }
 
 func (d *PortalSiteDao) ByName(name string) (*PortalSite, bool) {

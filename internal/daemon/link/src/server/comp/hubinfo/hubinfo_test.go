@@ -1,6 +1,8 @@
 package hubinfo
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"go.yorun.ai/vine/util/vcode"
@@ -80,7 +82,7 @@ func TestHubInfoRefreshRollsBackAndNotifiesEveryListenerAfterRepairFailure(t *te
 	assert.Equal(t, 2, secondCalls)
 }
 
-func TestHubInfoRefreshSkipsLookupInInprocMode(t *testing.T) {
+func TestHubInfoInprocSkipsLookupOnInitAndRefresh(t *testing.T) {
 	client := &_TestInfoServiceClient{}
 	flags := &flag.Flag{
 		HubInprocMode: true,
@@ -95,17 +97,54 @@ func TestHubInfoRefreshSkipsLookupInInprocMode(t *testing.T) {
 	assert.Equal(t, 0, client.getInfoCall)
 }
 
-func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
-	client := &_TestInfoServiceClient{}
-	flags := &flag.Flag{
-		HubInprocMode: true,
-		HubEndpoint:   "rpc+inproc://vine/hub",
-	}
-	flags.Normalize(false)
-	component := &HubInfo{Flag: flags, InfoServiceClient: client}
+func TestConcurrentRefreshAfterFailedRepairKeepsLatestEndpoint(t *testing.T) {
+	for _, port := range []int{7072, 7074} {
+		client := &_TestInfoServiceClient{info: hubskeled.Info{WatchPort: 7072}}
+		flags := &flag.Flag{HubEndpoint: "http://127.0.0.1:7071"}
+		flags.Normalize(false)
+		component := &HubInfo{Flag: flags, InfoServiceClient: client}
+		component.DIInit()
 
-	component.DIInit()
-	assert.Equal(t, 0, client.getInfoCall)
+		entered := make(chan struct{})
+		release := make(chan struct{})
+		var first sync.Once
+		component.OnRefresh(func() {
+			first.Do(func() {
+				close(entered)
+				<-release
+				panic("repair failed")
+			})
+		})
+		repairs := make(chan string, 2)
+		component.OnRefresh(func() { repairs <- component.WatchEndpoint() })
+		client.info.WatchPort = 7073
+		failure := make(chan any, 1)
+		go func() {
+			defer func() { failure <- recover() }()
+			component.Refresh()
+		}()
+		<-entered
+		client.info.WatchPort = port
+		starting := make(chan struct{})
+		done := make(chan struct{})
+		go func() {
+			close(starting)
+			component.Refresh()
+			close(done)
+		}()
+		<-starting
+		close(release)
+		assert.Equal(t, "repair failed", <-failure)
+		<-done
+		close(repairs)
+		var repaired []string
+		for endpoint := range repairs {
+			repaired = append(repaired, endpoint)
+		}
+		want := fmt.Sprintf("127.0.0.1:%d", port)
+		assert.Equal(t, want, component.WatchEndpoint())
+		assert.Equal(t, []string{"127.0.0.1:7073", want}, repaired)
+	}
 }
 
 func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {

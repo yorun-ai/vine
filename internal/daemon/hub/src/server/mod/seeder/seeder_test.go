@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/infra/rdb"
 	"go.yorun.ai/vine/internal/core/logger"
+	hubwatch "go.yorun.ai/vine/internal/daemon/hub/api/watch"
 	"go.yorun.ai/vine/internal/daemon/hub/api/watched"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/configaccess"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/watchserver"
@@ -627,11 +629,12 @@ func TestSeederStoresRulesThatShareOneRequest(t *testing.T) {
 	for name, test := range map[string]struct {
 		rules string
 	}{
-		"first first":  {rules: first + second},
-		"second first": {rules: second + first},
+		"first first":           {rules: first + second},
+		"second first":          {rules: second + first},
+		"last declaration wins": {rules: strings.Replace(first, "/app", "/old", 1) + second + first},
 	} {
 		t.Run(name, func(t *testing.T) {
-			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, _ := newTestSeederRepos(t)
+			configRepo, ruleRepo, certRepo, entryRepo, metadataRepo, watchServer := newTestSeederRepos(t)
 			seedPath := filepath.Join(t.TempDir(), "hub.yaml")
 			require.NoError(t, vfile.WriteString(seedPath, "portalEntries: [{name: web, scheme: http}]\nportalRules:\n"+test.rules))
 			seeder := &Seeder{
@@ -645,7 +648,19 @@ func TestSeederStoresRulesThatShareOneRequest(t *testing.T) {
 				SiteCore:      newTestSiteCore(entryRepo),
 			}
 
+			before, ok := watchServer.Get(hubwatch.RevisionKey)
+			require.True(t, ok)
+			revision, err := strconv.ParseUint(before, 10, 64)
+			require.NoError(t, err)
 			seeder.DIInit()
+			after, ok := watchServer.Get(hubwatch.RevisionKey)
+			require.True(t, ok)
+			// One revision for the entry and one for all final rule winners.
+			require.Equal(t, strconv.FormatUint(revision+2, 10), after)
+			_, ok = watchServer.Get(watched.FormatPortalRuleKey("demo.app"))
+			require.True(t, ok)
+			_, ok = watchServer.Get(watched.FormatPortalRuleKey("demo.app-second"))
+			require.False(t, ok)
 
 			assert.True(t, metadataRepo.IsSeeded())
 			require.Len(t, ruleRepo.List(), 2)
