@@ -92,12 +92,13 @@ func FuzzDependencyGraphScopePaths(f *testing.F) {
 			return
 		}
 
-		bounds := make([]*_Bound, len(dependencyFuzzTypes))
+		injector := &_PlainInjector{fallbackScope: TransientScope, bounds: map[reflect.Type]*_Bound{}}
+		bounds := injector.bounds
 		dependencies := make(map[reflect.Type][]reflect.Type, len(dependencyFuzzTypes))
 		for index, targetType := range dependencyFuzzTypes {
-			binding := newBinding(&_PlainInjector{fallbackScope: TransientScope}, targetType, false)
+			binding := newBinding(injector, targetType, false)
 			binding.explicitScope = fuzzScope(data[index])
-			bounds[index] = &_Bound{binding: binding}
+			bounds[targetType] = &_Bound{binding: binding}
 		}
 
 		limit := min(len(data), len(dependencyFuzzTypes)+128)
@@ -107,15 +108,16 @@ func FuzzDependencyGraphScopePaths(f *testing.F) {
 			if from >= to {
 				continue
 			}
+			source := bounds[dependencyFuzzTypes[from]]
 			dependency := dependencyFuzzTypes[to]
-			if vslice.Contains(bounds[from].factoryDependencies, dependency) {
+			if vslice.Contains(source.factoryDependencies, dependency) {
 				continue
 			}
-			bounds[from].factoryDependencies = append(bounds[from].factoryDependencies, dependency)
+			source.factoryDependencies = append(source.factoryDependencies, dependency)
 			dependencies[dependencyFuzzTypes[from]] = append(dependencies[dependencyFuzzTypes[from]], dependency)
 		}
 
-		graph := newDependencyGraph(bounds)
+		graph := newDependencyGraph(injector)
 		if cycle := graph.findCycle(); cycle != nil {
 			t.Fatalf("generated DAG reported a cycle: %v", cycle)
 		}
@@ -148,7 +150,7 @@ func fuzzScope(value byte) Scope {
 	}
 }
 
-func dependencyScopePathExists(bounds []*_Bound, dependencies map[reflect.Type][]reflect.Type) bool {
+func dependencyScopePathExists(bounds map[reflect.Type]*_Bound, dependencies map[reflect.Type][]reflect.Type) bool {
 	scopes := make(map[reflect.Type]Scope, len(bounds))
 	for _, bound := range bounds {
 		scopes[bound.TargetType()] = bound.ResolveScope(TransientScope)

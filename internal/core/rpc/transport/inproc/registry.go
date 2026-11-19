@@ -10,8 +10,16 @@ import (
 
 const EndpointScheme = "rpc+inproc://"
 
+// HandlerFunc receives an isolated request. A direct ServeRpc call takes the
+// same snapshot that RoundTrip takes before dispatching asynchronously.
+type HandlerFunc func(*spec.RequestImpl) spec.Response
+
+func (f HandlerFunc) ServeRpc(request spec.Request) spec.Response {
+	return f(spec.CloneInprocRequest(request))
+}
+
 type _Registration struct {
-	handler spec.RpcHandler
+	handler HandlerFunc
 }
 
 // handlerByEndpoint is the concurrency-safe process-wide inproc registry.
@@ -26,7 +34,11 @@ func Register(endpoint string, handler spec.RpcHandler) func() {
 	vpre.Check(len(endpoint) > len(EndpointScheme), "inproc endpoint host is empty")
 	vpre.CheckNotNil(handler, "inproc handler cannot be nil")
 
-	registration := &_Registration{handler: handler}
+	serve, ok := handler.(HandlerFunc)
+	if !ok {
+		serve = func(request *spec.RequestImpl) spec.Response { return handler.ServeRpc(request) }
+	}
+	registration := &_Registration{handler: serve}
 	registryMutex.Lock()
 	defer registryMutex.Unlock()
 	vpre.CheckNil(handlerByEndpoint[endpoint], "inproc endpoint %s already registered", endpoint)
@@ -50,7 +62,7 @@ func Unregister(endpoint string) {
 	delete(handlerByEndpoint, endpoint)
 }
 
-func getHandler(endpoint string) (spec.RpcHandler, bool) {
+func getHandler(endpoint string) (HandlerFunc, bool) {
 	registryMutex.RLock()
 	defer registryMutex.RUnlock()
 	registration := handlerByEndpoint[endpoint]

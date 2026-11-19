@@ -65,8 +65,8 @@ type testAssetsWeb struct {
 
 func (h *testAssetsWeb) DIInit() {
 	h.Server.SetAccessor(assets.NewEmbedAccessor(fstest.MapFS{
-		"dist/index.html": &fstest.MapFile{Data: []byte("index")},
-		"dist/app.js":     &fstest.MapFile{Data: []byte("script")},
+		"dist/index.html":    &fstest.MapFile{Data: []byte("index")},
+		"dist/assets/app.js": &fstest.MapFile{Data: []byte("script")},
 	}, "dist"))
 }
 
@@ -99,9 +99,11 @@ func TestServerServesEmbeddedAssetsThroughContainer(t *testing.T) {
 			}{
 				{http.MethodGet, base + "/", "", 200, "index"},
 				{http.MethodGet, base + "/index.html", "", 200, "index"},
-				{http.MethodGet, base + "/app.js?v=1", "", 200, "script"},
-				{http.MethodHead, base + "/app.js", "", 200, ""},
+				{http.MethodGet, base + "/assets/app.js?v=1", "", 200, "script"},
+				{http.MethodHead, base + "/assets/app.js", "", 200, ""},
 				{http.MethodGet, base + "/missing.js", "", 404, ""},
+				{http.MethodGet, base + "/assets", "", 404, ""},
+				{http.MethodGet, base + "/assets", "text/html", 200, "index"},
 				{http.MethodGet, base + "/page", "text/html", 200, "index"},
 				{http.MethodPost, base + "/", "", 405, ""},
 			} {

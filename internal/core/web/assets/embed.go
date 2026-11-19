@@ -78,7 +78,7 @@ func (a *_EmbedAccessor) cacheFilename(original string, target string) {
 func (a *_EmbedAccessor) open(filename string, encoding _Encoding) (*_File, bool) {
 	filePath := path.Join(a.root, filename)
 	info, err := fs.Stat(a.fsys, filePath)
-	if err != nil {
+	if err != nil || info.IsDir() {
 		return nil, false
 	}
 

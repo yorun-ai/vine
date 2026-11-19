@@ -47,15 +47,15 @@ func roundTrip(
 	rpcResponse, err := rpchttp.RoundTrip(httpRequest, prepared, do, func(response *http.Response) (spec.Response, error) {
 		return decodeResponse(response, rpcRequest.MethodInfo())
 	})
-	if decodeErr, ok := errors.AsType[*rpchttp.DecodeError](err); ok {
-		return nil, ex.New(ex.UnexpectedResponse, decodeErr.Cause.Error())
-	}
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, ex.New(ex.InvocationCancelled, err.Error())
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, ex.New(ex.InvocationTimeout, err.Error())
+		}
+		if decodeErr, ok := errors.AsType[*rpchttp.DecodeError](err); ok {
+			return nil, ex.New(ex.UnexpectedResponse, decodeErr.Cause.Error())
 		}
 		if _, ok := errors.AsType[*net.DNSError](err); ok {
 			return nil, ex.New(ex.ServerUnreachable, err.Error())

@@ -14,6 +14,7 @@ import (
 	rpclog "go.yorun.ai/vine/internal/core/rpc/log"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
 	httptrans "go.yorun.ai/vine/internal/core/rpc/transport/http"
+	"go.yorun.ai/vine/internal/core/rpc/transport/inproc"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -152,13 +153,12 @@ func (s *Server) handle(rpcRequest spec.Request) (response spec.Response) {
 // Rpc Handler
 
 func (s *Server) RpcHandler() spec.RpcHandler {
-	return spec.RpcHandlerFunc(s.serveRpc)
+	return inproc.HandlerFunc(s.serveRpc)
 }
 
-func (s *Server) serveRpc(rpcRequest spec.Request) spec.Response {
+func (s *Server) serveRpc(rpcRequest *spec.RequestImpl) spec.Response {
 	startedAt := time.Now()
 	methodInfo := rpcRequest.MethodInfo()
-	rpcRequest.(*spec.RequestImpl).ArgumentsValue = spec.CloneInprocRequestArguments(rpcRequest.Arguments(), methodInfo)
 
 	methodImpl, err := s.implDict.GetMethodImplByInfo(rpcRequest.MethodInfo())
 	if err != nil {
@@ -172,7 +172,7 @@ func (s *Server) serveRpc(rpcRequest spec.Request) spec.Response {
 		}
 	}
 
-	rpcRequest.(*spec.RequestImpl).MethodImplValue = methodImpl
+	rpcRequest.MethodImplValue = methodImpl
 	rpcResponse := s.handle(rpcRequest)
 
 	rpcResponse.(*spec.ResponseImpl).ResultValue = spec.CloneInprocResponseResult(rpcResponse.Result(), methodInfo)

@@ -87,15 +87,25 @@ func (r *RequestImpl) PositionalArguments() []any {
 }
 
 func WithoutDestination(request Request) Request {
+	copy := copyRequest(request)
+	copy.DestinationValue = ""
+	return copy
+}
+
+func copyRequest(request Request) *RequestImpl {
+	if original, ok := request.(*RequestImpl); ok {
+		return new(*original)
+	}
 	return &RequestImpl{
-		ContextValue:    request.Context(),
-		CancelValue:     request.Cancel,
-		TraceValue:      request.Trace(),
-		ActorValue:      request.Actor(),
-		InitiatorValue:  request.Initiator(),
-		ClientValue:     request.Client(),
-		MethodInfoValue: request.MethodInfo(),
-		MethodImplValue: request.MethodImpl(),
-		ArgumentsValue:  request.Arguments(),
+		ContextValue:     request.Context(),
+		CancelValue:      request.Cancel,
+		TraceValue:       request.Trace(),
+		ActorValue:       request.Actor(),
+		InitiatorValue:   request.Initiator(),
+		ClientValue:      request.Client(),
+		DestinationValue: request.Destination(),
+		MethodInfoValue:  request.MethodInfo(),
+		MethodImplValue:  request.MethodImpl(),
+		ArgumentsValue:   request.Arguments(),
 	}
 }

@@ -281,3 +281,26 @@ func TestFailedPostConstructionDisposesEachFactoryResult(t *testing.T) {
 	scope.CompleteExecution()
 	assert.Equal(t, []int{2, 1}, disposed)
 }
+
+func TestInterfaceFactoryReturningTypedNil(t *testing.T) {
+	makeBinding := func(b *Binder) *Binding {
+		return b.BindFactory(func() boundTestGateway {
+			return (*boundTestGatewayImpl)(nil)
+		})
+	}
+	var gateway boundTestGateway
+	strict := NewInjector(func(b *Binder) { makeBinding(b) })
+	assert.PanicsWithError(t, "factory of di.boundTestGateway returned nil", func() { strict.Resolve(&gateway) })
+	nullable := NewInjector(func(b *Binder) { makeBinding(b).AsNullable() })
+	nullable.Resolve(&gateway)
+	if gateway != nil {
+		t.Fatalf("expected nil interface, got %T", gateway)
+	}
+
+	incompatible := NewInjector(func(b *Binder) {
+		b.Bind(T[boundTestGateway]()).ToFactory(func() any { return (*boundTestDependency)(nil) }).AsNullable()
+	})
+	assert.PanicsWithError(t, "factory of di.boundTestGateway returned *di.boundTestDependency, which is not assignable to di.boundTestGateway", func() {
+		incompatible.Resolve(&gateway)
+	})
+}
