@@ -135,6 +135,10 @@ func (d *PortalEntryDao) DeleteById(id int) (*PortalEntry, bool) {
 	if !ok {
 		return nil, false
 	}
+	var rules int64
+	ex.PanicIfError(d.GormDB().Model(new(PortalRule)).Where("entry_id = ?", id).Count(&rules).Error)
+	ex.PanicNewIfNot(rules == 0, ex.OperationFailed,
+		ex.F("portal entry %q still routes %d rules; remove them first", row.Name, rules))
 	d.Delete(row)
 	return row, true
 }

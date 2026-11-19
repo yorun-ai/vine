@@ -15,3 +15,6 @@ CREATE TABLE IF NOT EXISTS portal_rule (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_rule_live_name
     ON portal_rule(name) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_portal_rule_live_entry
+    ON portal_rule(entry_id) WHERE deleted_at IS NULL;

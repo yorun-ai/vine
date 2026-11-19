@@ -70,6 +70,8 @@ func (s *PortalRuleRepo) GetByName(name string) (*core.PortalRule, bool) {
 }
 
 func (s *PortalRuleRepo) Save(rules ...*core.PortalRule) {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	// Each DAO save commits independently. If a later save fails, Watch must
 	// still reflect every committed row, including any newly assigned IDs.
@@ -91,6 +93,8 @@ func (s *PortalRuleRepo) Save(rules ...*core.PortalRule) {
 }
 
 func (s *PortalRuleRepo) Remove(id int) bool {
+	s.Access.PortalRouteWrites.Lock()
+	defer s.Access.PortalRouteWrites.Unlock()
 	s.Access.CheckWrite()
 	rule, ok := s.Dao.DeleteById(id)
 	if !ok {
