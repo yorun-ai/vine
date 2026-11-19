@@ -311,3 +311,36 @@ func TestExecutionInjectorWaitsForActiveOperationBeforeDisposal(t *testing.T) {
 		<-disposed
 	})
 }
+
+type retryInitResource struct {
+	attempt int
+	closed  *[]int
+}
+
+func (r *retryInitResource) DIInit() {
+	if r.attempt == 1 {
+		panic("first initialization failed")
+	}
+}
+
+func (r *retryInitResource) DIDispose() {
+	*r.closed = append(*r.closed, r.attempt)
+}
+
+func TestExecutionDisposesFailedInitAndSuccessfulRetryInOrder(t *testing.T) {
+	var attempts int
+	var closed []int
+	injector := NewInjector(func(b *Binder) {
+		b.BindFactory(func() *retryInitResource {
+			attempts++
+			return new(retryInitResource{attempt: attempts, closed: &closed})
+		}).In(ExecutionScope)
+	})
+	execution := injector.StartExecution()
+	resolve := func() { execution.Get(T[*retryInitResource]()) }
+	assert.PanicsWithValue(t, "first initialization failed", resolve)
+	resolve()
+	resolve()
+	execution.CompleteExecution()
+	assert.Equal(t, []int{2, 1}, closed)
+}

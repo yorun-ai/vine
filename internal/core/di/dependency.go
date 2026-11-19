@@ -1,12 +1,12 @@
 package di
 
 import (
+	"maps"
 	"reflect"
+	"slices"
 
-	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vmath"
 	"go.yorun.ai/vine/util/vpre"
-	"go.yorun.ai/vine/util/vslice"
 )
 
 type _DependencyGraph struct {
@@ -15,21 +15,21 @@ type _DependencyGraph struct {
 	targetTypes []reflect.Type
 }
 
-func newDependencyGraph(bounds []*_Bound) *_DependencyGraph {
-	sortedBounds := vslice.SortBy(bounds, func(left *_Bound, right *_Bound) bool {
-		return compareTypeName(left.TargetType(), right.TargetType()) < 0
-	})
+func newDependencyGraph(injector *_PlainInjector) *_DependencyGraph {
 	graph := &_DependencyGraph{
-		bounds:      make(map[reflect.Type]*_Bound, len(bounds)),
+		bounds:      injector.bounds,
 		graph:       vmath.NewGraph[reflect.Type](),
-		targetTypes: make([]reflect.Type, 0, len(bounds)),
+		targetTypes: slices.SortedFunc(maps.Keys(injector.bounds), compareTypeName),
 	}
-	for _, bound := range sortedBounds {
-		targetType := bound.TargetType()
-		graph.bounds[targetType] = bound
-		graph.graph.AddNode(targetType)
-		graph.graph.AddEdge(targetType, bound.Dependencies()...)
-		graph.targetTypes = append(graph.targetTypes, targetType)
+	for _, kind := range graph.targetTypes {
+		bound := injector.bounds[kind]
+		graph.graph.AddNode(kind)
+		// Inherited singletons resolve dependencies in their owning injector,
+		// whose graph was already checked.
+		if bound.binding.injector != injector && graph.scopeOf(kind) == SingletonScope {
+			continue
+		}
+		graph.graph.AddEdge(kind, bound.Dependencies()...)
 	}
 	return graph
 }
@@ -46,7 +46,7 @@ func compareTypeName(left reflect.Type, right reflect.Type) int {
 }
 
 func (i *_PlainInjector) checkDependencies() {
-	graph := newDependencyGraph(vmap.Values(i.bounds))
+	graph := newDependencyGraph(i)
 	if cycle := graph.findCycle(); cycle != nil {
 		vpre.Panicf("cycle dependency detected: %s", _BuildStack(cycle))
 	}

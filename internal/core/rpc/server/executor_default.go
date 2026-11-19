@@ -5,6 +5,7 @@ import (
 
 	"go.yorun.ai/vine/internal/core/ex"
 	"go.yorun.ai/vine/internal/core/rpc/spec"
+	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vpre"
 )
 
@@ -13,14 +14,13 @@ type DefaultExecutorOption interface {
 }
 
 type _DefaultExecutor struct {
-	instanceByType map[reflect.Type]reflect.Value
+	instanceByType      map[reflect.Type]reflect.Value
+	injectionFuncByType vmap.SyncMap[reflect.Type, _InjectionFunc]
 }
 
 type _DefaultExecutorOptionFunc func(*_DefaultExecutor)
 
 type _InjectionFunc func(*_DefaultExecutor, reflect.Value, spec.Context)
-
-var injectionFuncByType = map[reflect.Type]_InjectionFunc{}
 
 func NewDefaultExecutor(options ...DefaultExecutorOption) Executor {
 	executor := &_DefaultExecutor{instanceByType: map[reflect.Type]reflect.Value{}}
@@ -53,10 +53,7 @@ func WithAs(targetType reflect.Type, instance any) DefaultExecutorOption {
 func (e *_DefaultExecutor) Init(infoDict spec.ImplDict) {
 	infoDict.IterateServiceImpl(func(serviceImpl spec.ServiceImpl) {
 		implType := serviceImpl.Type()
-		if _, ok := injectionFuncByType[implType]; ok {
-			return
-		}
-		injectionFuncByType[implType] = newInjectionFunc(implType)
+		e.injectionFuncByType.Store(implType, newInjectionFunc(implType))
 	})
 }
 
@@ -84,7 +81,8 @@ func (e *_DefaultExecutor) Execute(rpcContext spec.Context, methodImpl spec.Meth
 }
 
 func (e *_DefaultExecutor) inject(methodValue reflect.Value, rpcContext spec.Context) {
-	injectionFuncByType[methodValue.Type()](e, methodValue, rpcContext)
+	inject, _ := e.injectionFuncByType.Load(methodValue.Type())
+	inject(e, methodValue, rpcContext)
 }
 
 func newInjectionFunc(implType reflect.Type) _InjectionFunc {

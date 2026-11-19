@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.yorun.ai/vine/internal/utilfortest/spectest"
+	"reflect"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -19,6 +20,10 @@ type testHandler struct {
 	calledCh chan struct{}
 	waitCh   <-chan struct{}
 	called   *atomic.Bool
+}
+
+type inprocTestArguments struct {
+	Names []string `skel:"index(0)"`
 }
 
 var inprocTestRequestCounter atomic.Uint64
@@ -46,16 +51,18 @@ func testRequest(t *testing.T) spec.Request {
 	}
 
 	return &spec.RequestImpl{
-		ContextValue: context.Background(),
-		TraceValue:   trace,
-		ClientValue:  client,
+		ContextValue:   context.Background(),
+		TraceValue:     trace,
+		ClientValue:    client,
+		ArgumentsValue: &inprocTestArguments{Names: []string{"original"}},
 		MethodInfoValue: spectest.RpcService(&spec.ServiceSpec{
 			Type:     spec.ServiceSpecTypeBoth,
 			Name:     "DemoService",
 			SkelName: fmt.Sprintf("demo.service.%d", inprocTestRequestCounter.Add(1)),
 			Methods: []*spec.MethodSpec{{
-				Name:     "Ping",
-				SkelName: "ping",
+				Name:          "Ping",
+				SkelName:      "ping",
+				ArgumentsType: reflect.TypeFor[inprocTestArguments](),
 			}},
 		}).Methods()[0],
 	}
@@ -179,11 +186,14 @@ func TestRoundTripDoesNotWaitForHandlerAfterContextCanceled(t *testing.T) {
 
 		waitCh := make(chan struct{})
 		calledCh := make(chan struct{})
-		Register("rpc+inproc://cancel-running", testHandler{
-			response: testResponse(t),
-			calledCh: calledCh,
-			waitCh:   waitCh,
-		})
+		observed := make(chan string, 1)
+		response := testResponse(t)
+		Register("rpc+inproc://cancel-running", spec.RpcHandlerFunc(func(request spec.Request) spec.Response {
+			close(calledCh)
+			<-waitCh
+			observed <- request.Arguments().(*inprocTestArguments).Names[0]
+			return response
+		}))
 
 		doneCh := make(chan ex.Error, 1)
 		go func() {
@@ -208,7 +218,11 @@ func TestRoundTripDoesNotWaitForHandlerAfterContextCanceled(t *testing.T) {
 			t.Fatal("expected round trip to return without waiting for handler")
 		}
 
+		req.ArgumentsValue.(*inprocTestArguments).Names[0] = "next call"
 		close(waitCh)
+		if name := <-observed; name != "original" {
+			t.Fatalf("handler observed caller's reused arguments: %q", name)
+		}
 	})
 }
 

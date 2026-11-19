@@ -785,3 +785,51 @@ func TestInjectorInjectsConcreteDependenciesIntoGenericEmbeddedFields(t *testing
 	assert.Same(t, replica, consumer.Replica.Config)
 	assert.True(t, consumer.ready, "generic dependencies must be injected before the consumer's DIInit")
 }
+
+type abstractConfigConsumer struct {
+	Config *abstractConfigA `inject:""`
+}
+
+func TestInjectorUsesAbstractFactoryForInjectedConcreteType(t *testing.T) {
+	parent := NewInjector(func(b *Binder) {
+		b.Bind(T[abstractConfig]()).ToAbstractFactory(func(ctx ResolveContext) abstractConfig {
+			require.Equal(t, T[*abstractConfigA](), ctx.TargetType)
+			return new(abstractConfigA{key: "configured"})
+		}).In(SingletonScope)
+	})
+	child := parent.SubInjector(func(b *Binder) { b.Bind(T[*abstractConfigConsumer]()) })
+	execution := child.StartExecution()
+	defer execution.CompleteExecution()
+	var consumer *abstractConfigConsumer
+	execution.Resolve(&consumer)
+	require.Equal(t, "configured", consumer.Config.Key())
+	var direct *abstractConfigA
+	parent.Resolve(&direct)
+	require.Same(t, direct, consumer.Config)
+
+	explicit := new(abstractConfigA{key: "explicit"})
+	override := parent.SubInjector(func(b *Binder) {
+		b.Bind(T[*abstractConfigConsumer]())
+		b.BindInstance(explicit)
+	})
+	override.Resolve(&consumer)
+	require.Same(t, explicit, consumer.Config)
+}
+
+func TestAbstractFactoryDependenciesParticipateInGraphChecks(t *testing.T) {
+	assert.PanicsWithError(t, "singleton cannot depend on execution-scoped type: *di.abstractConfigConsumer -> *di.abstractConfigA", func() {
+		NewInjector(func(b *Binder) {
+			b.Bind(T[*abstractConfigConsumer]()).In(SingletonScope)
+			b.Bind(T[abstractConfig]()).ToAbstractFactory(func(ResolveContext) abstractConfig {
+				return new(abstractConfigA)
+			}).In(ExecutionScope)
+		})
+	})
+	assert.PanicsWithError(t, "cycle dependency detected: *di.abstractConfigA -> *di.abstractConfigConsumer -> *di.abstractConfigA", func() {
+		NewInjector(func(b *Binder) {
+			b.Bind(T[abstractConfig]()).ToAbstractFactory(func(ResolveContext, *abstractConfigConsumer) abstractConfig {
+				return new(abstractConfigA)
+			})
+		})
+	})
+}

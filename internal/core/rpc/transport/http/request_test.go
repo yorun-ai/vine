@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"uuid"
@@ -21,39 +22,16 @@ import (
 	rpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
-type _PingNoArgsServiceServer interface {
-	mustBePingNoArgsServiceServer()
-}
-
-type _DefaultPingNoArgsServiceServer struct{}
-
-func (*_DefaultPingNoArgsServiceServer) Ping() {}
-
-func (*_DefaultPingNoArgsServiceServer) mustBePingNoArgsServiceServer() {}
-
-type _PingNoArgsServiceServerER interface {
-	mustBePingNoArgsServiceServerER()
-}
-
-type _DefaultPingNoArgsServiceServerER struct{}
-
-func (*_DefaultPingNoArgsServiceServerER) Ping() error { return nil }
-
-func (*_DefaultPingNoArgsServiceServerER) mustBePingNoArgsServiceServerER() {}
-
-type _PingNoArgsServiceImpl struct {
-	_DefaultPingNoArgsServiceServer
-}
-
-func _newRequestTestHandlerDict(t *testing.T, serviceInfo *spec.ServiceSpec, handlerType reflect.Type) *spec.ImplDict {
-	t.Helper()
-
-	serviceInfo.Type = spec.ServiceSpecTypeServer
-	spec.Register(serviceInfo)
-	handlerDict := spec.NewImplDict()
-	handlerDict.Add(handlerType)
-	return handlerDict
-}
+var noArgsRequestMethod = sync.OnceValue(func() spec.MethodInfo {
+	service := &spec.ServiceSpec{
+		Type:     spec.ServiceSpecTypeServer,
+		Name:     "PingService",
+		SkelName: "test.PingService",
+		Methods:  []*spec.MethodSpec{{Name: "Ping", SkelName: "ping"}},
+	}
+	spec.Register(service)
+	return service.Methods[0].Info()
+})
 
 func TestDecodeRequestRejectsMissingBody(t *testing.T) {
 	si := testServiceInfo()
@@ -74,23 +52,8 @@ func TestDecodeRequestRejectsMissingBody(t *testing.T) {
 }
 
 func TestDecodeRequestWithoutArgumentsAcceptsEmptyBody(t *testing.T) {
-	service := &spec.ServiceSpec{
-		Name:                "Service",
-		SkelName:            "service",
-		ServerType:          reflect.TypeFor[_PingNoArgsServiceServer](),
-		DefaultServerType:   reflect.TypeFor[*_DefaultPingNoArgsServiceServer](),
-		ERServerType:        reflect.TypeFor[_PingNoArgsServiceServerER](),
-		DefaultERServerType: reflect.TypeFor[*_DefaultPingNoArgsServiceServerER](),
-		Methods: []*spec.MethodSpec{{
-			Name:       "Ping",
-			SkelName:   "ping_no_args",
-			ResultType: testMethodInfo().ResultType,
-		}},
-	}
-	_newRequestTestHandlerDict(t, service, reflect.TypeFor[*_PingNoArgsServiceImpl]())
-	method := service.Methods[0].Info()
-
-	req, err := http.NewRequest(RequestMethod, "http://localhost:8080/service/ping_no_args", bytes.NewReader(nil))
+	method := noArgsRequestMethod()
+	req, err := http.NewRequest(RequestMethod, "http://localhost:8080"+method.FullURLPath(), bytes.NewReader(nil))
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}
@@ -110,7 +73,7 @@ func TestDecodeRequestWithoutArgumentsAcceptsEmptyBody(t *testing.T) {
 	}
 
 	for _, contentType := range []string{ContentTypeJson, ContentTypeCbor} {
-		oversized, err := http.NewRequest(RequestMethod, "http://localhost:8080/service/ping_no_args", nil)
+		oversized, err := http.NewRequest(RequestMethod, "http://localhost:8080"+method.FullURLPath(), nil)
 		if err != nil {
 			t.Fatalf("http.NewRequest() error = %v", err)
 		}
@@ -204,22 +167,8 @@ func TestEncodeRequestWritesTimeoutOption(t *testing.T) {
 }
 
 func TestDecodeRequestAppliesTimeoutOption(t *testing.T) {
-	service := &spec.ServiceSpec{
-		Name:                "Service",
-		SkelName:            "service.timeout",
-		ServerType:          reflect.TypeFor[_PingNoArgsServiceServer](),
-		DefaultServerType:   reflect.TypeFor[*_DefaultPingNoArgsServiceServer](),
-		ERServerType:        reflect.TypeFor[_PingNoArgsServiceServerER](),
-		DefaultERServerType: reflect.TypeFor[*_DefaultPingNoArgsServiceServerER](),
-		Methods: []*spec.MethodSpec{{
-			Name:       "Ping",
-			SkelName:   "ping_timeout",
-			ResultType: testMethodInfo().ResultType,
-		}},
-	}
-	_newRequestTestHandlerDict(t, service, reflect.TypeFor[*_PingNoArgsServiceImpl]())
-
-	req, err := http.NewRequest(RequestMethod, "http://localhost:8080/service.timeout/ping_timeout", bytes.NewReader(nil))
+	method := noArgsRequestMethod()
+	req, err := http.NewRequest(RequestMethod, "http://localhost:8080"+method.FullURLPath(), bytes.NewReader(nil))
 	if err != nil {
 		t.Fatalf("http.NewRequest() error = %v", err)
 	}

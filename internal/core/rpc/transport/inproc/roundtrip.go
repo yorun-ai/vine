@@ -17,11 +17,12 @@ func RoundTrip(endpoint string, rpcRequest spec.Request) (spec.Response, ex.Erro
 		return nil, err
 	}
 
+	request := spec.CloneInprocRequest(rpcRequest)
 	responseCh := make(chan spec.Response, 1)
 	// Match network transport semantics: client-side timeout/cancellation returns
 	// without waiting for the server handler to finish.
 	go func() {
-		responseCh <- handler.ServeRpc(rpcRequest)
+		responseCh <- handler(request)
 	}()
 
 	select {

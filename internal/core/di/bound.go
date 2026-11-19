@@ -143,7 +143,8 @@ func (b *_Bound) BuildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc 
 		track = nil
 	}
 	onResolved := b.binding.onDependenciesResolved
-	if onResolved == nil && track == nil {
+	initialize := b.binding.initFactoryResult || (b.binding.factory == nil && b.hasDeclaredInitMethod)
+	if !initialize && onResolved == nil && track == nil {
 		return construct
 	}
 	return func(stack _BuildStack, requestedType reflect.Type) reflect.Value {
@@ -154,6 +155,9 @@ func (b *_Bound) BuildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc 
 			if dispose := b.BuildDisposeFunc(instance); dispose != nil {
 				defer track(dispose)
 			}
+		}
+		if initialize {
+			initInstance(instance)
 		}
 		if onResolved != nil {
 			dependencies := make([]reflect.Value, len(b.binding.extraDependencies))
@@ -185,24 +189,22 @@ func (b *_Bound) buildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc 
 			return reflect.Value{}
 		}
 
-		instance := b.normalizeFactoryInstance(results[0], requestedType)
-		vpre.Check(instance.IsValid() && instance.Type().AssignableTo(requestedType),
-			"factory of %s returned %s, which is not assignable to %s",
-			b.binding.targetType, instance.Type(), requestedType)
-		if b.binding.initFactoryResult {
-			initInstance(instance)
-		}
-		return instance
+		return b.normalizeFactoryInstance(results[0], requestedType)
 	}
 }
 
 func (b *_Bound) normalizeFactoryInstance(instance reflect.Value, requestedType reflect.Type) reflect.Value {
+	if instance.Kind() == reflect.Interface {
+		instance = instance.Elem()
+	}
+	if instance.IsValid() {
+		vpre.Check(instance.Type().AssignableTo(requestedType),
+			"factory of %s returned %s, which is not assignable to %s",
+			b.binding.targetType, instance.Type(), requestedType)
+	}
 	if reflectutil.IsNilValue(instance) {
 		vpre.Check(b.binding.isNullable, "factory of %s returned nil", b.binding.targetType)
 		return reflect.Zero(requestedType)
-	}
-	if instance.Kind() == reflect.Interface {
-		instance = instance.Elem()
 	}
 	return instance
 }
@@ -223,7 +225,6 @@ func (b *_Bound) buildDefaultInstantiateFunc(injector *_BaseInjector) _Instantia
 			instance.Elem().FieldByIndex(injectedField.index).Set(fieldValue)
 		}
 
-		initInstance(instance)
 		return instance
 	}
 }

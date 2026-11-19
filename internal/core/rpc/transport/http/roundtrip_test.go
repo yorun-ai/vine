@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"go.yorun.ai/vine/internal/utilfortest/spectest"
+	"io"
 	nethttp "net/http"
 	"net/http/httptest"
 	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/iotest"
 	"uuid"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -325,5 +327,42 @@ func TestDecodeRequestRejectsDuplicatedHeader(t *testing.T) {
 	_, err = DecodeRequest(req)
 	if err == nil {
 		t.Fatalf("expected duplicated header error")
+	}
+}
+
+func TestRoundTripClassifiesResponseBodyReadErrors(t *testing.T) {
+	method := testServiceInfo().Methods()[0]
+	ctx := testContext()
+	request := &spec.RequestImpl{
+		ContextValue:    ctx,
+		TraceValue:      ctx.Trace(),
+		ActorValue:      ctx.Actor(),
+		ClientValue:     ctx.Client(),
+		MethodInfoValue: method,
+		ArgumentsValue:  &pingArguments{Name: "vine"},
+	}
+	for _, tc := range []struct {
+		cause error
+		want  ex.Code
+	}{
+		{context.Canceled, ex.InvocationCancelled},
+		{context.DeadlineExceeded, ex.InvocationTimeout},
+		{io.ErrUnexpectedEOF, ex.UnexpectedResponse},
+	} {
+		t.Run(string(tc.want), func(t *testing.T) {
+			_, err := roundTrip("http://localhost", request, nil, func(*nethttp.Request) (*nethttp.Response, error) {
+				recorder := httptest.NewRecorder()
+				response := &spec.ResponseImpl{ServerValue: testServerApp(), MethodValue: method, ResultValue: "pong", ErrorValue: ex.NewOK()}
+				if err := WriteResponse(recorder, nil, response); err != nil {
+					t.Fatal(err)
+				}
+				httpResponse := recorder.Result()
+				httpResponse.Body = io.NopCloser(iotest.ErrReader(tc.cause))
+				return httpResponse, nil
+			})
+			if err == nil || err.Code() != tc.want {
+				t.Fatalf("reading response: got %v, want %s", err, tc.want)
+			}
+		})
 	}
 }

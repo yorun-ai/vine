@@ -1,13 +1,11 @@
 package di
 
 import (
-	"maps"
 	"reflect"
 
 	"go.yorun.ai/vine/internal/util/reflectutil"
 	"go.yorun.ai/vine/util/vmap"
 	"go.yorun.ai/vine/util/vpre"
-	"go.yorun.ai/vine/util/vslice"
 )
 
 // Injector is the injectable view of the DI container.
@@ -28,10 +26,11 @@ type _PlainInjector struct {
 
 	parent *_PlainInjector
 
-	fallbackScope Scope
-	bindAppliers  []BindApplier
-	bindings      map[reflect.Type]*Binding
-	bounds        map[reflect.Type]*_Bound
+	fallbackScope  Scope
+	bindAppliers   []BindApplier
+	bindings       map[reflect.Type]*Binding
+	bounds         map[reflect.Type]*_Bound
+	abstractBounds []*_Bound
 
 	singletons *vmap.MutexMap[reflect.Type, reflect.Value]
 }
@@ -86,53 +85,51 @@ func (i *_PlainInjector) lookupBinding(targetType reflect.Type) *Binding {
 
 func (i *_PlainInjector) initBounds() {
 	i.bounds = map[reflect.Type]*_Bound{}
-	for _, binding := range vmap.Values(i.bindings) {
-		i.bounds[binding.targetType] = newBound(binding)
+	if i.parent != nil {
+		for kind, bound := range i.parent.bounds {
+			// Recompute abstract matches against this injector's visible factories.
+			if kind == bound.TargetType() {
+				i.bounds[kind] = bound
+			}
+		}
+	}
+	for kind, binding := range i.bindings {
+		i.bounds[kind] = newBound(binding)
+	}
+	for _, bound := range i.bounds {
+		if bound.binding.isAbstract {
+			i.abstractBounds = append(i.abstractBounds, bound)
+		}
+	}
+	for kind, bound := range i.bounds {
+		if bound.isImplicit() {
+			if provider := i.lookupAbstractBound(kind); provider != nil {
+				i.bounds[kind] = provider
+			}
+		}
 	}
 	i.completeImplicits()
-	// Inherited bindings are already complete. Include them in the read-only
-	// index shared by this injector and every execution it starts.
-	if i.parent != nil {
-		maps.Copy(i.bounds, i.parent.bounds)
-	}
 }
 
 func (i *_PlainInjector) completeImplicits() {
-	for {
-		implicitTypes := []reflect.Type{}
-		for _, bound := range vmap.Values(i.bounds) {
-			for _, depsType := range bound.Dependencies() {
-				if i.lookupBinding(depsType) == nil {
-					implicitTypes = append(implicitTypes, depsType)
-				}
-			}
-		}
-
-		implicitTypes = vslice.Unique(implicitTypes)
-		if len(implicitTypes) == 0 {
-			break
-		}
-
-		addedImplicit := false
-		for _, implicitType := range implicitTypes {
-			if implicitType == injectorType {
+	pending := vmap.Values(i.bounds)
+	for len(pending) > 0 {
+		bound := pending[0]
+		pending = pending[1:]
+		for _, kind := range bound.Dependencies() {
+			if kind == injectorType || i.bounds[kind] != nil {
 				continue
 			}
-			vpre.Check(reflectutil.IsStructPointerType(implicitType),
-				"implicit binding only supports struct pointer, but %s found", implicitType)
-
-			binding := newBinder(i).bindImplicit(implicitType)
-			i.bounds[binding.targetType] = newBound(binding)
-			addedImplicit = true
+			if provider := i.lookupAbstractBound(kind); provider != nil {
+				i.bounds[kind] = provider
+				continue
+			}
+			vpre.Check(reflectutil.IsStructPointerType(kind),
+				"implicit binding only supports struct pointer, but %s found", kind)
+			implicit := newBound(newBinder(i).bindImplicit(kind))
+			i.bounds[kind] = implicit
+			pending = append(pending, implicit)
 		}
-
-		if !addedImplicit {
-			break
-		}
-	}
-
-	for _, bound := range vmap.Values(i.bounds) {
-		vpre.Check(bound.ResolveScope(i.fallbackScope) != noScope, "bound type=%s has no scope", bound.TargetType().String())
 	}
 }
 
@@ -183,10 +180,7 @@ func (i *_PlainInjector) resolveDynamicResolver(targetType reflect.Type) _Resolv
 
 func (i *_PlainInjector) lookupAbstractBound(targetType reflect.Type) *_Bound {
 	var matched *_Bound
-	for _, bound := range i.bounds {
-		if !bound.binding.isAbstract {
-			continue
-		}
+	for _, bound := range i.abstractBounds {
 		if targetType == bound.TargetType() {
 			continue
 		}

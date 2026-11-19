@@ -11,10 +11,17 @@ import "go.yorun.ai/vine/util/vbean"
 // Inproc Rpc does not guarantee transport encoding, normalization, custom
 // marshaling, or codec failure behavior.
 
+// CloneInprocRequest takes a snapshot before control passes to an in-process handler.
+func CloneInprocRequest(request Request) *RequestImpl {
+	copy := copyRequest(request)
+	copy.ArgumentsValue = CloneInprocRequestArguments(copy.ArgumentsValue, copy.MethodInfoValue)
+	return copy
+}
+
 // CloneInprocRequestArguments returns arguments isolated from caller-owned
 // mutable values.
 func CloneInprocRequestArguments(arguments any, methodInfo MethodInfo) any {
-	if methodInfo.ArgumentsType() == nil || arguments == nil {
+	if arguments == nil || methodInfo.ArgumentsType() == nil {
 		return arguments
 	}
 	return vbean.DeepClone(arguments)

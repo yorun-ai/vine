@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 
 	"go.yorun.ai/vine/internal/core/ex"
@@ -310,4 +311,35 @@ func newInitializedDefaultExecutor(t *testing.T, handlerType reflect.Type) *_Def
 	executor := &_DefaultExecutor{}
 	executor.Init(*infoDict)
 	return executor
+}
+
+func TestDefaultExecutorServesConcurrentlyRegisteredHandlers(t *testing.T) {
+	type siblingHandler struct {
+		_DefaultExecutorTestServiceServer
+	}
+	executor := NewDefaultExecutor(With(new(_DefaultExecutorDependency{Value: "shared"})))
+	kinds := []reflect.Type{
+		reflect.TypeFor[*siblingHandler](),
+		reflect.TypeFor[*_DefaultExecutorInstanceServiceImpl](),
+	}
+	servers := make([]*Server, len(kinds))
+	var wg sync.WaitGroup
+	for i, kind := range kinds {
+		wg.Go(func() {
+			servers[i] = New(Option{App: testServerApp(), HandlerTypes: []reflect.Type{kind}, Executor: executor})
+		})
+	}
+	wg.Wait()
+
+	method := _DefaultExecutorTraceServiceSpec.Methods[0].Info()
+	want := []string{"", "shared"}
+	for i, server := range servers {
+		response := server.handle(newDefaultExecutorRequest(server, method))
+		if response.Error().Code() != ex.OK {
+			t.Fatalf("handler %s: %v", kinds[i], response.Error())
+		}
+		if result := response.Result(); result != want[i] {
+			t.Fatalf("handler %s returned %q, want %q", kinds[i], result, want[i])
+		}
+	}
 }
