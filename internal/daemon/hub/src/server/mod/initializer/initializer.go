@@ -41,8 +41,7 @@ const (
 func (i *Initializer) DIInit() {
 	i.RegistryCore.RegisterDescriptors(inprocDescriptorAppName, inprocDescriptorInstanceId, skel.RegisteredDomainDescriptors())
 
-	domainViews := i.DescriptorRepo.ListDomainDescriptorViews()
-	i.Syncer.SyncDescriptors(domainViews)
+	i.Syncer.RefreshDescriptors(i.DescriptorRepo.ListDomainDescriptorViews)
 	for _, item := range i.AppConfigRepo.List() {
 		i.Syncer.SyncAppConfig(item)
 	}

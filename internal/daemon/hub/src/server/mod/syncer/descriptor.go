@@ -12,11 +12,12 @@ type _DescriptorValue struct {
 	value any
 }
 
-func (s *Syncer) SyncDescriptors(domainViews []core.DomainDescriptorView) {
+// RefreshDescriptors reads and publishes under one lock so an older snapshot cannot overwrite a newer one.
+func (s *Syncer) RefreshDescriptors(load func() []core.DomainDescriptorView) {
 	s.descriptorMutex.Lock()
 	defer s.descriptorMutex.Unlock()
 
-	values := mainDescriptorValues(domainViews)
+	values := mainDescriptorValues(load())
 	batch := s.WatchServer.NotifyBatch()
 	nextHashes := make(map[string]string, len(values))
 	for _, key := range vmap.SortedKeys(values) {

@@ -132,8 +132,7 @@ func (m *PortalEntryCore) Create(creation PortalEntryCreation) PortalEntryView {
 			ex.F("portal entry %q already serves %s", current.Name, portalEntryAddress(entry)))
 	}
 	m.validateListeners(entry)
-	m.validateCertificates(entry)
-	m.PortalEntryRepo.Save(&entry)
+	m.saveWithCertificates(&entry)
 	return PortalEntryView{PortalEntry: entry}
 }
 
@@ -167,8 +166,7 @@ func (m *PortalEntryCore) Save(entry PortalEntry) *PortalEntry {
 	}
 	m.validateWildcardRules(entry, entry.Id)
 	m.validateListeners(entry)
-	m.validateCertificates(entry)
-	m.PortalEntryRepo.Save(&entry)
+	m.saveWithCertificates(&entry)
 	return &entry
 }
 
@@ -238,8 +236,7 @@ func (m *PortalEntryCore) Update(id int, update PortalEntryUpdate) PortalEntryVi
 
 	next.Id = current.Id
 	m.validateListeners(next)
-	m.validateCertificates(next)
-	m.PortalEntryRepo.Save(&next)
+	m.saveWithCertificates(&next)
 	return m.view(next)
 }
 
@@ -420,6 +417,9 @@ func (m *PortalEntryCore) sameAccess(entry PortalEntry) (*PortalEntry, bool) {
 	return nil, false
 }
 
-func (m *PortalEntryCore) validateCertificates(entry PortalEntry) {
-	ValidatePortalEntryCertificates(entry, m.PortalCertRepo.List())
+func (m *PortalEntryCore) saveWithCertificates(entry *PortalEntry) {
+	unlock := m.PortalCertRepo.LockCertificateWrites()
+	defer unlock()
+	ValidatePortalEntryCertificates(*entry, m.PortalCertRepo.List())
+	m.PortalEntryRepo.Save(entry)
 }

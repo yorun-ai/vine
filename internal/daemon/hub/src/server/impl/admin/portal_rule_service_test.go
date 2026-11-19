@@ -3,6 +3,7 @@ package admin
 import (
 	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -105,7 +106,8 @@ func TestPortalRuleListBatchesRelatedRows(t *testing.T) {
 
 // _PortalCertRepoSpy is a map-backed certificate repository.
 type _PortalCertRepoSpy struct {
-	items map[string]*core.PortalCert
+	writes sync.Mutex
+	items  map[string]*core.PortalCert
 }
 
 func (r *_PortalCertRepoSpy) List() []*core.PortalCert {
@@ -351,4 +353,9 @@ func TestPortalRuleServiceListConflicts(t *testing.T) {
 	assert.Equal(t, 2, conflicts[0].PublishedRuleId)
 	assert.Equal(t, "web", conflicts[0].SuppressedRule)
 	assert.Equal(t, 1, conflicts[0].SuppressedRuleId)
+}
+
+func (r *_PortalCertRepoSpy) LockCertificateWrites() func() {
+	r.writes.Lock()
+	return r.writes.Unlock
 }

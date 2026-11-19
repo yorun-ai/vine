@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"math/big"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,6 +63,7 @@ func TestPortalCertCoreUpdateDerivesMetadataWhenPublicKeyChanges(t *testing.T) {
 }
 
 type _TestPortalCertRepo struct {
+	writes sync.Mutex
 	nextId int
 	certs  map[int]*PortalCert
 	names  map[string]int
@@ -251,4 +253,9 @@ func TestPortalCertChangesPreserveExplicitEntryRequirements(t *testing.T) {
 		entries.Save(entry)
 		require.NotPanics(t, func() { target.Remove(backup.Id) })
 	}
+}
+
+func (r *_TestPortalCertRepo) LockCertificateWrites() func() {
+	r.writes.Lock()
+	return r.writes.Unlock
 }

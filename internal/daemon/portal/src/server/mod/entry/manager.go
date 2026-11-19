@@ -32,6 +32,8 @@ type Manager struct {
 	entryConfigsByName map[string]watched.PortalEntry
 	entriesByKey       map[_Key]*_Entry
 	started            bool
+	retry              *time.Timer
+	retryDelay         time.Duration
 }
 
 func (e *Manager) DIInit() {
@@ -66,6 +68,7 @@ func (e *Manager) AfterAppStart() {
 
 func (e *Manager) AfterAppStop() {
 	e.mutex.Lock()
+	e.cancelRetryLocked()
 	entries := e.entriesByKey
 	e.entriesByKey = map[_Key]*_Entry{}
 	e.started = false
@@ -93,9 +96,7 @@ func (e *Manager) handlePortalEntryEvent(event hubapiwatch.Event) {
 	} else {
 		e.entryConfigsByName[event.Key] = vcode.MustUnmarshalJsonS[watched.PortalEntry](event.Value)
 	}
-	if err := e.reconcileEntriesLocked(); err != nil {
-		entryLogger.Error("vine.portal listener update failed", "error", err)
-	}
+	e.applyUpdateLocked()
 }
 
 func (e *Manager) loadPortalRules() {
@@ -108,9 +109,7 @@ func (e *Manager) loadPortalRules() {
 		rule := vcode.MustUnmarshalJsonS[*watched.PortalRule](value)
 		e.entryRulesByName[key] = *rule
 	}
-	if err := e.reconcileEntriesLocked(); err != nil {
-		entryLogger.Error("vine.portal listener update failed", "error", err)
-	}
+	e.applyUpdateLocked()
 	subscription.Start()
 }
 
@@ -120,17 +119,41 @@ func (e *Manager) handlePortalRuleEvent(event hubapiwatch.Event) {
 
 	if event.Kind == hubapiwatch.EventKindDelete {
 		delete(e.entryRulesByName, event.Key)
-		if err := e.reconcileEntriesLocked(); err != nil {
-			entryLogger.Error("vine.portal listener update failed", "error", err)
-		}
-		return
+	} else {
+		e.entryRulesByName[event.Key] = vcode.MustUnmarshalJsonS[watched.PortalRule](event.Value)
 	}
+	e.applyUpdateLocked()
+}
 
-	rule := vcode.MustUnmarshalJsonS[*watched.PortalRule](event.Value)
-	e.entryRulesByName[event.Key] = *rule
+func (e *Manager) applyUpdateLocked() {
 	if err := e.reconcileEntriesLocked(); err != nil {
 		entryLogger.Error("vine.portal listener update failed", "error", err)
+		if !e.started || e.retry != nil {
+			return
+		}
+		e.retryDelay = min(max(time.Second, 2*e.retryDelay), 30*time.Second)
+		var timer *time.Timer
+		timer = time.AfterFunc(e.retryDelay, func() {
+			e.mutex.Lock()
+			defer e.mutex.Unlock()
+			if e.retry != timer {
+				return
+			}
+			e.retry = nil
+			e.applyUpdateLocked()
+		})
+		e.retry = timer
+		return
 	}
+	e.cancelRetryLocked()
+}
+
+func (e *Manager) cancelRetryLocked() {
+	if e.retry != nil {
+		e.retry.Stop()
+		e.retry = nil
+	}
+	e.retryDelay = 0
 }
 
 // reconcileEntriesLocked applies a listener change only after every new binding
@@ -154,6 +177,7 @@ func (e *Manager) reconcileEntriesLocked() error {
 				}
 				for _, previous := range removedEntries {
 					if restoreErr := previous.Start(); restoreErr != nil {
+						delete(e.entriesByKey, previous.Key())
 						entryLogger.Error("vine.portal listener restore failed", "error", restoreErr)
 					}
 				}

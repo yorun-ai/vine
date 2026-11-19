@@ -63,7 +63,7 @@ func (s *Sweeper) sweepExpiredPortalInstances() {
 }
 
 func (s *Sweeper) refreshDescriptors() {
-	s.Syncer.SyncDescriptors(s.DescriptorRepo.ListDomainDescriptorViews())
+	s.Syncer.RefreshDescriptors(s.DescriptorRepo.ListDomainDescriptorViews)
 }
 
 func (s *Sweeper) refreshPortalSiteRpcgwServices() {

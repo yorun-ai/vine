@@ -35,7 +35,10 @@ func (c *_Client) Messages(ctx context.Context, streamConfig jetstream.StreamCon
 		consumerName: sanitizeNATSResourceName(consumerName),
 		changed:      make(chan struct{}),
 	})
-	messages.start()
+	err := messages.restart(ctx)
+	if ctx.Err() == nil {
+		vpre.CheckNilError(err, "start nats jetstream pull consumer failed")
+	}
 	c.mutex.Lock()
 	c.messages[messages] = struct{}{}
 	c.mutex.Unlock()
@@ -170,9 +173,17 @@ func (c *_MessagesContext) Stop() {
 	c.client.mutex.Unlock()
 }
 
-func (c *_MessagesContext) start() {
-	js := c.client.ensureJetStream(c.streamConfig)
-	consumer, err := js.CreateOrUpdateConsumer(c.context, c.streamConfig.Name, jetstream.ConsumerConfig{
+func (c *_MessagesContext) restart(ctx context.Context) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if c.changed == nil || c.context.Err() != nil {
+		return nil
+	}
+	js, err := c.client.ensureJetStream(ctx, c.streamConfig)
+	if err != nil {
+		return err
+	}
+	consumer, err := js.CreateOrUpdateConsumer(ctx, c.streamConfig.Name, jetstream.ConsumerConfig{
 		Durable:       c.consumerName,
 		DeliverPolicy: jetstream.DeliverAllPolicy,
 		AckPolicy:     jetstream.AckExplicitPolicy,
@@ -180,31 +191,12 @@ func (c *_MessagesContext) start() {
 		MaxDeliver:    -1,
 		FilterSubject: c.subject,
 	})
-	if err != nil && c.context.Err() != nil {
-		return // The owner's cancellation also stops this reader.
+	if err != nil {
+		return err
 	}
-	vpre.CheckNilError(err, "create nats jetstream pull consumer failed")
+	if c.consumer != nil {
+		c.resetIteratorLocked()
+	}
 	c.consumer = consumer
-}
-
-func (c *_MessagesContext) restart() {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	if c.consumer == nil {
-		return
-	}
-	c.resetIteratorLocked()
-	c.start()
-}
-
-func (c *_Client) restartMessages() {
-	c.mutex.Lock()
-	messages := make([]*_MessagesContext, 0, len(c.messages))
-	for messageContext := range c.messages {
-		messages = append(messages, messageContext)
-	}
-	c.mutex.Unlock()
-	for _, messageContext := range messages {
-		messageContext.restart()
-	}
+	return nil
 }

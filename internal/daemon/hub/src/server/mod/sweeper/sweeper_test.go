@@ -228,10 +228,12 @@ func TestSweeperRetriesPublicationAfterCleanup(t *testing.T) {
 			t.Cleanup(server.AfterAppStop)
 			publisher := &syncer.Syncer{WatchServer: server, Access: new(configaccess.Access)}
 			publisher.DIInit()
-			publisher.SyncDescriptors([]core.DomainDescriptorView{{DomainVersion: core.DomainDescriptorVersion{
-				Descriptor: &skeldesc.Domain{Name: "demo", Hash: "00000000-0000-0000-0000-0000000000d5"},
-				Main:       true,
-			}}})
+			publisher.RefreshDescriptors(func() []core.DomainDescriptorView {
+				return []core.DomainDescriptorView{{DomainVersion: core.DomainDescriptorVersion{
+					Descriptor: &skeldesc.Domain{Name: "demo", Hash: "00000000-0000-0000-0000-0000000000d5"},
+					Main:       true,
+				}}}
+			})
 			registryRepo := &_SweeperRegistryRepo{
 				leases:   []core.AppHeartbeat{{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5")}},
 				status:   &core.AppStatus{Name: "demo.app", InstanceId: uuid.MustParse("00000000-0000-0000-0000-0000000000d5"), ExpiresAt: time.Now().Add(-time.Minute)},

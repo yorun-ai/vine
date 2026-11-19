@@ -458,3 +458,24 @@ func TestEntryEmptyHostEffectiveHTTPOnly(t *testing.T) {
 		require.Equal(t, host == "127.0.0.1:8080" || host == "[::1]:8080", ok)
 	}
 }
+
+func TestHotUpdateRetriesListenerAfterPortBecomesAvailable(t *testing.T) {
+	occupied, err := net.Listen("tcp4", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer occupied.Close()
+	port := occupied.Addr().(*net.TCPAddr).Port
+	manager := &Manager{entryConfigsByName: testEntryConfigs(), entriesByKey: map[_Key]*_Entry{}}
+	manager.AfterAppStart()
+	defer manager.AfterAppStop()
+	config := testEntryConfig("dash", "http", "", port, []string{"127.0.0.1"})
+	manager.handlePortalEntryEvent(hubapiwatch.Event{Key: watched.FormatPortalEntryKey(config.Name), Value: vcode.MustMarshalJsonS(config)})
+	require.NoError(t, occupied.Close())
+	require.Eventually(t, func() bool {
+		conn, err := net.DialTimeout("tcp4", occupied.Addr().String(), 100*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		conn.Close()
+		return true
+	}, 5*time.Second, 20*time.Millisecond)
+}

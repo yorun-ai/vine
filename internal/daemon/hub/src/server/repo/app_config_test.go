@@ -272,3 +272,29 @@ func TestAppConfigRepoStructuredValuesStayWhole(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, item.Value, string(vcode.MustUnmarshalJsonS[*watched.ConfigValue](raw).Value))
 }
+
+func TestAppConfigRecreatedDuringDeletePublication(t *testing.T) {
+	db, repo, watch := newTestAppConfigRepo(t)
+	first := testAppConfig("demo.Flag", "1", 1)
+	next := testAppConfig(first.Name, "2", 1)
+	repo.Save(first)
+	paused, resume := make(chan struct{}), make(chan struct{})
+	deletion := db.Callback().Delete()
+	const hook = "test:pause_committed_config_delete"
+	require.NoError(t, deletion.After("gorm:commit_or_rollback_transaction").Register(hook, func(tx *gorm.DB) {
+		if tx.Statement.Table == "app_config" {
+			close(paused)
+			<-resume
+		}
+	}))
+	t.Cleanup(func() { require.NoError(t, deletion.Remove(hook)) })
+
+	otherRequest := *repo
+	overlapRouteWrites(t, paused, resume, func() { require.True(t, repo.Remove(first.Id)) }, func() { otherRequest.Save(next) })
+	row, exists := repo.GetByName(first.Name)
+	require.True(t, exists)
+	require.Equal(t, next.Id, row.Id)
+	raw, published := watch.Get(watched.FormatConfigKey(first.Name))
+	require.True(t, published)
+	require.Equal(t, row.Value, string(vcode.MustUnmarshalJsonS[watched.ConfigValue](raw).Value))
+}
