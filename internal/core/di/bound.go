@@ -148,19 +148,19 @@ func (b *_Bound) BuildInstantiateFunc(injector *_BaseInjector) _InstantiateFunc 
 	}
 	return func(stack _BuildStack, requestedType reflect.Type) reflect.Value {
 		instance := construct(stack, requestedType)
+		// Register after the supplemental dependencies, even if resolving one
+		// or initializing the constructed instance panics.
+		if track != nil {
+			if dispose := b.BuildDisposeFunc(instance); dispose != nil {
+				defer track(dispose)
+			}
+		}
 		if onResolved != nil {
 			dependencies := make([]reflect.Value, len(b.binding.extraDependencies))
 			for i, kind := range b.binding.extraDependencies {
 				dependencies[i] = injector.get(kind, stack.push(kind))
 			}
 			onResolved(instance, dependencies)
-		}
-		// All dependencies have been constructed and registered before their
-		// dependent. Cached reads never re-enter this constructor.
-		if track != nil {
-			if dispose := b.BuildDisposeFunc(instance); dispose != nil {
-				track(dispose)
-			}
 		}
 		return instance
 	}

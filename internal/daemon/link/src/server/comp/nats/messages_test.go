@@ -171,3 +171,52 @@ func requireWaitingPulls(t *testing.T, client *_Client, consumerName string, cou
 		return err == nil && info.NumWaiting == count
 	}, time.Second, time.Millisecond)
 }
+
+func TestRecoveryRetriesUnprovisionedStreamWhileOthersConsume(t *testing.T) {
+	first, second := newTestNATSServer(t), newTestNATSServer(t)
+	c := new(_Client)
+	old := connectTestNATS(t, "nats://"+first.Addr().String())
+	c.setConn(old)
+	queue := queueStreamConfigForTest()
+	subject := formatTestQueueSubject("jobs")
+	messages := c.Messages(t.Context(), queue, subject, "jobs")
+	defer messages.Stop()
+	broadcast := broadcastStreamConfigForTest()
+	events := make(chan string, 1)
+	eventSubject := formatTestBroadcastSubject("alpha.created")
+	consumer := c.Consume(broadcast, eventSubject, "events", func(msg jetstream.Msg) {
+		events <- string(msg.Data())
+		msg.Ack()
+	})
+	defer consumer.Stop()
+	c.setConn(connectTestNATS(t, "nats://"+second.Addr().String()))
+	old.Close()
+	js := c.jetStream
+	require.NoError(t, js.DeleteStream(t.Context(), queue.Name))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	done := make(chan struct{})
+	go func() { defer close(done); c.recoverJetStream(ctx) }()
+	defer func() { cancel(); <-done }()
+	// The broadcast stream retains messages only while a consumer has interest.
+	require.Eventually(t, func() bool {
+		_, err := js.Consumer(ctx, broadcast.Name, "events")
+		return err == nil
+	}, 3*time.Second, 10*time.Millisecond)
+	c.Publish(broadcast, eventSubject, []byte("early"))
+	select {
+	case event := <-events:
+		require.Equal(t, "early", event)
+	case <-ctx.Done():
+		t.Fatal("healthy stream did not recover while the queue was unavailable")
+	}
+	_, err := js.CreateStream(ctx, queue)
+	require.NoError(t, err)
+	<-done
+	require.NoError(t, ctx.Err())
+	c.Publish(queue, subject, []byte("late"))
+	msg, err := messages.Next(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "late", string(msg.Data()))
+	require.NoError(t, msg.Ack())
+}

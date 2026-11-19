@@ -83,6 +83,8 @@ func (s *AppConfigRepo) GetDefinition(name string) *core.AppConfigDefinition {
 }
 
 func (s *AppConfigRepo) Save(item *core.AppConfig) {
+	s.Access.AppConfigWrites.Lock()
+	defer s.Access.AppConfigWrites.Unlock()
 	s.Access.CheckWrite()
 	row := s.Dao.Save(&model.AppConfig{
 		FieldSources: encodeFieldSources(item.FieldSources),
@@ -98,12 +100,14 @@ func (s *AppConfigRepo) Save(item *core.AppConfig) {
 }
 
 func (s *AppConfigRepo) Remove(id int) bool {
+	s.Access.AppConfigWrites.Lock()
+	defer s.Access.AppConfigWrites.Unlock()
 	s.Access.CheckWrite()
 	item, ok := s.Dao.DeleteById(id)
 	if !ok {
 		return false
 	}
-	s.Syncer.RemoveAppConfig(s.resolveAppConfig(mapAppConfig(item)))
+	s.Syncer.RemoveAppConfig(mapAppConfig(item))
 	return true
 }
 

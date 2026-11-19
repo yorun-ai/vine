@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	skeldesc "go.yorun.ai/skel/descriptor"
@@ -28,7 +29,7 @@ func TestVersionedServicesPublishAndUnregisterIndependently(t *testing.T) {
 			}},
 		}})
 	}
-	syncer.SyncDescriptors(repo.ListDomainDescriptorViews())
+	syncer.RefreshDescriptors(repo.ListDomainDescriptorViews)
 	for _, version := range []string{"", "V1", "V2", "V10"} {
 		name := "demo.OrderApiService" + version
 		value, ok := server.Get(watched.FormatDescriptorServiceKey(name))
@@ -36,7 +37,7 @@ func TestVersionedServicesPublishAndUnregisterIndependently(t *testing.T) {
 		require.Equal(t, name, vcode.MustUnmarshalJsonS[*skeldesc.Service](value).SkelName)
 	}
 	repo.ReleaseDomainDescriptors("demo.app", "instanceV1")
-	syncer.SyncDescriptors(repo.ListDomainDescriptorViews())
+	syncer.RefreshDescriptors(repo.ListDomainDescriptorViews)
 	_, ok := server.Get(watched.FormatDescriptorServiceKey("demo.OrderApiServiceV1"))
 	require.False(t, ok)
 	for _, version := range []string{"", "V2", "V10"} {
@@ -204,4 +205,31 @@ func TestDomainDescriptorsRetainCompleteContractWithOnlyAPIServiceKeys(t *testin
 		_, ok = server.Get(watched.FormatDescriptorServiceKey(internal.SkelName))
 		require.False(t, ok)
 	}
+}
+
+func (s *Syncer) SyncDescriptors(views []core.DomainDescriptorView) {
+	s.RefreshDescriptors(func() []core.DomainDescriptorView { return views })
+}
+
+func TestDescriptorRefreshCannotRepublishReleasedDescriptor(t *testing.T) {
+	server := watchserver.NewServerForTest()
+	defer server.AfterAppStop()
+	target := testSyncer(server)
+	loaded, resume, finished := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(finished)
+		target.RefreshDescriptors(func() []core.DomainDescriptorView {
+			views := concurrentDescriptorViews("demo.Worker")
+			close(loaded)
+			<-resume
+			return views
+		})
+	}()
+	<-loaded
+	timer := time.AfterFunc(100*time.Millisecond, func() { close(resume) })
+	defer timer.Stop()
+	target.RefreshDescriptors(func() []core.DomainDescriptorView { return nil })
+	<-finished
+	_, exists := server.Get(watched.FormatDescriptorActorKey("demo.Worker"))
+	require.False(t, exists)
 }

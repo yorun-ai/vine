@@ -52,7 +52,7 @@ func (s *RegistryServiceServerImpl) refreshPortalSiteRpcgwServices() {
 }
 
 func (s *RegistryServiceServerImpl) refreshDescriptors() {
-	s.Syncer.SyncDescriptors(s.DescriptorRepo.ListDomainDescriptorViews())
+	s.Syncer.RefreshDescriptors(s.DescriptorRepo.ListDomainDescriptorViews)
 }
 
 func toCoreServiceHandlerRegistrations(registrations []skeled.ServiceHandlerRegistration) []core.ServiceHandlerRegistration {

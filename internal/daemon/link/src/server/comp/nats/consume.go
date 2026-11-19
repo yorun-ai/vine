@@ -23,24 +23,8 @@ func (c *_Client) Consume(streamConfig jetstream.StreamConfig, subject string, c
 		consumerName: sanitizeNATSResourceName(consumerName),
 		handle:       handle,
 	}
-	consumeContext.start()
+	vpre.CheckNilError(consumeContext.restart(context.Background()), "start nats jetstream consumer failed")
 	c.addConsumer(consumeContext)
-	return consumeContext
-}
-
-func (c *_Client) consumeJetStream(streamConfig jetstream.StreamConfig, subject string, consumerName string, handle func(msg jetstream.Msg)) jetstream.ConsumeContext {
-	js := c.ensureJetStream(streamConfig)
-	consumer, err := js.CreateOrUpdateConsumer(context.Background(), streamConfig.Name, jetstream.ConsumerConfig{
-		Durable:       consumerName,
-		DeliverPolicy: jetstream.DeliverAllPolicy,
-		AckPolicy:     jetstream.AckExplicitPolicy,
-		MaxDeliver:    -1,
-		FilterSubject: subject,
-	})
-	vpre.CheckNilError(err, "create nats jetstream pull consumer failed")
-
-	consumeContext, err := consumer.Consume(handle)
-	vpre.CheckNilError(err, "consume nats jetstream subject failed")
 	return consumeContext
 }
 
@@ -58,19 +42,6 @@ func (c *_Client) removeConsumer(consumeContext *_ConsumeContext) {
 	delete(c.consumers, consumeContext)
 }
 
-func (c *_Client) restartConsumers() {
-	c.mutex.Lock()
-	consumers := make([]*_ConsumeContext, 0, len(c.consumers))
-	for consumeContext := range c.consumers {
-		consumers = append(consumers, consumeContext)
-	}
-	c.mutex.Unlock()
-
-	for _, consumeContext := range consumers {
-		consumeContext.restart()
-	}
-}
-
 type _ConsumeContext struct {
 	client       *_Client
 	streamConfig jetstream.StreamConfig
@@ -83,19 +54,34 @@ type _ConsumeContext struct {
 	stopped        bool
 }
 
-func (c *_ConsumeContext) start() {
-	c.consumeContext = c.client.consumeJetStream(c.streamConfig, c.subject, c.consumerName, c.handle)
-}
-
-func (c *_ConsumeContext) restart() {
+func (c *_ConsumeContext) restart(ctx context.Context) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
 	if c.stopped {
-		return
+		return nil
 	}
-	c.consumeContext.Stop()
-	c.start()
+	js, err := c.client.ensureJetStream(ctx, c.streamConfig)
+	if err != nil {
+		return err
+	}
+	consumer, err := js.CreateOrUpdateConsumer(ctx, c.streamConfig.Name, jetstream.ConsumerConfig{
+		Durable:       c.consumerName,
+		DeliverPolicy: jetstream.DeliverAllPolicy,
+		AckPolicy:     jetstream.AckExplicitPolicy,
+		MaxDeliver:    -1,
+		FilterSubject: c.subject,
+	})
+	if err != nil {
+		return err
+	}
+	if c.consumeContext != nil {
+		c.consumeContext.Stop()
+	}
+	next, err := consumer.Consume(c.handle)
+	if err == nil {
+		c.consumeContext = next
+	}
+	return err
 }
 
 func (c *_ConsumeContext) Stop() {

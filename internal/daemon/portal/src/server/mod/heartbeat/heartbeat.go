@@ -2,6 +2,7 @@ package heartbeat
 
 import (
 	"context"
+	"sync"
 	"time"
 	"uuid"
 
@@ -37,6 +38,7 @@ type Heartbeat struct {
 
 	instanceId uuid.UUID
 	stop       context.CancelFunc
+	worker     sync.WaitGroup
 }
 
 func (h *Heartbeat) AfterAppStart() {
@@ -51,23 +53,23 @@ func (h *Heartbeat) AfterAppStart() {
 
 	heartbeatCtx, cancel := context.WithCancel(h.Context)
 	h.stop = cancel
-	goutil.NewSafeTicker(heartbeatCtx, heartbeatInterval, nil).Go(func() {
-		if h.PortalRegistryClient.Heartbeat(skeled.PortalStatus{InstanceId: h.instanceId}) {
-			return
-		}
-		// Hub no longer knows this instance, which is what a Hub restart looks
-		// like. A restarted Hub can also advertise a new watch endpoint, so
-		// refresh Hub information before registering again.
-		refreshed := false
-		goutil.RunWithRecover(heartbeatRecovered, func() {
-			h.HubInfo.Refresh()
-			refreshed = true
+	h.worker.Go(func() {
+		goutil.Tick(heartbeatCtx, heartbeatInterval, func() {
+			goutil.RunWithRecover(heartbeatRecovered, func() { h.keepAlive(heartbeatCtx) })
 		})
-		if !refreshed {
-			return
-		}
-		h.register()
 	})
+}
+
+func (h *Heartbeat) keepAlive(ctx context.Context) {
+	if ctx.Err() != nil || h.PortalRegistryClient.Heartbeat(skeled.PortalStatus{InstanceId: h.instanceId}) {
+		return
+	}
+	if ctx.Err() == nil {
+		h.HubInfo.Refresh()
+	}
+	if ctx.Err() == nil {
+		h.register()
+	}
 }
 
 // BeforeAppStop unregisters while the application context is still live. A
@@ -76,6 +78,7 @@ func (h *Heartbeat) AfterAppStart() {
 func (h *Heartbeat) BeforeAppStop() {
 	if h.stop != nil {
 		h.stop()
+		h.worker.Wait()
 		h.stop = nil
 	}
 
@@ -98,5 +101,5 @@ func (h *Heartbeat) register() {
 }
 
 func heartbeatRecovered(recovered any) {
-	heartbeatLogger.Warn("portal hub information refresh failed", "error", recovered)
+	heartbeatLogger.Warn("portal heartbeat recovery failed", "error", recovered)
 }

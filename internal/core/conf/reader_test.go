@@ -398,3 +398,19 @@ func TestReaderAdoptedConfigsResolveIndependentlyWithoutSource(t *testing.T) {
 		})
 	}
 }
+
+func TestEternalReaderRetainsFirstSuccessfulValuePerApp(t *testing.T) {
+	const key = "demo.StartupConfig"
+	kind := reflect.TypeFor[*readerTestConfig]()
+	registry := NewRegistry()
+	registry.Register(ConfigSpec{SkelName: key, Lifecycle: LifecycleEternal, Type: kind})
+	linker := &linktest.Linker{EternalConfigByKey: map[string]string{key: "{"}}
+	app := newReader(linker, registry)
+	require.Panics(t, func() { app.GetByType(kind) })
+	linker.EternalConfigByKey[key] = `{"name":"startup"}`
+	first := app.GetByType(kind).(*readerTestConfig)
+	first.Name = "modified by caller"
+	linker.EternalConfigByKey[key] = `{"name":"later"}`
+	require.Equal(t, "startup", app.GetByType(kind).(*readerTestConfig).Name)
+	require.Equal(t, "later", newReader(linker, registry).GetByType(kind).(*readerTestConfig).Name)
+}

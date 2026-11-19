@@ -41,6 +41,9 @@ type PortalCertUpdate struct {
 // PortalCertRepo stores Portal certificates. List and the lookups return entities
 // the caller owns.
 type PortalCertRepo interface {
+	// LockCertificateWrites orders certificate validation and persistence with
+	// writes of entries that depend on those certificates, across requests.
+	LockCertificateWrites() (unlock func())
 	List() []*PortalCert
 	GetById(id int) (*PortalCert, bool)
 	GetByName(name string) (*PortalCert, bool)
@@ -69,6 +72,9 @@ func (m *PortalCertCore) Get(id int) *PortalCert {
 }
 
 func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
+	unlock := m.PortalCertRepo.LockCertificateWrites()
+	defer unlock()
+
 	_, ok := m.PortalCertRepo.GetByName(creation.Name)
 	ex.PanicNewIfNot(!ok, ex.OperationFailed, ex.F("entry cert %q already exists", creation.Name))
 
@@ -83,6 +89,9 @@ func (m *PortalCertCore) Create(creation PortalCertCreation) *PortalCert {
 }
 
 func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
+	unlock := m.PortalCertRepo.LockCertificateWrites()
+	defer unlock()
+
 	cert, ok := m.PortalCertRepo.GetById(id)
 	ex.PanicNewIfNot(ok, ex.OperationFailed, ex.F("entry cert %d not found", id))
 
@@ -126,6 +135,9 @@ func (m *PortalCertCore) Update(id int, update PortalCertUpdate) *PortalCert {
 }
 
 func (m *PortalCertCore) Remove(id int) {
+	unlock := m.PortalCertRepo.LockCertificateWrites()
+	defer unlock()
+
 	_, exists := m.PortalCertRepo.GetById(id)
 	ex.PanicNewIfNot(exists, ex.OperationFailed, ex.F("entry cert %d not found", id))
 	m.validateEntryCertificates(id, nil)
@@ -190,6 +202,9 @@ func (*PortalCertCore) Validate(cert PortalCert) PortalCert {
 
 // Save creates or replaces a certificate by name, preserving an existing ID.
 func (m *PortalCertCore) Save(cert PortalCert) *PortalCert {
+	unlock := m.PortalCertRepo.LockCertificateWrites()
+	defer unlock()
+
 	cert = m.Validate(cert)
 	cert.Id = 0
 	if current, ok := m.PortalCertRepo.GetByName(cert.Name); ok {

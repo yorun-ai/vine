@@ -145,3 +145,38 @@ func TestPortalCertRepoRejectsReadOnlyWrites(t *testing.T) {
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Save(new(core.PortalCert)) })
 	require.PanicsWithError(t, "Configuration is read-only; update the configuration source and restart Hub. type=APPLICATION code=PERMISSION_DENIED", func() { repo.Remove(1) })
 }
+
+func TestConcurrentRemovalsKeepLastRequiredCertificate(t *testing.T) {
+	db, rules, watch := newTestPortalRuleRepo(t)
+	require.NoError(t, db.Exec("DELETE FROM portal_cert").Error)
+	entries := rules.PortalEntryRepo.(*PortalEntryRepo)
+	certs := &PortalCertRepo{Dao: entries.CertDao, Syncer: entries.Syncer, Access: entries.Access}
+	a, b := testPortalCert("old"), testPortalCert("next")
+	certs.Save(a)
+	certs.Save(b)
+	entry := &core.PortalEntry{Name: "console", Protocol: "http", Http: &core.PortalEntryHTTP{
+		Host: "demo.local", Http: "DISABLED", Https: "ENABLED",
+	}, Enabled: true}
+	entries.Save(entry)
+
+	paused, resume := make(chan struct{}), make(chan struct{})
+	deletion := db.Callback().Delete()
+	const hook = "test:pause_first_certificate_delete"
+	once := sync.OnceFunc(func() { close(paused); <-resume })
+	require.NoError(t, deletion.Before("gorm:begin_transaction").Register(hook, func(tx *gorm.DB) {
+		if tx.Statement.Table == "portal_cert" {
+			once()
+		}
+	}))
+	t.Cleanup(func() { require.NoError(t, deletion.Remove(hook)) })
+	first := &core.PortalCertCore{PortalCertRepo: certs, PortalEntryRepo: entries}
+	otherRepo := *certs
+	second := &core.PortalCertCore{PortalCertRepo: &otherRepo, PortalEntryRepo: entries}
+	overlapRouteWrites(t, paused, resume, func() { first.Remove(a.Id) }, func() {
+		require.PanicsWithError(t, `portal entry "console": explicit HTTPS or autohttps requires an enabled matching certificate for host "demo.local" type=APPLICATION code=OPERATION_FAILED`, func() { second.Remove(b.Id) })
+	})
+	require.Len(t, certs.List(), 1)
+	raw, ok := watch.Get(watched.FormatPortalEntryKey(entry.Name))
+	require.True(t, ok)
+	require.True(t, vcode.MustUnmarshalJsonS[watched.PortalEntry](raw).EffectiveHTTP.HttpsEnabled)
+}

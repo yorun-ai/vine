@@ -13,7 +13,9 @@ type Access struct {
 
 	// PortalRouteWrites orders entry, rule and site changes, including full site
 	// refreshes, through Watch publication. It is shared by all Hub requests.
-	PortalRouteWrites sync.Mutex
+	PortalRouteWrites       sync.Mutex
+	AppConfigWrites         sync.Mutex
+	PortalCertificateWrites sync.Mutex
 
 	readOnly atomic.Bool
 }

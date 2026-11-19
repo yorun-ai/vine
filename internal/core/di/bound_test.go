@@ -259,3 +259,25 @@ func TestBoundBuildDisposeFuncHandlesDefaultAndCustomOnlyCases(t *testing.T) {
 	customOnly.BuildDisposeFunc(reflect.ValueOf(&boundTestDependency{}))()
 	assert.Equal(t, []string{"custom"}, customOrder)
 }
+
+func TestFailedPostConstructionDisposesEachFactoryResult(t *testing.T) {
+	type resource struct{ id int }
+	opened := 0
+	var disposed []int
+	root := NewInjector(func(b *Binder) {
+		b.BindFactory(func() *resource {
+			opened++
+			return &resource{id: opened}
+		}).WithDisposer(func(r *resource) { disposed = append(disposed, r.id) }).
+			WithDependencies(nil, func(value reflect.Value, _ []reflect.Value) {
+				if value.Interface().(*resource).id == 1 {
+					panic("initialization failed")
+				}
+			})
+	})
+	scope := root.StartExecution()
+	assert.PanicsWithValue(t, "initialization failed", func() { scope.Get(T[*resource]()) })
+	scope.Get(T[*resource]())
+	scope.CompleteExecution()
+	assert.Equal(t, []int{2, 1}, disposed)
+}

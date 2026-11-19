@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"sync"
+	"time"
 
 	gonats "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -57,13 +58,14 @@ func (c *Client) InitOption(option *_Option) {
 type _Client struct {
 	app.BaseManagedComponent[*_ClientManager]
 
-	conn          *gonats.Conn
-	jetStream     jetstream.JetStream
-	ensuredStream map[string]struct{}
-	consumers     map[*_ConsumeContext]struct{}
-	messages      map[*_MessagesContext]struct{}
-	mutex         sync.Mutex
-	recoverMutex  sync.Mutex
+	conn           *gonats.Conn
+	jetStream      jetstream.JetStream
+	ensuredStream  map[string]struct{}
+	consumers      map[*_ConsumeContext]struct{}
+	messages       map[*_MessagesContext]struct{}
+	mutex          sync.Mutex
+	recoverMutex   sync.Mutex
+	cancelRecovery context.CancelFunc
 }
 
 var newNATSConnect = gonats.Connect
@@ -94,31 +96,55 @@ func (c *_Client) onReconnect(ctx context.Context, _ *gonats.Conn) {
 	go c.recoverJetStream(ctx)
 }
 
-func (c *_Client) recoverJetStream(ctx context.Context) {
-	c.recoverMutex.Lock()
-	defer c.recoverMutex.Unlock()
-
-	for {
-		err := c.waitJetStreamReady(ctx, jetStreamReadyTimeout, jetStreamReadyInterval)
-		if err == nil {
-			break
-		}
-		if ctx.Err() != nil {
-			return
-		}
-		natsLogger.Warn("nats jetstream not ready after reconnect, retrying", "error", err)
-	}
-
-	c.clearEnsuredStreams()
-	c.restartConsumers()
-	c.restartMessages()
+type recoverableConsumer interface {
+	restart(context.Context) error
 }
 
-func (c *_Client) clearEnsuredStreams() {
+func (c *_Client) recoverJetStream(ctx context.Context) {
+	// Take the snapshot alongside subscription creation. A newer reconnect
+	// supersedes this recovery, including waits for streams that no longer exist.
+	c.recoverMutex.Lock()
+	if c.cancelRecovery != nil {
+		c.cancelRecovery()
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	c.cancelRecovery = cancel
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	clear(c.ensuredStream)
+	pending := make([]recoverableConsumer, 0, len(c.consumers)+len(c.messages))
+	for consumer := range c.consumers {
+		pending = append(pending, consumer)
+	}
+	for messages := range c.messages {
+		pending = append(pending, messages)
+	}
+	c.mutex.Unlock()
+	c.recoverMutex.Unlock()
 
-	c.ensuredStream = map[string]struct{}{}
+	// AccountInfo can succeed before Hub has provisioned every stream.
+	// Retry only failed consumers, leaving recovered subscriptions running.
+	for delay := jetStreamReadyInterval; len(pending) > 0; delay = min(2*delay, reconnectWait) {
+		failed := pending[:0]
+		for _, consumer := range pending {
+			if ctx.Err() != nil {
+				return
+			}
+			if err := consumer.restart(ctx); err != nil {
+				natsLogger.Warn("nats consumer recovery failed, retrying", "error", err)
+				failed = append(failed, consumer)
+			}
+		}
+		clear(pending[len(failed):])
+		pending = failed
+		if len(pending) > 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(delay):
+			}
+		}
+	}
 }
 
 // Publish
@@ -128,23 +154,26 @@ func (c *_Client) Publish(streamConfig jetstream.StreamConfig, subject string, d
 }
 
 func (c *_Client) publishJetStream(streamConfig jetstream.StreamConfig, subject string, data []byte) {
-	js := c.ensureJetStream(streamConfig)
-	_, err := js.Publish(context.Background(), subject, data)
+	js, err := c.ensureJetStream(context.Background(), streamConfig)
+	vpre.CheckNilError(err, "read nats jetstream stream failed")
+	_, err = js.Publish(context.Background(), subject, data)
 	vpre.CheckNilError(err, "publish nats jetstream message failed")
 }
 
 // Stream
 
-func (c *_Client) ensureJetStream(streamConfig jetstream.StreamConfig) jetstream.JetStream {
+func (c *_Client) ensureJetStream(ctx context.Context, streamConfig jetstream.StreamConfig) (jetstream.JetStream, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	if _, exists := c.ensuredStream[streamConfig.Name]; exists {
-		return c.jetStream
+		return c.jetStream, nil
 	}
 
-	_, err := c.jetStream.Stream(context.Background(), streamConfig.Name)
-	vpre.CheckNilError(err, "read nats jetstream stream failed")
+	_, err := c.jetStream.Stream(ctx, streamConfig.Name)
+	if err != nil {
+		return nil, err
+	}
 	c.ensuredStream[streamConfig.Name] = struct{}{}
-	return c.jetStream
+	return c.jetStream, nil
 }

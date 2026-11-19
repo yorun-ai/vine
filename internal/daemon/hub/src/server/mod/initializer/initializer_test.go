@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,7 +74,8 @@ type testPortalRuleRepo struct {
 }
 
 type testPortalCertRepo struct {
-	certs []*core.PortalCert
+	writes sync.Mutex
+	certs  []*core.PortalCert
 }
 
 type testPortalSiteRepo struct {
@@ -474,4 +476,9 @@ func findDomainDescriptorByHash(views []core.DomainDescriptorView, hash string) 
 		}
 	}
 	return nil, false
+}
+
+func (r *testPortalCertRepo) LockCertificateWrites() func() {
+	r.writes.Lock()
+	return r.writes.Unlock
 }

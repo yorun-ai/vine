@@ -14,6 +14,11 @@ type PortalCertRepo struct {
 	Access *configaccess.Access `inject:""`
 }
 
+func (s *PortalCertRepo) LockCertificateWrites() func() {
+	s.Access.PortalCertificateWrites.Lock()
+	return s.Access.PortalCertificateWrites.Unlock
+}
+
 func (s *PortalCertRepo) List() []*core.PortalCert {
 	rows := s.Dao.ListOrdered()
 	certs := make([]*core.PortalCert, 0, len(rows))

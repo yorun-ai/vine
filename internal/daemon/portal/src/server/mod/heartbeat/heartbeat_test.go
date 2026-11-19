@@ -198,3 +198,33 @@ func TestHeartbeatKeepsRunningWhenHubLacksTheRegistration(t *testing.T) {
 		component.BeforeAppStop()
 	})
 }
+
+type blockedHeartbeatRefresh struct{ entered, resume chan struct{} }
+
+func (c blockedHeartbeatRefresh) GetInfo(...client.InvokeOption) skeled.Info {
+	close(c.entered)
+	<-c.resume
+	return skeled.Info{}
+}
+
+func TestShutdownWaitsForHeartbeatRecovery(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		registry := &_TestPortalRegistryClient{}
+		h := newTestHeartbeat(registry, &_TestInfoServiceClient{}, &flag.Flag{})
+		h.Context = t.Context()
+		refresh := blockedHeartbeatRefresh{make(chan struct{}), make(chan struct{})}
+		h.HubInfo.InfoServiceClient = refresh
+		h.AfterAppStart()
+		<-refresh.entered
+		done := make(chan struct{})
+		go func() { defer close(done); h.BeforeAppStop() }()
+		synctest.Wait()
+		_, _, unregisters := registry.state()
+		require.Zero(t, unregisters)
+		close(refresh.resume)
+		<-done
+		registers, _, unregisters := registry.state()
+		require.Equal(t, 1, registers)
+		require.Equal(t, 1, unregisters)
+	})
+}
