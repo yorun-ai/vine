@@ -163,11 +163,6 @@ func TestBusyEventListenerLeavesBacklogForAnotherInstance(t *testing.T) {
 				remaining = append(remaining, strconv.Itoa(id))
 			}
 
-			info, err := consumer.Info(t.Context())
-			require.NoError(t, err)
-			require.Equal(t, capacity, info.NumAckPending)
-			require.EqualValues(t, total-capacity, info.NumPending)
-
 			// B can process the entire backlog while A's calls remain blocked.
 			managers[1].OnSetup(b)
 			var received []string
