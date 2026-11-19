@@ -79,16 +79,41 @@ func (p *_SchedulerTaskPublisher) PublishTask(message taskspec.NATSMessage) erro
 	return p.err
 }
 
-func TestSchedulerRefreshSchedulesDeduplicatesAppInstances(t *testing.T) {
+func TestSchedulerPublishesOnceAcrossRollingUpgrade(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	target := newTestScheduler([]*core.AppStatus{
-		newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001")),
-		newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000002")),
-	}, publisher)
-
+	old := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+	next := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000002"))
+	next.TaskRunners[0].DescriptorHash = "new-task-hash"
+	registry := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{old}}
+	target := newTestSchedulerWithRegistry(registry, publisher)
+	descriptors := target.DescriptorRepo.(*_SchedulerDescriptorRepo)
+	descriptors.taskVersions = append(descriptors.taskVersions, core.DescriptorVersion[*skeldesc.Task]{
+		DescriptorHash: next.TaskRunners[0].DescriptorHash,
+		Descriptor: &skeldesc.Task{
+			SkelName: next.TaskRunners[0].TaskSkelName,
+			Triggers: []*skeldesc.TaskTrigger{{SkelName: "rebuild"}, {SkelName: "preview"}},
+		},
+	})
+	assertTick := func(want int) {
+		t.Helper()
+		before := len(publisher.messages)
+		for _, entry := range target.cron.Entries() {
+			entry.Job.Run()
+		}
+		assert.Equal(t, want, len(publisher.messages)-before)
+	}
 	require.NoError(t, target.refreshSchedules())
+	assertTick(1)
 
-	assert.Len(t, target.jobs, 1)
+	registry.statuses = []*core.AppStatus{old, next}
+	require.NoError(t, target.refreshSchedules())
+	assertTick(1)
+
+	// The existing timer can fire between unregister and the next refresh.
+	registry.statuses = []*core.AppStatus{next}
+	assertTick(1)
+	registry.statuses = nil
+	assertTick(0)
 }
 
 func TestSchedulerRefreshSchedulesAddsMultipleCronSchedulers(t *testing.T) {
@@ -153,27 +178,37 @@ func TestSchedulerPublishScheduleHandlesPublisherError(t *testing.T) {
 
 func TestSchedulerRejectsCronSchedulerTriggerWithArguments(t *testing.T) {
 	publisher := &_SchedulerTaskPublisher{}
-	target := newTestScheduler([]*core.AppStatus{newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))}, publisher)
-	target.DescriptorRepo = &_SchedulerDescriptorRepo{
-		taskVersions: []core.DescriptorVersion[*skeldesc.Task]{{
-			DescriptorHash: "task-hash",
-			Descriptor: &skeldesc.Task{
-				SkelName: "demo.booker.RebuildCatalogIndexTask",
-				Triggers: []*skeldesc.TaskTrigger{{
-					SkelName: "rebuild",
-					Arguments: []*skeldesc.Member{{
-						Name: "full",
-						Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
-					}},
+	old := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+	next := newTestScheduledAppStatus(uuid.MustParse("00000000-0000-0000-0000-000000000002"))
+	next.TaskRunners[0].DescriptorHash = "incompatible-task-hash"
+	registry := &_SchedulerRegistryRepo{statuses: []*core.AppStatus{old}}
+	target := newTestSchedulerWithRegistry(registry, publisher)
+	require.NoError(t, target.refreshSchedules())
+	descriptors := target.DescriptorRepo.(*_SchedulerDescriptorRepo)
+	descriptors.taskVersions = append(descriptors.taskVersions, core.DescriptorVersion[*skeldesc.Task]{
+		DescriptorHash: next.TaskRunners[0].DescriptorHash,
+		Descriptor: &skeldesc.Task{
+			SkelName: next.TaskRunners[0].TaskSkelName,
+			Triggers: []*skeldesc.TaskTrigger{{
+				SkelName: "rebuild",
+				Arguments: []*skeldesc.Member{{
+					Name: "full",
+					Type: &skeldesc.Type{Kind: skeldesc.TypeKindScalar, Scalar: skeldesc.ScalarBoolean},
 				}},
-			},
-		}},
-	}
+			}},
+		},
+	})
 
-	err := target.refreshSchedules()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must have no arguments")
-	assert.Empty(t, target.jobs)
+	registry.statuses = []*core.AppStatus{old, next}
+	require.ErrorContains(t, target.refreshSchedules(), "must have no arguments")
+	entries := target.cron.Entries()
+	require.Len(t, entries, 1)
+	registry.statuses = []*core.AppStatus{next, old}
+	entries[0].Job.Run()
+	require.Len(t, publisher.messages, 1)
+	registry.statuses = []*core.AppStatus{next}
+	entries[0].Job.Run()
+	assert.Len(t, publisher.messages, 1)
 }
 
 func TestSchedulerRejectsInvalidCronWithoutChangingExistingJobs(t *testing.T) {
@@ -318,11 +353,12 @@ func newTestScheduledAppStatus(instanceId uuid.UUID) *core.AppStatus {
 
 func newTestScheduleConfig() _ScheduleConfig {
 	return _ScheduleConfig{
-		AppName:         "booker",
-		TaskSkelName:    "demo.booker.RebuildCatalogIndexTask",
-		DescriptorHash:  "task-hash",
-		TriggerSkelName: "rebuild",
-		CronExpr:        "0 * * * *",
+		AppName:      "booker",
+		TaskSkelName: "demo.booker.RebuildCatalogIndexTask",
+		TaskRunnerCronScheduler: core.TaskRunnerCronScheduler{
+			TriggerSkelName: "rebuild",
+			CronExpr:        "0 * * * *",
+		},
 	}
 }
 

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"maps"
 	"runtime/debug"
-	"strings"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
+	skeldesc "go.yorun.ai/skel/descriptor"
 	skeltype "go.yorun.ai/skel/types"
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/meta"
@@ -32,7 +33,7 @@ type Scheduler struct {
 
 	mutex     sync.Mutex
 	cron      *cron.Cron
-	jobs      map[string]cron.EntryID
+	jobs      map[_ScheduleConfig]cron.EntryID
 	publisher _TaskPublisher
 	stop      context.CancelFunc
 	refreshWG sync.WaitGroup
@@ -44,17 +45,16 @@ type _TaskPublisher interface {
 	PublishTask(message taskspec.NATSMessage) error
 }
 
+// Replicas and descriptor versions declaring the same schedule share a timer.
 type _ScheduleConfig struct {
-	AppName         string
-	TaskSkelName    string
-	DescriptorHash  string
-	TriggerSkelName string
-	CronExpr        string
+	AppName      string
+	TaskSkelName string
+	core.TaskRunnerCronScheduler
 }
 
 func (s *Scheduler) DIInit() {
 	s.cron = cron.New(cron.WithChain(cron.Recover(_SchedulerCronLogger{})))
-	s.jobs = map[string]cron.EntryID{}
+	s.jobs = map[_ScheduleConfig]cron.EntryID{}
 	if s.refreshInterval <= 0 {
 		s.refreshInterval = schedulerRefreshInterval
 	}
@@ -120,82 +120,74 @@ func (s *Scheduler) refreshSchedules() error {
 	if err != nil {
 		return err
 	}
-	nextKeys := map[string]struct{}{}
-
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	addedJobs := map[string]cron.EntryID{}
-	for _, config := range configs {
-		key := config.key()
-		nextKeys[key] = struct{}{}
-		if _, exists := s.jobs[key]; exists {
+	addedJobs := map[_ScheduleConfig]cron.EntryID{}
+	for config := range configs {
+		if _, exists := s.jobs[config]; exists {
 			continue
 		}
-		addedConfig := config
 		entryId, err := s.cron.AddFunc(config.CronExpr, func() {
-			s.publishSchedule(addedConfig)
+			s.publishSchedule(config)
 		})
 		if err != nil {
 			for _, addedEntryId := range addedJobs {
 				s.cron.Remove(addedEntryId)
 			}
-			return fmt.Errorf("add cron schedule %q: %w", key, err)
+			return fmt.Errorf("add cron schedule %+v: %w", config, err)
 		}
-		addedJobs[key] = entryId
+		addedJobs[config] = entryId
 	}
 	maps.Copy(s.jobs, addedJobs)
 
-	for key, entryId := range s.jobs {
-		if _, exists := nextKeys[key]; exists {
+	for config, entryId := range s.jobs {
+		if _, exists := configs[config]; exists {
 			continue
 		}
 		s.cron.Remove(entryId)
-		delete(s.jobs, key)
+		delete(s.jobs, config)
 	}
 	return nil
 }
 
-func (s *Scheduler) scheduleConfigs() ([]_ScheduleConfig, error) {
-	configs := []_ScheduleConfig{}
-	seen := map[string]struct{}{}
-	for statusIndex, status := range s.RegistryRepo.ListAppStatuses() {
+func (s *Scheduler) scheduleConfigs() (map[_ScheduleConfig]struct{}, error) {
+	configs := map[_ScheduleConfig]struct{}{}
+	statuses := s.RegistryRepo.ListAppStatuses()
+	versions := s.DescriptorRepo.ListTaskDescriptorVersions()
+	for statusIndex, status := range statuses {
 		if status == nil {
 			return nil, fmt.Errorf("app status %d is nil", statusIndex)
 		}
 		for _, runner := range status.TaskRunners {
 			for _, scheduler := range runner.CronSchedulers {
 				config := _ScheduleConfig{
-					AppName:         status.Name,
-					TaskSkelName:    runner.TaskSkelName,
-					DescriptorHash:  runner.DescriptorHash,
-					TriggerSkelName: scheduler.TriggerSkelName,
-					CronExpr:        scheduler.CronExpr,
+					AppName:                 status.Name,
+					TaskSkelName:            runner.TaskSkelName,
+					TaskRunnerCronScheduler: scheduler,
 				}
 				if err := config.validate(); err != nil {
 					return nil, err
 				}
-				if err := s.checkNoArgumentTrigger(config); err != nil {
+				if err := config.checkNoArgumentTrigger(runner.DescriptorHash, versions); err != nil {
 					return nil, err
 				}
-				key := config.key()
-				if _, exists := seen[key]; exists {
-					continue
-				}
-				seen[key] = struct{}{}
-				configs = append(configs, config)
+				configs[config] = struct{}{}
 			}
 		}
 	}
 	return configs, nil
 }
 
-func (s *Scheduler) checkNoArgumentTrigger(config _ScheduleConfig) error {
-	for _, version := range s.DescriptorRepo.ListTaskDescriptorVersions() {
+func (config _ScheduleConfig) checkNoArgumentTrigger(descriptorHash string, versions []core.DescriptorVersion[*skeldesc.Task]) error {
+	if descriptorHash == "" {
+		return fmt.Errorf("scheduled task descriptor hash is empty")
+	}
+	for _, version := range versions {
 		if version.Descriptor == nil {
 			continue
 		}
-		if version.Descriptor.SkelName != config.TaskSkelName || version.DescriptorHash != config.DescriptorHash {
+		if version.Descriptor.SkelName != config.TaskSkelName || version.DescriptorHash != descriptorHash {
 			continue
 		}
 		for _, trigger := range version.Descriptor.Triggers {
@@ -243,29 +235,22 @@ func (s *Scheduler) publishSchedule(config _ScheduleConfig) {
 }
 
 func (s *Scheduler) hasActiveRunner(config _ScheduleConfig) bool {
-	for _, status := range s.RegistryRepo.ListAppStatuses() {
-		if status == nil {
-			continue
-		}
-		if status.Name != config.AppName {
+	statuses := s.RegistryRepo.ListAppStatuses()
+	versions := s.DescriptorRepo.ListTaskDescriptorVersions()
+	for _, status := range statuses {
+		if status == nil || status.Name != config.AppName {
 			continue
 		}
 		for _, runner := range status.TaskRunners {
-			if runner.TaskSkelName != config.TaskSkelName || runner.DescriptorHash != config.DescriptorHash {
+			if runner.TaskSkelName != config.TaskSkelName || !slices.Contains(runner.CronSchedulers, config.TaskRunnerCronScheduler) {
 				continue
 			}
-			for _, scheduler := range runner.CronSchedulers {
-				if scheduler.TriggerSkelName == config.TriggerSkelName && scheduler.CronExpr == config.CronExpr {
-					return true
-				}
+			if config.checkNoArgumentTrigger(runner.DescriptorHash, versions) == nil {
+				return true
 			}
 		}
 	}
 	return false
-}
-
-func (c _ScheduleConfig) key() string {
-	return strings.Join([]string{c.AppName, c.TaskSkelName, c.DescriptorHash, c.TriggerSkelName, c.CronExpr}, "\x00")
 }
 
 func (c _ScheduleConfig) validate() error {
@@ -274,9 +259,6 @@ func (c _ScheduleConfig) validate() error {
 	}
 	if c.TaskSkelName == "" {
 		return fmt.Errorf("scheduled task skel name is empty")
-	}
-	if c.DescriptorHash == "" {
-		return fmt.Errorf("scheduled task descriptor hash is empty")
 	}
 	if c.TriggerSkelName == "" {
 		return fmt.Errorf("scheduled task trigger skel name is empty")
