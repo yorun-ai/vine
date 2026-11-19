@@ -134,13 +134,22 @@ func TestBusyEventListenerLeavesBacklogForAnotherInstance(t *testing.T) {
 			emit := func(id int) {
 				managers[0].EmitEvent(skeled.EventEmission{EventSkelName: eventName, EventJson: strconv.Itoa(id)})
 			}
+			conn := hubnats.ConnectInproc()
+			defer conn.Close()
+			js, err := jetstream.New(conn)
+			require.NoError(t, err)
+			consumer, err := js.Consumer(t.Context(), eventspec.NATSStreamName, eventspec.NATSConsumerName(eventName, appName))
+			require.NoError(t, err)
 			next := func(started <-chan string) string {
 				t.Helper()
 				select {
 				case id := <-started:
 					return id
 				case <-time.After(3 * time.Second):
-					t.Fatal("event delivery timed out")
+					info, err := consumer.Info(t.Context())
+					require.NoError(t, err)
+					t.Fatalf("event delivery timed out: delivered=%d pending=%d ackPending=%d waitingPulls=%d",
+						info.Delivered.Consumer, info.NumPending, info.NumAckPending, info.NumWaiting)
 					return ""
 				}
 			}
@@ -154,12 +163,6 @@ func TestBusyEventListenerLeavesBacklogForAnotherInstance(t *testing.T) {
 				remaining = append(remaining, strconv.Itoa(id))
 			}
 
-			conn := hubnats.ConnectInproc()
-			defer conn.Close()
-			js, err := jetstream.New(conn)
-			require.NoError(t, err)
-			consumer, err := js.Consumer(t.Context(), eventspec.NATSStreamName, eventspec.NATSConsumerName(eventName, appName))
-			require.NoError(t, err)
 			info, err := consumer.Info(t.Context())
 			require.NoError(t, err)
 			require.Equal(t, capacity, info.NumAckPending)
