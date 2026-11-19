@@ -38,9 +38,7 @@ type PortalSiteDao struct {
 }
 
 func (d *PortalSiteDao) EnsureSchema() {
-	sql := schemaSQL(d.GormDB(), createPortalSiteSQLiteSQL, createPortalSitePgSQL)
-	err := d.GormDB().Exec(sql).Error
-	ex.PanicIfError(err)
+	ensureLiveNameSchema(d.GormDB(), "portal_site", createPortalSiteSQLiteSQL, createPortalSitePgSQL)
 	dropColumns(d.GormDB(), "portal_site", "actor_via")
 	columns, err := tableColumnNames(d.GormDB(), "portal_site")
 	ex.PanicIfError(err)

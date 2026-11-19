@@ -37,9 +37,7 @@ type PortalCertDao struct {
 }
 
 func (d *PortalCertDao) EnsureSchema() {
-	sql := schemaSQL(d.GormDB(), createPortalCertSQLiteSQL, createPortalCertPgSQL)
-	err := d.GormDB().Exec(sql).Error
-	ex.PanicIfError(err)
+	ensureLiveNameSchema(d.GormDB(), "portal_cert", createPortalCertSQLiteSQL, createPortalCertPgSQL)
 	ensureFieldSourceTable(d.GormDB())
 	dropColumns(d.GormDB(), "portal_cert", "public_key_base64", "private_key_base64")
 }

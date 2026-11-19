@@ -39,8 +39,7 @@ type PortalRuleDao struct {
 
 func (d *PortalRuleDao) EnsureSchema() {
 	ex.PanicIfError(ensurePortalEntryTable(d.GormDB()))
-	sql := schemaSQL(d.GormDB(), createPortalRuleSQLiteSQL, createPortalRulePgSQL)
-	ex.PanicIfError(d.GormDB().Exec(sql).Error)
+	ensureLiveNameSchema(d.GormDB(), "portal_rule", createPortalRuleSQLiteSQL, createPortalRulePgSQL)
 	ensureFieldSourceTable(d.GormDB())
 }
 

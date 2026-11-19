@@ -2,16 +2,15 @@ package hubinfo
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"go.yorun.ai/vine/internal/app"
 	"go.yorun.ai/vine/internal/core/logger"
+	"go.yorun.ai/vine/internal/daemon/hub/api/hubinfo"
 	hubskeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/portal/src/server/flag"
 	"go.yorun.ai/vine/internal/util/goutil"
-	"go.yorun.ai/vine/util/vslice"
 )
 
 // refreshInterval bounds how long Portal can keep using a stale Hub endpoint.
@@ -30,10 +29,10 @@ type HubInfo struct {
 	Flag              *flag.Flag                  `inject:""`
 	InfoServiceClient hubskeled.InfoServiceClient `inject:""`
 
-	mutex       sync.RWMutex
-	host        string
-	info        hubskeled.Info
-	listeners   []func()
+	host  string
+	cache hubinfo.Cache
+
+	mutex       sync.Mutex
 	refreshStop context.CancelFunc
 }
 
@@ -43,7 +42,7 @@ func (c *HubInfo) DIInit() {
 	}
 
 	c.host = c.Flag.HubEndpointURL.Hostname()
-	c.info = c.InfoServiceClient.GetInfo()
+	c.cache.Init(c.InfoServiceClient.GetInfo())
 }
 
 func (c *HubInfo) BeforeAppStart() error {
@@ -80,10 +79,7 @@ func (c *HubInfo) AfterAppStop() {
 // OnRefresh registers a listener invoked after Refresh observed changed Hub
 // information. Each listener decides whether an endpoint it owns moved.
 func (c *HubInfo) OnRefresh(listener func()) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	c.listeners = append(c.listeners, listener)
+	c.cache.OnRefresh(listener)
 }
 
 // Refresh re-reads Hub information and notifies listeners when it changed. An
@@ -94,56 +90,9 @@ func (c *HubInfo) Refresh() {
 		return
 	}
 
-	info := c.InfoServiceClient.GetInfo()
-
-	c.mutex.Lock()
-	previous := c.info
-	changed := c.info != info
-	c.info = info
-	listeners := vslice.Clone(c.listeners)
-	c.mutex.Unlock()
-
-	if !changed {
-		return
-	}
-	succeeded := false
-	defer func() {
-		if succeeded {
-			return
-		}
-		c.mutex.Lock()
-		c.info = previous
-		c.mutex.Unlock()
-	}()
-	var firstRecovered any
-	failed := false
-	for _, listener := range listeners {
-		func() {
-			defer func() {
-				if recovered := recover(); recovered != nil {
-					if !failed {
-						firstRecovered = recovered
-					}
-					failed = true
-				}
-			}()
-			listener()
-		}()
-	}
-	if failed {
-		panic(firstRecovered)
-	}
-	succeeded = true
+	c.cache.Refresh(c.InfoServiceClient)
 }
 
 func (c *HubInfo) WatchEndpoint() string {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	port := c.info.WatchPort
-	if port == 0 {
-		// Hubs predating watchPort only advertise redisPort.
-		port = c.info.RedisPort
-	}
-	return fmt.Sprintf("%s:%d", c.host, port)
+	return c.cache.WatchEndpoint(c.host)
 }
