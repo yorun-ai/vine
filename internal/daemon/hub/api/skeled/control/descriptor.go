@@ -14,7 +14,7 @@ func init() {
 var _DomainDescriptor = &descriptor.Domain{
 	Name:        "vine.hub.control",
 	Description: "Internal control API for Link and Portal",
-	Hash:        "2fa4de6f",
+	Hash:        "b9fb8aa1",
 	Full:        true,
 	Generated:   &descriptor.GeneratedInfo{CompilerVersion: "v0.35.0"},
 
@@ -42,9 +42,8 @@ var _DomainDescriptor = &descriptor.Domain{
 			{Name: "concurrency", Description: "Maximum concurrency", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "noRetry", Description: "Whether to disallow retrying after failure", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 		}},
-		{Name: "Info", SkelName: "vine.hub.control.Info", Description: "Hub information", Hash: "fc7faec2", Members: []*descriptor.Member{
+		{Name: "Info", SkelName: "vine.hub.control.Info", Description: "Hub information", Hash: "a502abb4", Members: []*descriptor.Member{
 			{Name: "version", Description: "Hub Vine runtime version", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarString}},
-			{Name: "apiPort", Description: "Control API service port", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "watchPort", Description: "Configuration and service discovery watch port", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
 			{Name: "mqEmbedded", Description: "Whether MQ is embedded in Hub", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}},
 			{Name: "mqNatsPort", Description: "Embedded NATS service port", Type: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarInt}},
@@ -84,8 +83,8 @@ var _DomainDescriptor = &descriptor.Domain{
 	},
 
 	Services: []*descriptor.Service{
-		{Name: "InfoService", SkelName: "vine.hub.control.InfoService", Description: "Hub's information service, called by Link", Hash: "344a170b", Pub: true, AuthMode: descriptor.AuthModeRequired, Methods: []*descriptor.Method{
-			{Name: "getInfo", SkelName: "getInfo", Description: "Read Hub information", Hash: "6bf89aba", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeRequired, OutputDescription: "Hub information", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "Info", SkelName: "vine.hub.control.Info"}},
+		{Name: "InfoService", SkelName: "vine.hub.control.InfoService", Description: "Hub's information service, called by Link", Hash: "ff9f3d1c", Pub: true, AuthMode: descriptor.AuthModeRequired, Methods: []*descriptor.Method{
+			{Name: "getInfo", SkelName: "getInfo", Description: "Read Hub information", Hash: "2c011b26", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeRequired, OutputDescription: "Hub information", ResultType: &descriptor.Type{Kind: descriptor.TypeKindData, Name: "Info", SkelName: "vine.hub.control.Info"}},
 		}},
 		{Name: "LockService", SkelName: "vine.hub.control.LockService", Description: "Distributed lease lock service", Hash: "19321bbe", Pub: true, AuthMode: descriptor.AuthModeRequired, Methods: []*descriptor.Method{
 			{Name: "acquire", SkelName: "acquire", Description: "Acquire a lock using a unique attempt token", Hash: "f085a1e5", AuthMode: descriptor.AuthModeInherit, EffectiveAuthMode: descriptor.AuthModeRequired, ResultType: &descriptor.Type{Kind: descriptor.TypeKindScalar, Scalar: descriptor.ScalarBoolean}, Arguments: []*descriptor.Member{

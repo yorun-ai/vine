@@ -57,14 +57,14 @@ func TestPortalSiteMcpSeedDefaultAndBoolean(t *testing.T) {
 
 func TestPortalRuleSeedMapsWithoutDomainValidation(t *testing.T) {
 	seed := _PortalRule{Name: "mapped", RouteType: "SITE", RoutePathPrefix: "/internal/"}
-	rule := seed.toCorePortalRule()
+	rule := seed.toSeedRule().Rule
 	assert.Zero(t, rule.Id)
 	assert.Equal(t, "/internal/", rule.RoutePathPrefix)
 	seed.RoutePathPrefix = ""
-	assert.Empty(t, seed.toCorePortalRule().RoutePathPrefix)
+	assert.Empty(t, seed.toSeedRule().Rule.RoutePathPrefix)
 	seed.RouteType = "PERMANENT_REDIRECT"
 	seed.RoutePathPrefix = "/internal"
-	assert.NotPanics(t, func() { seed.toCorePortalRule() })
+	assert.NotPanics(t, func() { seed.toSeedRule() })
 }
 
 func TestSeedPortalRuleFieldNames(t *testing.T) {

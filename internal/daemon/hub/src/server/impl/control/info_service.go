@@ -25,7 +25,6 @@ func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 	}
 	return skeled.Info{
 		Version:           buildinfo.MustVineVersion(),
-		ApiPort:           s.Flag.ControlPort(),
 		WatchPort:         s.Flag.WatchPort(),
 		MqEmbedded:        s.Flag.MQMode == flag.MQModeEmbedded,
 		MqNatsPort:        natsPort,

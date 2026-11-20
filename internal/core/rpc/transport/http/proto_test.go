@@ -86,16 +86,29 @@ func TestEncodeClientToHeaderNormalizesGoVersionPrefix(t *testing.T) {
 	}
 }
 
-func TestDecodeClientFromHeaderAcceptsGoVersionPrefix(t *testing.T) {
-	header := http.Header{}
-	header.Set(HeaderRpcClient, "name=vine.hub,version=v0.15.8,instanceId=123e4567-e89b-12d3-a456-426614174000")
-
-	got, err := DecodeClientFromHeader(header)
-	if err != nil {
-		t.Fatalf("DecodeClientFromHeader() error = %v", err)
-	}
-	if got.Name() != "vine.hub" || got.Version() != "v0.15.8" {
-		t.Fatalf("unexpected client app: %s %s", got.Name(), got.Version())
+func TestDecodeAppHeadersRequirePlainSemanticVersion(t *testing.T) {
+	for _, tc := range []struct {
+		key    string
+		decode func(http.Header) (meta.App, error)
+	}{
+		{HeaderRpcClient, DecodeClientFromHeader},
+		{HeaderRpcServer, DecodeServerFromHeader},
+	} {
+		t.Run(tc.key, func(t *testing.T) {
+			header := http.Header{}
+			header.Set(tc.key, "name=demo.worker2,version=v1.2.3,instanceId=123e4567-e89b-12d3-a456-426614174000")
+			if _, err := tc.decode(header); err == nil {
+				t.Fatal("expected a Go module version to be rejected")
+			}
+			header.Set(tc.key, "name=demo.worker2,version=1.2.3,instanceId=123e4567-e89b-12d3-a456-426614174000")
+			app, err := tc.decode(header)
+			if err != nil {
+				t.Fatalf("decode header: %v", err)
+			}
+			if app.Name() != "demo.worker2" || app.Version() != "1.2.3" {
+				t.Fatalf("unexpected identity: %s %s", app.Name(), app.Version())
+			}
+		})
 	}
 }
 
