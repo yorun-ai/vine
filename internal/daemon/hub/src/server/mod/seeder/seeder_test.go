@@ -352,7 +352,7 @@ func TestSeederEnableSwitches(t *testing.T) {
 				case "portalSites":
 					actual = payload.PortalSites[0].toCorePortalSite().Enabled
 				case "portalRules":
-					actual = payload.PortalRules[0].toCorePortalRule().Enabled
+					actual = payload.PortalRules[0].toSeedRule().Rule.Enabled
 				case "portalCerts":
 					actual = payload.PortalCerts[0].toCorePortalCert().Enabled
 				}
@@ -400,9 +400,9 @@ func TestSeederRejectsUnknownPortalField(t *testing.T) {
 			want:    `portal certificate "demo-cert" declares unknown field "issuers"`,
 		},
 		{
-			name:    "Hub-owned built-in marker",
+			name:    "retired built-in marker",
 			content: "portalSites:\n  - name: demo.Web\n    webName: demo.Web\n    builtIn: true\n",
-			want:    `portal site "demo.Web" declares "builtIn"; Hub owns the built-in entities, so a seed cannot declare it`,
+			want:    `portal site "demo.Web" declares unknown field "builtIn"`,
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {

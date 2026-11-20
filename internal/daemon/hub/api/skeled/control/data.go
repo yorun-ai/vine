@@ -60,8 +60,6 @@ type EventListenerRegistration struct {
 type Info struct {
 	// Version Hub Vine runtime version
 	Version string `json:"version"`
-	// ApiPort Control API service port
-	ApiPort int `json:"apiPort"`
 	// WatchPort Configuration and service discovery watch port
 	WatchPort int `json:"watchPort"`
 	// MqEmbedded Whether MQ is embedded in Hub

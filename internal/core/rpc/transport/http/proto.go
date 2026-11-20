@@ -127,11 +127,7 @@ func decodeAppFromHeader(header http.Header, key string) (meta.App, error) {
 		return nil, fmt.Errorf("missing request header %s", key)
 	}
 
-	// The wire contract requires a plain semantic version, but the decoder stays
-	// lenient so that peers released before this normalization keep working.
-	// TODO: replace with vrpc.DecodeIdentity once every supported peer sends a
-	// plain semantic version.
-	appInfo, err := meta.DecodeAppFromDelimited(value)
+	appInfo, err := meta.DecodeAppFromRpcIdentity(value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid request header %s", key)
 	}

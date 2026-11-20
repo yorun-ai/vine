@@ -307,12 +307,6 @@ func checkSeedEntityFields(fields map[string]yaml.Node, section string, name str
 		if seedSectionFields[section][key] {
 			continue
 		}
-		if key == "builtIn" {
-			// TODO: Report builtIn as an unknown field once the built-in entities
-			// are a release behind.
-			return fmt.Errorf("%s declares \"builtIn\"; Hub owns the built-in entities, so a seed cannot declare it",
-				seedEntityLabel(section, name))
-		}
 		return fmt.Errorf("%s declares unknown field %q", seedEntityLabel(section, name), key)
 	}
 	return nil
@@ -345,12 +339,6 @@ func (r _PortalRule) toSeedRule() *seedRule {
 		},
 		EntryName: r.EntryName,
 	}
-}
-
-// toCorePortalRule returns the rule the seed declares, without resolving the
-// entry it belongs to.
-func (r _PortalRule) toCorePortalRule() *core.PortalRule {
-	return r.toSeedRule().Rule
 }
 
 // Portal site

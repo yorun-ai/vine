@@ -29,10 +29,14 @@ type _App struct {
 var applicationNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$`)
 
 func NewApp(name string, version string, instanceId uuid.UUID) (App, error) {
+	return newApp(name, version, instanceId, IsValidVersion)
+}
+
+func newApp(name string, version string, instanceId uuid.UUID, validVersion func(string) bool) (App, error) {
 	if !IsValidName(name) {
 		return nil, fmt.Errorf("invalid name, lowercase letters, digits and dots expected")
 	}
-	if !IsValidVersion(version) {
+	if !validVersion(version) {
 		return nil, fmt.Errorf("invalid version, semantic expected")
 	}
 	return &_App{
@@ -43,6 +47,15 @@ func NewApp(name string, version string, instanceId uuid.UUID) (App, error) {
 }
 
 func DecodeAppFromDelimited(value string) (App, error) {
+	return decodeAppFromDelimited(value, IsValidVersion)
+}
+
+// DecodeAppFromRpcIdentity decodes a delimited identity with a plain semantic version.
+func DecodeAppFromRpcIdentity(value string) (App, error) {
+	return decodeAppFromDelimited(value, isPlainSemanticVersion)
+}
+
+func decodeAppFromDelimited(value string, validVersion func(string) bool) (App, error) {
 	fields, err := vstring.DecodeDelimited(value)
 	if err != nil {
 		return nil, err
@@ -59,7 +72,7 @@ func DecodeAppFromDelimited(value string) (App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid instanceId: %w", err)
 	}
-	return NewApp(name, version, id)
+	return newApp(name, version, id, validVersion)
 }
 
 func EncodeAppToDelimited(app App) string {
@@ -115,7 +128,11 @@ func IsValidName(name string) bool {
 // after it must be a full semantic version, which is what the Rpc identity
 // header requires.
 func IsValidVersion(version string) bool {
-	_, err := semver.StrictNewVersion(strings.TrimPrefix(version, "v"))
+	return isPlainSemanticVersion(strings.TrimPrefix(version, "v"))
+}
+
+func isPlainSemanticVersion(version string) bool {
+	_, err := semver.StrictNewVersion(version)
 	return err == nil
 }
 

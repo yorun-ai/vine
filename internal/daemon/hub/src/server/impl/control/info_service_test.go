@@ -25,7 +25,7 @@ func runTestNATSServerDIInit(t *testing.T, server *natsserver.NATSServer) {
 	server.DIInit()
 }
 
-func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
+func TestHubInfoServiceReturnsWatchPortAndExternalNATS(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag: &flag.Flag{
@@ -40,7 +40,6 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 
 	assert.Equal(t, skeled.Info{
 		Version:        buildinfo.MustVineVersion(),
-		ApiPort:        7071,
 		WatchPort:      7072,
 		MqNatsEndpoint: "nats://127.0.0.1:4222",
 	}, info)
@@ -60,7 +59,6 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 
 	info := service.GetInfo()
 
-	assert.Equal(t, 7071, info.ApiPort)
 	assert.Equal(t, 7072, info.WatchPort)
 	assert.True(t, info.MqEmbedded)
 	assert.Equal(t, service.NATSServer.Port(), info.MqNatsPort)
@@ -81,6 +79,7 @@ func TestHubInfoServiceWireCompatibility(t *testing.T) {
 			require.NoError(t, err)
 			var fields map[string]any
 			require.NoError(t, payload.Unmarshal(payload.ResultBytes, &fields))
+			assert.NotContains(t, fields, "apiPort")
 			assert.NotContains(t, fields, "redisPort")
 			assert.NotContains(t, fields, "natsPort")
 			assert.NotContains(t, fields, "mqEndpoint")
@@ -94,6 +93,7 @@ func TestHubInfoServiceWireCompatibility(t *testing.T) {
 			assert.Equal(t, 7072, legacy.WatchPort)
 			assert.Equal(t, "nats://localhost:4222", legacy.MqNatsEndpoint)
 
+			fields["apiPort"] = 7071
 			fields["redisPort"] = info.WatchPort
 			fields["natsPort"] = info.MqNatsPort
 			fields["mqEndpoint"] = info.MqNatsEndpoint

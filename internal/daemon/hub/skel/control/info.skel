@@ -5,9 +5,6 @@ pub data Info {
     @desc("Hub Vine runtime version")
     version: string
 
-    @desc("Control API service port")
-    apiPort: int
-
     @desc("Configuration and service discovery watch port")
     watchPort: int
 

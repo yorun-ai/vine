@@ -206,7 +206,7 @@ func TestSyncerWithdrawsWildcardRuleWhenSiteBecomesRpc(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestSyncerPublishesPEMAndLegacyCertificateFields(t *testing.T) {
+func TestSyncerPublishesPEMCertificateFields(t *testing.T) {
 	server := watchserver.NewServerForTest()
 	t.Cleanup(server.AfterAppStop)
 	target := testSyncer(server)
@@ -220,7 +220,6 @@ func TestSyncerPublishesPEMAndLegacyCertificateFields(t *testing.T) {
 		published := vcode.MustUnmarshalJsonS[watched.PortalCert](value)
 		require.Equal(t, cert.Certificate, published.Certificate)
 		require.Equal(t, cert.PrivateKey, published.PrivateKey)
-
 	}
 }
 

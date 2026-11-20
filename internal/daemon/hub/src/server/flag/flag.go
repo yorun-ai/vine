@@ -156,10 +156,6 @@ func (f *Flag) normalizeLock() {
 	}
 }
 
-func (f *Flag) ControlPort() int {
-	return vnet.MustParsePort(f.ControlListen)
-}
-
 func (f *Flag) WatchPort() int {
 	return vnet.MustParsePort(f.WatchListen)
 }
