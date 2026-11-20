@@ -37,13 +37,7 @@ func (c *Cache) Info() control.Info {
 
 // WatchEndpoint returns the dial address for the Hub's watch service.
 func (c *Cache) WatchEndpoint(host string) string {
-	info := c.Info()
-	port := info.WatchPort
-	if port == 0 {
-		// Hubs predating watchPort only advertise redisPort.
-		port = info.RedisPort
-	}
-	return net.JoinHostPort(host, strconv.Itoa(port))
+	return net.JoinHostPort(host, strconv.Itoa(c.Info().WatchPort))
 }
 
 // OnRefresh registers a listener that repairs its connections after a change.

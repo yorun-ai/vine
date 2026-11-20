@@ -57,41 +57,26 @@ func (c *HubInfo) WatchEndpoint() string {
 
 func (c *HubInfo) MQEndpoint() string {
 	info := c.cache.Info()
-	if usesEmbeddedNATS(info) {
-		port := info.MqNatsPort
-		if port == 0 {
-			port = info.NatsPort
-		}
+	if info.MqEmbedded {
 		scheme := "nats"
 		if c.Flag.MTLS.Enabled() {
 			scheme = "tls"
 		}
-		endpoint := url.URL{Scheme: scheme, Host: net.JoinHostPort(c.host, strconv.Itoa(port))}
+		endpoint := url.URL{Scheme: scheme, Host: net.JoinHostPort(c.host, strconv.Itoa(info.MqNatsPort))}
 		return endpoint.String()
 	}
-	if info.MqNatsEndpoint != "" {
-		return info.MqNatsEndpoint
-	}
-	return info.MqEndpoint
-}
-
-func usesEmbeddedNATS(info hubskeled.Info) bool {
-	return info.MqEmbedded || info.NatsPort != 0
+	return info.MqNatsEndpoint
 }
 
 func (c *HubInfo) UsesEmbeddedNATS() bool {
-	return usesEmbeddedNATS(c.cache.Info())
+	return c.cache.Info().MqEmbedded
 }
 
 func (c *HubInfo) LockMode() string {
 	if c.Flag.HubInprocMode {
 		return hublock.ModeEmbedded
 	}
-	mode := c.cache.Info().LockMode
-	if mode == "" {
-		return hublock.ModeDisable
-	}
-	return mode
+	return c.cache.Info().LockMode
 }
 
 func (c *HubInfo) LockRedisEndpoint() string {

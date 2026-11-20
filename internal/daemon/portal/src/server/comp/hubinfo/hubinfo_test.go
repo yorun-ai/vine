@@ -7,8 +7,6 @@ import (
 	"testing/synctest"
 	"time"
 
-	"go.yorun.ai/vine/util/vcode"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	rpcclient "go.yorun.ai/vine/internal/core/rpc/client"
@@ -45,24 +43,6 @@ func TestHubInfoDIInitSkipsHubInfoLookupInInprocMode(t *testing.T) {
 
 	component.DIInit()
 	assert.Equal(t, 0, client.getInfoCall)
-}
-
-func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		payload string
-		want    string
-	}{
-		{"old hub", `{"redisPort":7072}`, "hub:7072"},
-		{"new hub", `{"watchPort":8072}`, "hub:8072"},
-		{"prefer watch port", `{"watchPort":8072,"redisPort":7072}`, "hub:8072"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			component := &HubInfo{host: "hub"}
-			component.cache.Init(vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload))
-			assert.Equal(t, tc.want, component.WatchEndpoint())
-		})
-	}
 }
 
 func TestHubInfoRefreshNotifiesListenersOnlyWhenHubInfoChanged(t *testing.T) {

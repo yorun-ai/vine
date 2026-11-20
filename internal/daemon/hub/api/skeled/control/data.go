@@ -74,18 +74,6 @@ type Info struct {
 	LockMode string `json:"lockMode"`
 	// LockRedisEndpoint External Redis endpoint for locks
 	LockRedisEndpoint string `json:"lockRedisEndpoint"`
-	// RedisPort Redis service port
-	//
-	// Deprecated: Use watchPort instead.
-	RedisPort int `json:"redisPort"`
-	// NatsPort NATS service port
-	//
-	// Deprecated: Use mqNatsPort instead.
-	NatsPort int `json:"natsPort"`
-	// MqEndpoint External NATS service endpoint
-	//
-	// Deprecated: Use mqNatsEndpoint instead.
-	MqEndpoint string `json:"mqEndpoint"`
 }
 
 // PortalRegistration Portal instance registration information provided by Portal

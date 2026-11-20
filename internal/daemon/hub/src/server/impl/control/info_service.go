@@ -32,8 +32,5 @@ func (s *InfoServiceServerImpl) GetInfo() skeled.Info {
 		MqNatsEndpoint:    mqEndpoint,
 		LockMode:          s.Flag.LockMode,
 		LockRedisEndpoint: s.Flag.LockRedisEndpoint,
-		RedisPort:         s.Flag.WatchPort(), // Keep the same port for older Link and Portal clients.
-		NatsPort:          natsPort,
-		MqEndpoint:        mqEndpoint,
 	}
 }

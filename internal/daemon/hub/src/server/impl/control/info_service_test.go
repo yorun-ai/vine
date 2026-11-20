@@ -1,17 +1,17 @@
 package control
 
 import (
-	"go.yorun.ai/vine/buildinfo"
 	"testing"
 
-	"go.yorun.ai/vine/util/vcode"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.yorun.ai/vine/buildinfo"
 	"go.yorun.ai/vine/internal/app"
 	hubnats "go.yorun.ai/vine/internal/daemon/hub/api/nats"
 	skeled "go.yorun.ai/vine/internal/daemon/hub/api/skeled/control"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/comp/natsserver"
 	"go.yorun.ai/vine/internal/daemon/hub/src/server/flag"
+	vrpchttp "go.yorun.ai/vrpc/transport/http"
 )
 
 func runTestNATSServerDIInit(t *testing.T, server *natsserver.NATSServer) {
@@ -41,10 +41,7 @@ func TestHubInfoServiceReturnsPortsFromFlag(t *testing.T) {
 	assert.Equal(t, skeled.Info{
 		Version:        buildinfo.MustVineVersion(),
 		ApiPort:        7071,
-		RedisPort:      7072,
 		WatchPort:      7072,
-		NatsPort:       0,
-		MqEndpoint:     "nats://127.0.0.1:4222",
 		MqNatsEndpoint: "nats://127.0.0.1:4222",
 	}, info)
 }
@@ -64,31 +61,51 @@ func TestHubInfoServiceReturnsNATSServerPortWhenEnabled(t *testing.T) {
 	info := service.GetInfo()
 
 	assert.Equal(t, 7071, info.ApiPort)
-	assert.Equal(t, 7072, info.RedisPort)
-	assert.Equal(t, info.RedisPort, info.WatchPort)
-	assert.Equal(t, service.NATSServer.Port(), info.NatsPort)
-	assert.Empty(t, info.MqEndpoint)
+	assert.Equal(t, 7072, info.WatchPort)
 	assert.True(t, info.MqEmbedded)
-	assert.Equal(t, info.NatsPort, info.MqNatsPort)
+	assert.Equal(t, service.NATSServer.Port(), info.MqNatsPort)
 	assert.Empty(t, info.MqNatsEndpoint)
 }
 
-func TestHubInfoServicePreservesOldClientPort(t *testing.T) {
+func TestHubInfoServiceWireCompatibility(t *testing.T) {
 	service := &InfoServiceServerImpl{
 		InprocFlag: &app.InternalInprocFlag{},
 		Flag:       &flag.Flag{ControlListen: ":7071", WatchListen: ":7072", MQNatsEndpoint: "nats://localhost:4222"},
 	}
-	type oldInfo struct {
-		ApiPort    int    `json:"apiPort"`
-		RedisPort  int    `json:"redisPort"`
-		NatsPort   int    `json:"natsPort"`
-		MqEndpoint string `json:"mqEndpoint"`
-	}
 	info := service.GetInfo()
-	decoded := vcode.MustUnmarshalJsonS[oldInfo](vcode.MustMarshalJsonS(info))
-	assert.Equal(t, 7072, decoded.RedisPort)
-	assert.Equal(t, info.WatchPort, decoded.RedisPort)
-	assert.Equal(t, info.MqEndpoint, decoded.MqEndpoint)
+	for _, contentType := range []string{vrpchttp.ContentTypeJson, vrpchttp.ContentTypeCbor} {
+		t.Run(contentType, func(t *testing.T) {
+			body, err := vrpchttp.EncodeResponse(info, nil, contentType)
+			require.NoError(t, err)
+			payload, err := vrpchttp.DecodeResponse(body, contentType)
+			require.NoError(t, err)
+			var fields map[string]any
+			require.NoError(t, payload.Unmarshal(payload.ResultBytes, &fields))
+			assert.NotContains(t, fields, "redisPort")
+			assert.NotContains(t, fields, "natsPort")
+			assert.NotContains(t, fields, "mqEndpoint")
+
+			// The Watch and MQ fields used by v0.27.1 clients still decode.
+			var legacy struct {
+				WatchPort      int    `json:"watchPort"`
+				MqNatsEndpoint string `json:"mqNatsEndpoint"`
+			}
+			require.NoError(t, payload.Unmarshal(payload.ResultBytes, &legacy))
+			assert.Equal(t, 7072, legacy.WatchPort)
+			assert.Equal(t, "nats://localhost:4222", legacy.MqNatsEndpoint)
+
+			fields["redisPort"] = info.WatchPort
+			fields["natsPort"] = info.MqNatsPort
+			fields["mqEndpoint"] = info.MqNatsEndpoint
+			body, err = vrpchttp.EncodeResponse(fields, nil, contentType)
+			require.NoError(t, err)
+			payload, err = vrpchttp.DecodeResponse(body, contentType)
+			require.NoError(t, err)
+			var decoded skeled.Info
+			require.NoError(t, payload.Unmarshal(payload.ResultBytes, &decoded))
+			assert.Equal(t, info, decoded)
+		})
+	}
 }
 
 func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
@@ -100,8 +117,6 @@ func TestHubInfoServiceInprocEmbeddedMQ(t *testing.T) {
 	assert.True(t, info.MqEmbedded)
 	assert.Zero(t, info.MqNatsPort)
 	assert.Empty(t, info.MqNatsEndpoint)
-	assert.Zero(t, info.NatsPort)
-	assert.Empty(t, info.MqEndpoint)
 }
 
 func TestHubInfoAdvertisesLockConfiguration(t *testing.T) {
