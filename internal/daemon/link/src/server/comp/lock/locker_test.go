@@ -9,18 +9,20 @@ import (
 	hublock "go.yorun.ai/vine/internal/daemon/hub/api/lock"
 )
 
-func TestDisabledAndMissingModeRejectOperations(t *testing.T) {
-	for _, mode := range []string{"disable", ""} {
-		t.Run(mode, func(t *testing.T) {
-			locker, hub := newTestLocker(t, mode, "", false)
-			ctx := lockContext(context.Background())
-			assert.Panics(t, func() { locker.Acquire(ctx, "key", "token", 1000) })
-			assert.Panics(t, func() { locker.Renew(ctx, "key", "token", 1000) })
-			assert.Panics(t, func() { locker.Release(ctx, "key", "token") })
-			assert.Empty(t, hub.calls)
-			assert.Nil(t, locker.impl)
-		})
-	}
+func TestDisabledModeRejectsOperations(t *testing.T) {
+	locker, hub := newTestLocker(t, hublock.ModeDisable, "", false)
+	ctx := lockContext(context.Background())
+	assert.Panics(t, func() { locker.Acquire(ctx, "key", "token", 1000) })
+	assert.Panics(t, func() { locker.Renew(ctx, "key", "token", 1000) })
+	assert.Panics(t, func() { locker.Release(ctx, "key", "token") })
+	assert.Empty(t, hub.calls)
+	assert.Nil(t, locker.impl)
+}
+
+func TestMissingLockModeRejectsInitialization(t *testing.T) {
+	assert.PanicsWithError(t, `unsupported Hub lock mode ""`, func() {
+		newTestLocker(t, "", "", false)
+	})
 }
 
 func TestLockerKeepsRedisClientWhenHubLockEndpointIsUnchanged(t *testing.T) {

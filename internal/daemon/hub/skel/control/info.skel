@@ -25,18 +25,6 @@ pub data Info {
 
     @desc("External Redis endpoint for locks")
     lockRedisEndpoint: string
-
-    @desc("Redis service port")
-    @deprecated("Use watchPort instead")
-    redisPort: int
-
-    @desc("NATS service port")
-    @deprecated("Use mqNatsPort instead")
-    natsPort: int
-
-    @desc("External NATS service endpoint")
-    @deprecated("Use mqNatsEndpoint instead")
-    mqEndpoint: string
 }
 
 @desc("Hub's information service, called by Link")

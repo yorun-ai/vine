@@ -23,8 +23,9 @@ func (c *_TestInfoServiceClient) GetInfo(_ ...rpcclient.InvokeOption) hubskeled.
 
 func TestHubInfoDIInitLoadsHubInfo(t *testing.T) {
 	client := &_TestInfoServiceClient{info: hubskeled.Info{
-		WatchPort: 7072,
-		NatsPort:  4222,
+		WatchPort:  7072,
+		MqEmbedded: true,
+		MqNatsPort: 4222,
 	}}
 	flags := &flag.Flag{HubEndpoint: "http://[fe80::1%25en0]:7071"}
 	flags.Normalize(false)
@@ -95,37 +96,15 @@ func TestHubInfoInprocSkipsLookupOnInitAndRefresh(t *testing.T) {
 	assert.Equal(t, 0, client.getInfoCall)
 }
 
-func TestHubInfoWatchEndpointSupportsHubVersions(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		payload string
-		want    string
-	}{
-		{"old hub", `{"redisPort":7072}`, "hub:7072"},
-		{"new hub", `{"watchPort":8072}`, "hub:8072"},
-		{"prefer watch port", `{"watchPort":8072,"redisPort":7072}`, "hub:8072"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			component := &HubInfo{host: "hub"}
-			component.cache.Init(vcode.MustUnmarshalJsonS[hubskeled.Info](tc.payload))
-			assert.Equal(t, tc.want, component.WatchEndpoint())
-		})
-	}
-}
-
-func TestHubInfoMQSupportsHubVersions(t *testing.T) {
+func TestHubInfoUsesAdvertisedMQ(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		payload  string
 		endpoint string
 		embedded bool
 	}{
-		{"old embedded", `{"natsPort":4222}`, "nats://hub:4222", true},
-		{"new embedded", `{"mqEmbedded":true,"mqNatsPort":4223}`, "nats://hub:4223", true},
-		{"prefer new port", `{"mqEmbedded":true,"mqNatsPort":4223,"natsPort":4222}`, "nats://hub:4223", true},
-		{"old external", `{"mqEndpoint":"nats://old:4222"}`, "nats://old:4222", false},
-		{"new external", `{"mqNatsEndpoint":"nats://new:4222"}`, "nats://new:4222", false},
-		{"prefer new endpoint", `{"mqNatsEndpoint":"nats://new:4222","mqEndpoint":"nats://old:4222"}`, "nats://new:4222", false},
+		{"embedded", `{"mqEmbedded":true,"mqNatsPort":4223}`, "nats://hub:4223", true},
+		{"external", `{"mqNatsEndpoint":"nats://mq:4222"}`, "nats://mq:4222", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			component := &HubInfo{host: "hub", Flag: &flag.Flag{}}
