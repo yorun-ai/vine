@@ -8,6 +8,31 @@ are not part of the public compatibility commitment.
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-11-22
+
+### Changed
+
+- Require a plain semantic version in Rpc client and server identity headers.
+- Upgrade vRPC Go to v0.18.0 and pass application instance IDs directly to the
+  identity encoder. Rpc identity headers continue to carry UUID text.
+- Update stable Hub, Link, and Portal Kubernetes images to v0.35.0.
+
+### Removed
+
+- Remove `apiPort`, `redisPort`, `natsPort`, and `mqEndpoint` from the Hub Info
+  response. Link and Portal use the current Watch, NATS, and lock fields.
+
+### Upgrade Notes
+
+- For deployments that still rely on legacy Hub Info fields, upgrade all
+  components to v0.34.0 before rolling out v0.35.0. Consumers of Hub Info use
+  `watchPort` for Watch and `mqNatsPort` or `mqNatsEndpoint` for NATS. Configure
+  the control API address directly.
+- If you construct Rpc identity headers, send versions such as `1.2.3`.
+  The Go module form `v1.2.3` remains valid for application metadata.
+- Go applications that also use `vrpc.Identity` should pass a `uuid.UUID`
+  to `InstanceID`. Use `uuid.Parse` for IDs read from configuration.
+
 ## [0.34.0] - 2026-11-19
 
 ### Changed
@@ -2014,7 +2039,8 @@ Initial public release.
 - Standalone, linked, and separated Hub, Link, Portal deployment modes
 - Skel-powered Go and TypeScript contracts
 
-[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.34.0...HEAD
+[Unreleased]: https://github.com/yorun-ai/vine/compare/v0.35.0...HEAD
+[0.35.0]: https://github.com/yorun-ai/vine/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/yorun-ai/vine/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/yorun-ai/vine/compare/v0.32.6...v0.33.0
 [0.32.6]: https://github.com/yorun-ai/vine/compare/v0.32.5...v0.32.6
