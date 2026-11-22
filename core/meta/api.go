@@ -7,7 +7,7 @@ import (
 	internalmeta "go.yorun.ai/vine/internal/core/meta"
 )
 
-// App identifies one running application instance with a native UUID.
+// App identifies one running application instance.
 type App = internalmeta.App
 
 // CurrentApp identifies the application instance that owns the component graph
@@ -45,7 +45,6 @@ const (
 )
 
 // NewApp validates the name and version and creates an identity with instanceId.
-// Parse external UUID text with uuid.Parse before calling NewApp.
 func NewApp(name string, version string, instanceId uuid.UUID) (App, error) {
 	return internalmeta.NewApp(name, version, instanceId)
 }

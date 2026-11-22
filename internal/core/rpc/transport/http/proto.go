@@ -149,7 +149,7 @@ func encodeAppToHeader(header http.Header, appInfo meta.App, key string) {
 	identity, err := vrpc.EncodeIdentity(vrpc.Identity{
 		Name:       appInfo.Name(),
 		Version:    strings.TrimPrefix(appInfo.Version(), "v"),
-		InstanceID: appInfo.InstanceId().String(),
+		InstanceID: appInfo.InstanceId(),
 	})
 	vpre.CheckNilError(err, "invalid identity for header %s: %v", key, err)
 	header.Set(key, identity)
