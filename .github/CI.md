@@ -154,7 +154,8 @@ selected by the change policy.
    install frontend dependencies or rebuild Dashboard assets. PR CI verifies
    that the committed assets match the frontend build.
 5. Completion verifies four archive checksums, anonymous access to all three
-   images, Linux AMD64/ARM64, and release version/source/revision labels.
+   images, Linux AMD64/ARM64 manifest coverage, matching binary architecture in
+   each image, and release version/source/revision labels.
    Only then is the Draft Release formally published. Prerelease tags remain
    prereleases. The current non-prerelease can then update image `latest` tags.
 6. A separate promotion job shares one concurrency group across all versions.

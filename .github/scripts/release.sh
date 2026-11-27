@@ -17,6 +17,27 @@ read_url() (
   cat "$response"
 )
 
+# Binary blobs cannot pass through command substitution because it drops NUL bytes.
+read_blob() {
+  local output="$1"; shift
+  curl --fail --silent --show-error --location --connect-timeout 10 --max-time 300 \
+    --retry 3 --retry-max-time 600 --output "$output" "$@"
+}
+
+elf_arch() {
+  local binary="$1" magic endian machine
+  magic=$(od -An -t x1 -N 4 "$binary" | tr -d ' \n')
+  [[ "$magic" == 7f454c46 ]] || { fail "$binary is not an ELF executable"; return 1; }
+  endian=$(od -An -t u1 -j 5 -N 1 "$binary" | tr -d ' \n')
+  [[ "$endian" == 1 ]] || { fail "$binary is not a little-endian ELF executable"; return 1; }
+  machine=$(od -An -t u2 -j 18 -N 2 "$binary" | tr -d ' \n')
+  case "$machine" in
+    62) echo amd64 ;;
+    183) echo arm64 ;;
+    *) fail "$binary has unsupported ELF machine $machine"; return 1 ;;
+  esac
+}
+
 require_release_checkout() {
   local tag="$1" sha="$2" tag_sha
   tag_sha=$(git rev-parse --verify "refs/tags/$tag^{commit}") || { fail "Cannot resolve release tag $tag"; return 1; }
@@ -155,11 +176,18 @@ verify_labels() {
     then true else error("Image labels do not match the release source") end'
 }
 
-verify_images() {
+verify_images() (
   local repo="$1" tag="$2" sha="$3" check_latest="$4"
   local owner target image token index platforms digest descriptor config latest
+  local directory cleanup binary layer_file layer expected_arch actual_arch found
   owner=$(printf '%s' "${repo%%/*}" | tr '[:upper:]' '[:lower:]')
   local accept='application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json'
+  directory=$(mktemp -d "${TMPDIR:-/tmp}/vine-image-verify.XXXXXXXX")
+  printf -v cleanup 'rm -rf -- %q' "$directory"
+  # shellcheck disable=SC2064
+  trap "$cleanup" EXIT
+  binary="$directory/vine"
+  layer_file="$directory/layer"
   for target in hub link portal; do
     image="$owner/vine-$target"
     # Do not use GH_TOKEN here: users must be able to pull anonymously.
@@ -167,20 +195,33 @@ verify_images() {
     local headers=(-H "Authorization: Bearer $token" -H "Accept: $accept")
     index=$(read_url "${headers[@]}" "https://ghcr.io/v2/$image/manifests/$tag")
     platforms=$(image_platforms <<< "$index")
-    while IFS= read -r digest; do
+    while IFS=$'\t' read -r expected_arch digest; do
       descriptor=$(read_url "${headers[@]}" "https://ghcr.io/v2/$image/manifests/$digest")
       digest=$(jq -er .config.digest <<< "$descriptor")
       config=$(read_url "${headers[@]}" "https://ghcr.io/v2/$image/blobs/$digest")
       jq -e .config.Labels <<< "$config" | verify_labels "$tag" "$sha" "$repo"
-    done <<< "$(jq -r '.[].digest' <<< "$platforms")"
+      found=false
+      while IFS= read -r layer; do
+        read_blob "$layer_file" "${headers[@]}" "https://ghcr.io/v2/$image/blobs/$layer" || return $?
+        if tar -xOf "$layer_file" usr/local/bin/vine > "$binary" 2>/dev/null; then
+          actual_arch=$(elf_arch "$binary")
+          [[ "$actual_arch" == "$expected_arch" ]] || {
+            fail "$image:$tag $expected_arch image contains a $actual_arch binary"; return 1;
+          }
+          found=true
+          break
+        fi
+      done < <(jq -r '.layers | reverse | .[].digest' <<< "$descriptor")
+      [[ "$found" == true ]] || { fail "$image:$tag $expected_arch image has no vine binary"; return 1; }
+    done <<< "$(jq -r '.[] | [.platform.architecture, .digest] | @tsv' <<< "$platforms")"
     if [[ "$check_latest" == true ]]; then
       latest=$(read_url "${headers[@]}" "https://ghcr.io/v2/$image/manifests/latest")
       jq -en --arg image "$image" --arg tag "$tag" --argjson latest "$latest" --argjson index "$index" \
         'if $latest == $index then true else error($image + ": latest does not match " + $tag) end'
     fi
-    echo "Verified ghcr.io/$image:$tag (anonymous, AMD64/ARM64, release revision)"
+    echo "Verified ghcr.io/$image:$tag (anonymous, AMD64/ARM64 binaries, release revision)"
   done
-}
+)
 
 verify_binaries() (
   local directory name names cleanup
