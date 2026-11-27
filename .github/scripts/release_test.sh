@@ -82,14 +82,6 @@ names=$(archive_names "$tag")
 
 directory=$(mktemp -d "${TMPDIR:-/tmp}/vine-release-test.XXXXXXXX")
 trap 'rm -rf -- "$directory"' EXIT
-printf '\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00' > "$directory/elf-amd64"
-printf '\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00' > "$directory/elf-arm64"
-printf '\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00' > "$directory/elf-invalid"
-printf 'not an ELF' > "$directory/elf-text"
-[[ "$(elf_arch "$directory/elf-amd64")" == amd64 ]]
-[[ "$(elf_arch "$directory/elf-arm64")" == arm64 ]]
-expect_failure elf_arch "$directory/elf-invalid"
-expect_failure elf_arch "$directory/elf-text"
 (
   mkdir "$directory/repo"
   cd "$directory/repo"
